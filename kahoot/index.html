@@ -1,149 +1,91 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>Kahoot 題目生成器</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    input, button, select { margin: 5px; padding: 8px; }
-    .question-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-  </style>
+<meta charset="UTF-8">
+<title>Kahoot AI Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+body{font-family:Arial;background:#f5f5f5;padding:20px}
+.box{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:12px}
+input,button{width:100%;padding:10px;margin:5px 0}
+button{background:#4CAF50;color:#fff;border:none}
+</style>
 </head>
 <body>
 
-<h2>🎯 Kahoot 題目生成器</h2>
+<div class="box">
+<h2>Kahoot AI 題目生成器（Gemini版）</h2>
 
-<label>題目主題：</label>
-<input type="text" id="topic" placeholder="例如：台灣歷史"><br>
+<input id="topic" placeholder="題目主題">
+<input id="count" type="number" value="5">
+<input id="time" type="number" value="20">
 
-<label>題數：</label>
-<input type="number" id="count" value="5"><br>
+<button onclick="generate()">生成題目</button>
+<button onclick="download()">下載 Kahoot Excel</button>
 
-<label>作答時間：</label>
-<select id="time">
-  <option>5</option>
-  <option>10</option>
-  <option selected>20</option>
-  <option>30</option>
-  <option>60</option>
-  <option>90</option>
-  <option>120</option>
-  <option>240</option>
-</select><br>
-
-<label>OpenAI API Key：</label>
-<input type="password" id="apiKey"><br>
-
-<button onclick="generateQuiz()">🚀 生成題目</button>
-<button onclick="downloadExcel()">📥 下載 Kahoot Excel</button>
-
-<div id="output"></div>
+<pre id="log"></pre>
+</div>
 
 <script>
-let quizData = [];
+const API_URL = "https://script.google.com/macros/s/AKfycbwoC39gokDGJ-bZ-45u26HmQZiiGQGb3zZzMFtTX1FEdAgswpciRV7eXGbq7n-jeDmL/exec";
 
-async function generateQuiz() {
+let quiz = [];
+
+async function generate(){
   const topic = document.getElementById("topic").value;
   const count = document.getElementById("count").value;
-  const apiKey = document.getElementById("apiKey").value;
-  const time = document.getElementById("time").value;
 
-  const prompt = `
-請生成 ${count} 題 Kahoot 選擇題（主題：${topic}）
-
-格式為 JSON：
-[
- {
-  "question": "",
-  "choices": ["","","",""],
-  "answer": 1
- }
-]
-
-規則：
-- 4個選項
-- answer 為正確答案 (1~4)
-- 題目簡短（<120字）
-`;
-
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + apiKey,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-5-mini",
-      input: prompt
-    })
+  const res = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({topic, count})
   });
 
-  const data = await res.json();
-  const text = data.output[0].content[0].text;
+  quiz = await res.json();
 
-  try {
-    quizData = JSON.parse(text);
-    displayQuiz();
-  } catch (e) {
-    alert("解析失敗，請重試");
-    console.log(text);
-  }
+  document.getElementById("log").textContent = JSON.stringify(quiz,null,2);
 }
 
-function displayQuiz() {
-  const div = document.getElementById("output");
-  div.innerHTML = "";
+function download(){
+  if(!quiz.length){alert("先生成題目");return;}
 
-  quizData.forEach((q, i) => {
-    div.innerHTML += `
-      <div class="question-box">
-        <b>Q${i+1}：</b>${q.question}<br>
-        1️⃣ ${q.choices[0]}<br>
-        2️⃣ ${q.choices[1]}<br>
-        3️⃣ ${q.choices[2]}<br>
-        4️⃣ ${q.choices[3]}<br>
-        ✅ 正確答案：${q.answer}
-      </div>
-    `;
-  });
-}
-
-function downloadExcel() {
   const time = document.getElementById("time").value;
 
   let ws_data = [];
 
-  // Kahoot header (第8列)
-  ws_data[7] = [
-    "",
-    "Question - max 120 characters",
-    "Answer 1 - max 75 characters",
-    "Answer 2 - max 75 characters",
-    "Answer 3 - max 75 characters",
-    "Answer 4 - max 75 characters",
-    "Time limit (sec)",
-    "Correct answer(s)"
-  ];
+  // 前7列空白（符合模板）
+  for(let i=0;i<7;i++) ws_data.push([]);
 
-  quizData.forEach((q, i) => {
-    ws_data[8 + i] = [
-      i + 1,
+  // 第8列標題
+  ws_data.push([
+    "",
+    "Question",
+    "Answer 1",
+    "Answer 2",
+    "Answer 3",
+    "Answer 4",
+    "Time",
+    "Correct Answer"
+  ]);
+
+  // 題目
+  quiz.forEach((q,i)=>{
+    ws_data.push([
+      i+1,
       q.question,
       q.choices[0],
       q.choices[1],
       q.choices[2],
       q.choices[3],
-      parseInt(time),
+      time,
       q.answer.toString()
-    ];
+    ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Kahoot");
+  XLSX.utils.book_append_sheet(wb, ws, "Quiz");
 
-  XLSX.writeFile(wb, "kahoot_quiz.xlsx");
+  XLSX.writeFile(wb, "kahoot.xlsx");
 }
 </script>
 
