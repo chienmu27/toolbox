@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kahoot AI Generator</title>
+    <title>Kahoot AI 題目生成器</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; line-height: 1.6; }
-        .box { max-width: 700px; margin: auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #46178f; text-align: center; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
+        .box { width: 100%; max-width: 600px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #46178f; text-align: center; margin-bottom: 25px; }
         .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; margin-top: 10px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; margin-top: 15px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
         .btn-generate { background: #46178f; color: white; }
-        .btn-generate:disabled { background: #ccc; }
-        .btn-download { background: #26890c; color: white; margin-top: 10px; }
-        pre { background: #333; color: #7cfc00; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; max-height: 300px; }
-        .status { text-align: center; color: #666; margin-top: 10px; }
+        .btn-generate:hover { background: #35116d; }
+        .btn-generate:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-download { background: #26890c; color: white; display: none; }
+        .btn-download:hover { background: #1e6b0a; }
+        #status { text-align: center; margin-top: 15px; color: #666; font-size: 14px; }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; max-height: 200px; border: 1px solid #eee; margin-top: 20px; display: none; }
     </style>
 </head>
 <body>
@@ -27,79 +29,93 @@
     
     <div class="input-group">
         <label>題目主題</label>
-        <input id="topic" placeholder="例如：台灣地理、JavaScript 基礎...">
+        <input id="topic" placeholder="例如：生活常識、Python 程式設計...">
     </div>
     <div class="input-group">
-        <label>題數</label>
+        <label>生成題數 (建議 1-10 題)</label>
         <input id="count" type="number" value="5" min="1" max="20">
     </div>
     <div class="input-group">
-        <label>作答時間 (秒)</label>
+        <label>每題作答秒數</label>
         <input id="time" type="number" value="20">
     </div>
 
-    <button id="genBtn" class="btn-generate" onclick="generate()">生成題目 (可能需要 10-20 秒)</button>
-    <button id="dlBtn" class="btn-download" onclick="download()" style="display:none;">下載 Kahoot Excel</button>
+    <button id="genBtn" class="btn-generate" onclick="generate()">開始生成題目</button>
+    <button id="dlBtn" class="btn-download" onclick="download()">下載 Kahoot Excel</button>
 
-    <div id="status" class="status"></div>
-    <pre id="log" style="display:none;"></pre>
+    <div id="status"></div>
+    <pre id="log"></pre>
 </div>
 
 <script>
-// 請更換為你部署後的 GAS 網址
+// --- 重要：請在此處替換成你部署後的 GAS 網址 ---
 const API_URL = "https://script.google.com/macros/s/AKfycbwoC39gokDGJ-bZ-45u26HmQZiiGQGb3zZzMFtTX1FEdAgswpciRV7eXGbq7n-jeDmL/exec";
 
-let quiz = [];
+let quizData = [];
 
-async function generate(){
+async function generate() {
     const topic = document.getElementById("topic").value;
     const count = document.getElementById("count").value;
     const genBtn = document.getElementById("genBtn");
     const status = document.getElementById("status");
+    const log = document.getElementById("log");
 
-    if(!topic) { alert("請輸入主題"); return; }
+    if (!topic) { alert("請輸入主題內容"); return; }
+    if (!API_URL || API_URL.includes("你的_GAS")) { alert("請先在程式碼中設定 API_URL"); return; }
 
     genBtn.disabled = true;
-    genBtn.innerText = "生成中，請稍候...";
-    status.innerText = "正在與 AI 通訊，請勿關閉視窗...";
+    genBtn.innerText = "AI 思考中...";
+    status.innerText = "正在連線至 Gemini 生成題目，請稍候...";
+    log.style.display = "none";
+    document.getElementById("dlBtn").style.display = "none";
 
     try {
-        const res = await fetch(API_URL, {
+        const response = await fetch(API_URL, {
             method: "POST",
-            body: JSON.stringify({ topic, count }),
-            headers: { "Content-Type": "text/plain;charset=utf-8" } 
-            // 注意：GAS POST 建議用 text/plain 避免 preflight 問題
+            mode: "no-cors", // 避免某些瀏覽器 CORS 預檢失敗
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ topic, count })
         });
 
-        quiz = await res.json();
+        // 註：因為 GAS 的 no-cors 模式無法直接讀取 response，
+        // 若發生錯誤，通常是因為部署時權限沒設為「所有人」。
+        // 我們改用一般的 fetch 試試，如果沒 CORS 問題最理想。
+        const res = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({ topic, count })
+        });
         
-        if (quiz.error) throw new Error(quiz.error);
+        quizData = await res.json();
 
-        document.getElementById("log").style.display = "block";
-        document.getElementById("log").textContent = JSON.stringify(quiz, null, 2);
-        document.getElementById("dlBtn").style.display = "block";
+        if (quizData.error) {
+            throw new Error(quizData.error);
+        }
+
         status.innerText = "生成成功！";
+        log.style.display = "block";
+        log.textContent = JSON.stringify(quizData, null, 2);
+        document.getElementById("dlBtn").style.display = "block";
+
     } catch (e) {
         console.error(e);
-        alert("發生錯誤：" + e.message);
-        status.innerText = "生成失敗";
+        status.innerText = "發生錯誤，請檢查 GAS 部署是否正確。";
+        alert("錯誤訊息：" + e.message);
     } finally {
         genBtn.disabled = false;
         genBtn.innerText = "再次生成題目";
     }
 }
 
-function download(){
-    if(!quiz.length){ alert("請先生成題目"); return; }
+function download() {
+    if (quizData.length === 0) return;
 
-    const time = document.getElementById("time").value;
+    const timeLimit = document.getElementById("time").value;
     let ws_data = [];
 
-    // Kahoot 標準模板從第 9 列開始讀取數據
-    // 前 7 列留白
-    for(let i=0; i<7; i++) ws_data.push([]);
+    // Kahoot 模板格式：前 7 欄留空
+    for (let i = 0; i < 7; i++) ws_data.push([]);
 
-    // 第 8 列：欄位標題 (Kahoot 官方格式)
+    // 第 8 欄為標題列
     ws_data.push([
         "No.",
         "Question",
@@ -111,17 +127,17 @@ function download(){
         "Correct answer(s)"
     ]);
 
-    // 填入題目數據
-    quiz.forEach((q, i) => {
+    // 填入 AI 生成的題目
+    quizData.forEach((item, index) => {
         ws_data.push([
-            i + 1,
-            q.question,
-            q.choices[0] || "",
-            q.choices[1] || "",
-            q.choices[2] || "",
-            q.choices[3] || "",
-            time,
-            q.answer // 1, 2, 3, or 4
+            index + 1,
+            item.question,
+            item.choices[0],
+            item.choices[1],
+            item.choices[2],
+            item.choices[3],
+            timeLimit,
+            item.answer // 應為 1, 2, 3 或 4
         ]);
     });
 
@@ -129,8 +145,7 @@ function download(){
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Quiz");
 
-    // 產生檔名
-    const fileName = `Kahoot_${document.getElementById("topic").value}.xlsx`;
+    const fileName = `Kahoot_${document.getElementById("topic").value || "AI"}.xlsx`;
     XLSX.writeFile(wb, fileName);
 }
 </script>
