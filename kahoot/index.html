@@ -11,6 +11,7 @@
         :root {
             --primary-color: #46178f;
             --secondary-color: #250850;
+            --danger-color: #e21b3c;
         }
         body {
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -28,7 +29,30 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             width: 90%;
             max-width: 600px;
+            position: relative;
         }
+        /* 登出按鈕樣式 */
+        .auth-box {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .logout-btn {
+            background-color: transparent;
+            color: #666;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+        }
+        .logout-btn:hover {
+            background-color: #f0f0f0;
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
         h1 {
             color: var(--primary-color);
             text-align: center;
@@ -50,7 +74,7 @@
             box-sizing: border-box;
             font-size: 1rem;
         }
-        button {
+        .main-btn {
             width: 100%;
             padding: 12px;
             background-color: var(--primary-color);
@@ -62,10 +86,10 @@
             font-weight: bold;
             transition: background 0.3s;
         }
-        button:hover {
+        .main-btn:hover {
             background-color: var(--secondary-color);
         }
-        button:disabled {
+        .main-btn:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
@@ -81,15 +105,16 @@
             font-size: 0.8rem;
             color: #888;
         }
-        #logoutBtn {
-            background-color: #dc3545; /* 红色 */
-            margin-top: 1rem;
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 登出按鈕區域 -->
+    <div class="auth-box">
+        <button id="logoutBtn" class="logout-btn">登出 AI 帳號</button>
+    </div>
+
     <h1>Kahoot AI 生成器</h1>
     
     <div class="form-group">
@@ -115,8 +140,7 @@
         </select>
     </div>
 
-    <button id="generateBtn">開始 AI 生成題目</button>
-    <button id="logoutBtn" style="display:none;">登出</button>  <!-- 新增登出按鈕，預設隱藏 -->
+    <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
     <div id="status">準備就緒</div>
 
     <div class="footer">
@@ -127,8 +151,17 @@
 
 <script>
     const generateBtn = document.getElementById('generateBtn');
-    const statusDiv = document.getElementById('status');
     const logoutBtn = document.getElementById('logoutBtn');
+    const statusDiv = document.getElementById('status');
+
+    // 登出功能
+    logoutBtn.addEventListener('click', async () => {
+        if (confirm('確定要登出 AI 帳號工作階段嗎？')) {
+            puter.auth.signOut();
+            alert('已登出。頁面將重新載入。');
+            window.location.reload();
+        }
+    });
 
     generateBtn.addEventListener('click', async () => {
         const topic = document.getElementById('topic').value.trim();
@@ -184,7 +217,6 @@
 
     function downloadKahootExcel(questions, timeLimit) {
         // 1. 建立符合 Kahoot 官方格式的基礎資料結構
-        // Kahoot 範本前 7 行通常是說明，第 8 行是表頭，第 9 行開始是資料
         const header = [
             ["Quiz template", "", "", "", "", "", ""],
             ["Add questions, at least two answer alternatives, time limit and choose correct answers (at least one). Have fun creating your awesome quiz!", "", "", "", "", "", ""],
@@ -198,13 +230,13 @@
 
         // 2. 轉換 AI 資料到表格列
         const rows = questions.map(q => [
-            q.q,       // 題目
-            q.a1,      // 選項1
-            q.a2,      // 選項2
-            q.a3,      // 選項3
-            q.a4,      // 選項4
-            parseInt(timeLimit), // 時間
-            q.ans.toString()     // 正確答案 (1,2,3,4)
+            q.q,       
+            q.a1,      
+            q.a2,      
+            q.a3,      
+            q.a4,      
+            parseInt(timeLimit), 
+            q.ans.toString()     
         ]);
 
         const fullData = header.concat(rows);
@@ -213,7 +245,7 @@
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(fullData);
 
-        // 設定欄位寬度（讓下載的 Excel 比較好看）
+        // 設定欄位寬度
         ws['!cols'] = [
             { wch: 40 }, // Question
             { wch: 20 }, // A1
@@ -230,17 +262,6 @@
         const fileName = `Kahoot_${document.getElementById('topic').value || 'Quiz'}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
-
-    // 登出功能
-    logoutBtn.addEventListener('click', () => {
-        //  因為使用 Puter.js 呼叫 AI，不需要額外的登出程式碼。 
-        //  可以移除所有與使用者帳戶相關的資料，例如清除 localStorage 或 cookie。
-        //  這裡僅提供一個範例，表示可以添加清除使用者資料的程式碼。
-        localStorage.clear();  // 清除所有 localStorage 資料
-        //  或者，如果使用 cookie，則清除 cookie 
-
-        alert("已登出，請關閉頁面。");
-    });
 </script>
 
 </body>
