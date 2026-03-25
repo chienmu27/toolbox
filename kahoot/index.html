@@ -21,6 +21,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px 0;
         }
         .container {
             background: white;
@@ -66,13 +67,17 @@
             margin-bottom: 0.5rem;
             font-weight: bold;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             border: 2px solid #ddd;
             border-radius: 6px;
             box-sizing: border-box;
             font-size: 1rem;
+        }
+        textarea {
+            resize: vertical;
+            font-family: inherit;
         }
         .main-btn {
             width: 100%;
@@ -85,6 +90,7 @@
             cursor: pointer;
             font-weight: bold;
             transition: background 0.3s;
+            margin-top: 10px;
         }
         .main-btn:hover {
             background-color: var(--secondary-color);
@@ -120,6 +126,11 @@
     <div class="form-group">
         <label for="topic">題目主題</label>
         <input type="text" id="topic" placeholder="例如：台灣地理、國中數學、Python 基礎..." />
+    </div>
+
+    <div class="form-group">
+        <label for="hint">出題提示語 / 額外要求 (選填)</label>
+        <textarea id="hint" rows="3" placeholder="例如：難度要深一點、針對國小學生、語氣要幽默、著重於歷史事件..."></textarea>
     </div>
 
     <div class="form-group">
@@ -165,6 +176,7 @@
 
     generateBtn.addEventListener('click', async () => {
         const topic = document.getElementById('topic').value.trim();
+        const hint = document.getElementById('hint').value.trim();
         const count = document.getElementById('count').value;
         const timeLimit = document.getElementById('timeLimit').value;
 
@@ -178,9 +190,13 @@
         statusDiv.innerText = "AI 正在思考題目中，請稍候...";
 
         try {
+            // 整合提示語到 Prompt 中
+            let customRequirement = hint ? `\n額外的自訂要求如下：\n${hint}\n` : "";
+
             // 呼叫 Puter AI (Gemini)
             const prompt = `
                 你是一位專業的出題老師。請幫我出 ${count} 題關於「${topic}」的選擇題，這要用於 Kahoot。
+                ${customRequirement}
                 請務必以 JSON 陣列格式回傳，不要有任何多餘的解釋文字。
                 JSON 格式應為：
                 [
