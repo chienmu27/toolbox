@@ -1,137 +1,229 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Kahoot AI Generator</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahoot 題目 AI 自動生成器</title>
+    <!-- 引入外部函式庫 -->
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-        .card { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h2 { color: #46178f; text-align: center; margin-top: 0; }
-        .field { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        .btn-gen { background: #46178f; color: #fff; }
-        .btn-gen:disabled { background: #aaa; cursor: not-allowed; }
-        .btn-dl { background: #26890c; color: #fff; display: none; }
-        #status { margin-top: 15px; text-align: center; font-size: 14px; min-height: 1.2em; }
-        #error-log { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 4px; font-size: 12px; margin-top: 15px; display: none; white-space: pre-wrap; }
+        :root {
+            --primary-color: #46178f;
+            --secondary-color: #250850;
+        }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 1rem;
+            text-align: center;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Kahoot AI 出題器</h2>
+<div class="container">
+    <h1>Kahoot AI 生成器</h1>
     
-    <div class="field">
-        <label>主題</label>
-        <input id="topic" type="text" placeholder="例如：生活常識、九九乘法">
-    </div>
-    
-    <div class="field">
-        <label>生成題數</label>
-        <input id="count" type="number" value="5" min="1" max="15">
+    <div class="form-group">
+        <label for="topic">題目主題</label>
+        <input type="text" id="topic" placeholder="例如：台灣地理、國中數學、Python 基礎..." />
     </div>
 
-    <div class="field">
-        <label>作答秒數</label>
-        <input id="time" type="number" value="20">
+    <div class="form-group">
+        <label for="count">題數 (建議 1-20)</label>
+        <input type="number" id="count" value="5" min="1" max="50" />
     </div>
 
-    <button id="genBtn" class="btn-gen" onclick="generate()">生成題目</button>
-    <button id="dlBtn" class="btn-dl" onclick="download()">下載 Kahoot Excel</button>
+    <div class="form-group">
+        <label for="timeLimit">每題答題時間 (秒)</label>
+        <select id="timeLimit">
+            <option value="5">5 秒</option>
+            <option value="10">10 秒</option>
+            <option value="20" selected>20 秒</option>
+            <option value="30">30 秒</option>
+            <option value="60">60 秒</option>
+            <option value="90">90 秒</option>
+            <option value="120">120 秒</option>
+        </select>
+    </div>
 
-    <div id="status"></div>
-    <div id="error-log"></div>
+    <button id="generateBtn">開始 AI 生成題目</button>
+    <div id="status">準備就緒</div>
+
+    <div class="footer">
+        Powered by Google Gemini (via Puter.js) <br>
+        產生的 Excel 檔案可直接上傳至 Kahoot
+    </div>
 </div>
 
 <script>
-// --- 請務必換成你最新的 GAS 網址 ---
-const API_URL = "https://script.google.com/macros/s/AKfycbz1Yad7i2Ip6ZJF78ovwtGO7_6xDG3Y1fn5ZaNPdIK3mKQSkzlEFoyqKfKzDQ6rr0x6/exec";
+    const generateBtn = document.getElementById('generateBtn');
+    const statusDiv = document.getElementById('status');
 
-let quizData = [];
+    generateBtn.addEventListener('click', async () => {
+        const topic = document.getElementById('topic').value.trim();
+        const count = document.getElementById('count').value;
+        const timeLimit = document.getElementById('timeLimit').value;
 
-async function generate() {
-    const topic = document.getElementById("topic").value;
-    const count = document.getElementById("count").value;
-    const genBtn = document.getElementById("genBtn");
-    const dlBtn = document.getElementById("dlBtn");
-    const status = document.getElementById("status");
-    const errorLog = document.getElementById("error-log");
-
-    if(!topic) { alert("請輸入主題"); return; }
-    
-    // UI 重置
-    genBtn.disabled = true;
-    dlBtn.style.display = "none";
-    errorLog.style.display = "none";
-    status.innerText = "AI 正在思考並出題中...";
-
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({ topic, count })
-        });
-
-        const result = await response.json();
-
-        if (result.error) {
-            throw new Error(`${result.error}: ${result.details || result.message}`);
+        if (!topic) {
+            alert('請輸入主題！');
+            return;
         }
 
-        quizData = result;
-        status.innerText = `成功生成 ${quizData.length} 題！`;
-        dlBtn.style.display = "block";
+        // 鎖定按鈕
+        generateBtn.disabled = true;
+        statusDiv.innerText = "AI 正在思考題目中，請稍候...";
 
-    } catch (e) {
-        status.innerText = "生成失敗";
-        errorLog.innerText = e.message;
-        errorLog.style.display = "block";
-        console.error(e);
-    } finally {
-        genBtn.disabled = false;
-    }
-}
+        try {
+            // 呼叫 Puter AI (Gemini)
+            const prompt = `
+                你是一位專業的出題老師。請幫我出 ${count} 題關於「${topic}」的選擇題，這要用於 Kahoot。
+                請務必以 JSON 陣列格式回傳，不要有任何多餘的解釋文字。
+                JSON 格式應為：
+                [
+                  {
+                    "q": "題目內容(限制95字內)",
+                    "a1": "選項1(限制60字內)",
+                    "a2": "選項2(限制60字內)",
+                    "a3": "選項3(限制60字內)",
+                    "a4": "選項4(限制60字內)",
+                    "ans": "正確答案編號(只能是1, 2, 3, 或 4)"
+                  }
+                ]
+            `;
 
-function download() {
-    if (!quizData.length) return;
-
-    const time = document.getElementById("time").value;
-    let wsData = [];
-
-    // Kahoot 規定：前 7 列空白
-    for (let i = 0; i < 7; i++) wsData.push([]);
-
-    // 第 8 列：標題列 (Kahoot 官方標準)
-    wsData.push([
-        "No.", 
-        "Question", 
-        "Answer 1", "Answer 2", "Answer 3", "Answer 4", 
-        "Time limit (sec)", 
-        "Correct answer(s)"
-    ]);
-
-    // 第 9 列開始：題目內容
-    quizData.forEach((q, i) => {
-        wsData.push([
-            i + 1,
-            q.question,
-            q.choices[0] || "",
-            q.choices[1] || "",
-            q.choices[2] || "",
-            q.choices[3] || "",
-            time,
-            q.answer.toString()
-        ]);
+            const response = await puter.ai.chat(prompt);
+            let rawData = response.toString();
+            
+            // 清理 AI 可能產生的 Markdown 標籤
+            rawData = rawData.replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            const questions = JSON.parse(rawData);
+            
+            statusDiv.innerText = "題目生成成功！正在建立 Excel...";
+            downloadKahootExcel(questions, timeLimit);
+            statusDiv.innerText = "Excel 已下載！";
+            
+        } catch (error) {
+            console.error(error);
+            statusDiv.innerText = "發生錯誤：" + error.message;
+        } finally {
+            generateBtn.disabled = false;
+        }
     });
 
-    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Quiz");
+    function downloadKahootExcel(questions, timeLimit) {
+        // 1. 建立符合 Kahoot 官方格式的基礎資料結構
+        // Kahoot 範本前 7 行通常是說明，第 8 行是表頭，第 9 行開始是資料
+        const header = [
+            ["Quiz template", "", "", "", "", "", ""],
+            ["Add questions, at least two answer alternatives, time limit and choose correct answers (at least one). Have fun creating your awesome quiz!", "", "", "", "", "", ""],
+            ["Remember: questions have a limit of 95 characters and answers can have 60 characters max.", "", "", "", "", "", ""],
+            ["See an example question below (don't forget to overwrite this with your first question!)", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", ""],
+            ["Question - max 95 characters", "Answer 1 - max 60 characters", "Answer 2 - max 60 characters", "Answer 3 - max 60 characters", "Answer 4 - max 60 characters", "Time limit (sec) – 5, 10, 20, 30, 60, 90, 120, or 240 secs", "Correct answer(s) - choose at least one"]
+        ];
 
-    XLSX.writeFile(workbook, `Kahoot_${document.getElementById("topic").value}.xlsx`);
-}
+        // 2. 轉換 AI 資料到表格列
+        const rows = questions.map(q => [
+            q.q,       // 題目
+            q.a1,      // 選項1
+            q.a2,      // 選項2
+            q.a3,      // 選項3
+            q.a4,      // 選項4
+            parseInt(timeLimit), // 時間
+            q.ans.toString()     // 正確答案 (1,2,3,4)
+        ]);
+
+        const fullData = header.concat(rows);
+
+        // 3. 使用 SheetJS 產生活頁簿
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(fullData);
+
+        // 設定欄位寬度（讓下載的 Excel 比較好看）
+        ws['!cols'] = [
+            { wch: 40 }, // Question
+            { wch: 20 }, // A1
+            { wch: 20 }, // A2
+            { wch: 20 }, // A3
+            { wch: 20 }, // A4
+            { wch: 15 }, // Time
+            { wch: 15 }  // Correct
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, "Questions");
+
+        // 4. 觸發瀏覽器下載
+        const fileName = `Kahoot_${document.getElementById('topic').value || 'Quiz'}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
 </script>
 
 </body>
