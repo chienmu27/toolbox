@@ -81,6 +81,10 @@
             font-size: 0.8rem;
             color: #888;
         }
+        #logoutBtn {
+            background-color: #dc3545; /* 红色 */
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +116,7 @@
     </div>
 
     <button id="generateBtn">開始 AI 生成題目</button>
+    <button id="logoutBtn" style="display:none;">登出</button>  <!-- 新增登出按鈕，預設隱藏 -->
     <div id="status">準備就緒</div>
 
     <div class="footer">
@@ -123,6 +128,7 @@
 <script>
     const generateBtn = document.getElementById('generateBtn');
     const statusDiv = document.getElementById('status');
+    const logoutBtn = document.getElementById('logoutBtn');
 
     generateBtn.addEventListener('click', async () => {
         const topic = document.getElementById('topic').value.trim();
@@ -224,6 +230,17 @@
         const fileName = `Kahoot_${document.getElementById('topic').value || 'Quiz'}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
+
+    // 登出功能
+    logoutBtn.addEventListener('click', () => {
+        //  因為使用 Puter.js 呼叫 AI，不需要額外的登出程式碼。 
+        //  可以移除所有與使用者帳戶相關的資料，例如清除 localStorage 或 cookie。
+        //  這裡僅提供一個範例，表示可以添加清除使用者資料的程式碼。
+        localStorage.clear();  // 清除所有 localStorage 資料
+        //  或者，如果使用 cookie，則清除 cookie 
+
+        alert("已登出，請關閉頁面。");
+    });
 </script>
 
 </body>
