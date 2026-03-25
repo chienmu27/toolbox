@@ -2,63 +2,65 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kahoot AI Generator</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px 20px; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-        h2 { color: #46178f; text-align: center; margin-bottom: 20px; }
-        label { display: block; margin: 10px 0 5px; font-weight: bold; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; margin-top: 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        #genBtn { background: #46178f; color: white; }
-        #genBtn:disabled { background: #ccc; }
-        #dlBtn { background: #26890c; color: white; margin-top: 10px; display: none; }
-        .status { margin-top: 15px; text-align: center; font-size: 14px; color: #555; }
-        #errorMsg { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 4px; margin-top: 15px; display: none; font-size: 12px; word-break: break-all; }
+        body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #46178f; text-align: center; }
+        .field { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        .btn-gen { background: #46178f; color: #fff; margin-top: 10px; }
+        .btn-gen:disabled { background: #aaa; }
+        .btn-dl { background: #26890c; color: #fff; margin-top: 10px; display: none; }
+        #msg { margin-top: 15px; font-size: 14px; text-align: center; color: #333; }
+        #error-area { color: red; font-size: 12px; margin-top: 10px; background: #fff1f1; padding: 10px; border-radius: 4px; display: none; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="card">
     <h2>Kahoot AI 出題器</h2>
-    
-    <label>主題</label>
-    <input id="topic" type="text" placeholder="例如：國中歷史、動漫知識">
-    
-    <label>題目數量</label>
-    <input id="count" type="number" value="5" min="1" max="10">
-    
-    <label>作答時間 (秒)</label>
-    <input id="time" type="number" value="20">
+    <div class="field">
+        <label>主題</label>
+        <input id="topic" type="text" placeholder="例如：生活常識">
+    </div>
+    <div class="field">
+        <label>題數</label>
+        <input id="count" type="number" value="5">
+    </div>
+    <div class="field">
+        <label>秒數</label>
+        <input id="time" type="number" value="20">
+    </div>
 
-    <button id="genBtn" onclick="generate()">生成題目</button>
-    <button id="dlBtn" onclick="download()">下載 Kahoot Excel</button>
+    <button id="genBtn" class="btn-gen" onclick="generate()">生成題目</button>
+    <button id="dlBtn" class="btn-dl" onclick="download()">下載 Excel</button>
 
-    <div id="status" class="status"></div>
-    <div id="errorMsg"></div>
+    <div id="msg"></div>
+    <div id="error-area"></div>
 </div>
 
 <script>
-// --- 請替換為你最新的 GAS 部署網址 ---
-const API_URL = "https://script.google.com/macros/s/AKfycbwoC39gokDGJ-bZ-45u26HmQZiiGQGb3zZzMFtTX1FEdAgswpciRV7eXGbq7n-jeDmL/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwoC39gokDGJ-bZ-45u26HmQZiiGQGb3zZzMFtTX1FEdAgswpciRV7eXGbq7n-jeDmL/exec"; // <--- 記得換成新的部署網址
 
-let quizData = [];
+let quiz = [];
 
 async function generate() {
     const topic = document.getElementById("topic").value;
     const count = document.getElementById("count").value;
     const genBtn = document.getElementById("genBtn");
-    const status = document.getElementById("status");
-    const errorMsg = document.getElementById("errorMsg");
+    const msg = document.getElementById("msg");
+    const err = document.getElementById("error-area");
     const dlBtn = document.getElementById("dlBtn");
 
-    if (!topic) { alert("請輸入主題"); return; }
-    
+    if(!topic) { alert("請輸入主題"); return; }
+
     genBtn.disabled = true;
-    status.innerText = "AI 正在出題中，請稍候...";
-    errorMsg.style.display = "none";
+    msg.innerText = "正在生成中，大約需要 15 秒...";
+    err.style.display = "none";
     dlBtn.style.display = "none";
 
     try {
@@ -67,41 +69,34 @@ async function generate() {
             body: JSON.stringify({ topic, count })
         });
 
-        const result = await response.json();
+        const data = await response.json();
 
-        if (result.error) {
-            throw new Error(result.error + (result.details ? ": " + result.details : ""));
+        if (data.error) {
+            throw new Error(`${data.error}\n${data.details || data.message}`);
         }
 
-        quizData = result;
-        status.innerText = "生成完畢！共 " + quizData.length + " 題";
+        quiz = data;
+        msg.innerText = `成功生成 ${quiz.length} 題！`;
         dlBtn.style.display = "block";
-    } catch (err) {
-        errorMsg.innerText = "錯誤: " + err.message;
-        errorMsg.style.display = "block";
-        status.innerText = "生成失敗";
+    } catch (e) {
+        msg.innerText = "生成失敗";
+        err.innerText = e.message;
+        err.style.display = "block";
+        console.error(e);
     } finally {
         genBtn.disabled = false;
     }
 }
 
 function download() {
-    if (!quizData.length) return;
-
     const timeLimit = document.getElementById("time").value;
-    let excelRows = [];
+    let data = [];
+    for(let i=0; i<7; i++) data.push([]); // 前 7 列空白
 
-    // Kahoot 規定：前 7 列空白
-    for (let i = 0; i < 7; i++) excelRows.push([]);
+    data.push(["No.", "Question", "Answer 1", "Answer 2", "Answer 3", "Answer 4", "Time limit (sec)", "Correct answer(s)"]);
 
-    // 第 8 列：標題
-    excelRows.push([
-        "No.", "Question", "Answer 1", "Answer 2", "Answer 3", "Answer 4", "Time limit (sec)", "Correct answer(s)"
-    ]);
-
-    // 第 9 列開始：題目內容
-    quizData.forEach((q, i) => {
-        excelRows.push([
+    quiz.forEach((q, i) => {
+        data.push([
             i + 1,
             q.question,
             q.choices[0],
@@ -113,11 +108,10 @@ function download() {
         ]);
     });
 
-    const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Quiz");
-
-    XLSX.writeFile(workbook, "Kahoot_Quiz.xlsx");
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Quiz");
+    XLSX.writeFile(wb, "Kahoot_Quiz.xlsx");
 }
 </script>
 
