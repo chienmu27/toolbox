@@ -11,6 +11,7 @@
         :root {
             --primary-color: #46178f;
             --secondary-color: #250850;
+            --success-color: #108548;
             --danger-color: #e21b3c;
         }
         body {
@@ -95,6 +96,23 @@
         .main-btn:hover {
             background-color: var(--secondary-color);
         }
+        .download-again-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.3s;
+            margin-top: 10px;
+            display: none; /* 初始隱藏 */
+        }
+        .download-again-btn:hover {
+            opacity: 0.9;
+        }
         .main-btn:disabled {
             background-color: #ccc;
             cursor: not-allowed;
@@ -125,12 +143,12 @@
     
     <div class="form-group">
         <label for="topic">題目主題</label>
-        <input type="text" id="topic" placeholder="例如：台灣地理、國中數學、Python 基礎..." />
+        <input type="text" id="topic" placeholder="例如：自然科學、數學、社會、英語..." />
     </div>
 
     <div class="form-group">
         <label for="hint">出題提示語 / 額外要求 (選填)</label>
-        <textarea id="hint" rows="3" placeholder="例如：難度要深一點、針對國小學生、語氣要幽默、著重於歷史事件..."></textarea>
+        <textarea id="hint" rows="3" placeholder="例如：國小中年級社會、難度要深一點、語氣要幽默、著重於歷史事件..."></textarea>
     </div>
 
     <div class="form-group">
@@ -139,31 +157,42 @@
     </div>
 
     <div class="form-group">
-        <label for="timeLimit">每題答題時間 (秒)</label>
+        <label for="timeLimit">每題答題時間</label>
         <select id="timeLimit">
             <option value="5">5 秒</option>
             <option value="10">10 秒</option>
+            <option value="15">15 秒</option>
             <option value="20" selected>20 秒</option>
             <option value="30">30 秒</option>
-            <option value="60">60 秒</option>
-            <option value="90">90 秒</option>
-            <option value="120">120 秒</option>
+            <option value="45">45 秒</option>
+            <option value="60">1 分鐘</option>
+            <option value="90">1 分鐘 30 秒</option>
+            <option value="120">2 分鐘</option>
         </select>
     </div>
 
     <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
+    <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel 檔</button>
+    
     <div id="status">準備就緒</div>
 
     <div class="footer">
         Powered by Google Gemini (via Puter.js) <br>
-        產生的 Excel 檔案可直接上傳至 Kahoot
+        產生的 Excel 檔案可直接上傳至 Kahoot <br>
+        © 2026 chienmu.tai 保留所有權利
     </div>
 </div>
 
 <script>
     const generateBtn = document.getElementById('generateBtn');
     const logoutBtn = document.getElementById('logoutBtn');
+    const reDownloadBtn = document.getElementById('reDownloadBtn');
     const statusDiv = document.getElementById('status');
+
+    // 用於儲存最後生成的數據，以便重複下載
+    let lastGeneratedQuestions = null;
+    let lastTimeLimit = null;
+    let lastTopic = "";
 
     // 登出功能
     logoutBtn.addEventListener('click', async () => {
@@ -171,6 +200,13 @@
             puter.auth.signOut();
             alert('已登出。頁面將重新載入。');
             window.location.reload();
+        }
+    });
+
+    // 再次下載按鈕功能
+    reDownloadBtn.addEventListener('click', () => {
+        if (lastGeneratedQuestions) {
+            downloadKahootExcel(lastGeneratedQuestions, lastTimeLimit, lastTopic);
         }
     });
 
@@ -185,8 +221,9 @@
             return;
         }
 
-        // 鎖定按鈕
+        // 鎖定按鈕，隱藏再次下載按鈕
         generateBtn.disabled = true;
+        reDownloadBtn.style.display = 'none';
         statusDiv.innerText = "AI 正在思考題目中，請稍候...";
 
         try {
@@ -219,9 +256,16 @@
             
             const questions = JSON.parse(rawData);
             
+            // 儲存狀態
+            lastGeneratedQuestions = questions;
+            lastTimeLimit = timeLimit;
+            lastTopic = topic;
+
             statusDiv.innerText = "題目生成成功！正在建立 Excel...";
-            downloadKahootExcel(questions, timeLimit);
+            downloadKahootExcel(questions, timeLimit, topic);
+            
             statusDiv.innerText = "Excel 已下載！";
+            reDownloadBtn.style.display = 'block'; // 顯示再次下載按鈕
             
         } catch (error) {
             console.error(error);
@@ -231,7 +275,7 @@
         }
     });
 
-    function downloadKahootExcel(questions, timeLimit) {
+    function downloadKahootExcel(questions, timeLimit, topicName) {
         // 1. 建立符合 Kahoot 官方格式的基礎資料結構
         const header = [
             ["Quiz template", "", "", "", "", "", ""],
@@ -275,7 +319,7 @@
         XLSX.utils.book_append_sheet(wb, ws, "Questions");
 
         // 4. 觸發瀏覽器下載
-        const fileName = `Kahoot_${document.getElementById('topic').value || 'Quiz'}.xlsx`;
+        const fileName = `Kahoot_${topicName || 'Quiz'}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
 </script>
