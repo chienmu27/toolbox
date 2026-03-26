@@ -136,7 +136,7 @@
         location.reload();
     };
 
-    // --- AI 生成功能 (已優化繁體中文提示與按鍵鎖定) ---
+    // --- AI 生成功能 (已修改按鍵鎖定邏輯) ---
     document.getElementById('generateBtn').onclick = async () => {
         const genBtn = document.getElementById('generateBtn');
         const statusTxt = document.getElementById('status');
@@ -148,24 +148,12 @@
 
         if (!topic) return alert("請輸入主題");
 
-        // 立即停止按鍵使用
+        // 1. 立即停止按鍵使用
         genBtn.disabled = true;
-        statusTxt.innerText = "AI 正在以繁體中文思考與生成題目中，請稍候...";
+        statusTxt.innerText = "AI 正在思考與生成題目中，請稍候...";
         
         try {
-            // 提示詞中強化繁體中文要求
-            const prompt = `你是一位專業的老師，請幫我出 ${count} 題關於「${topic}」的選擇題。
-            ${hint ? "額外要求：" + hint : ""}
-            請務必使用「繁體中文」(Traditional Chinese) 撰寫所有內容，嚴禁使用簡體字。
-            輸出格式必須嚴格遵守 JSON 陣列，每個物件包含：
-            q: 題目, 
-            a1: 選項1, 
-            a2: 選項2, 
-            a3: 選項3, 
-            a4: 選項4, 
-            ans: 正確答案編號(1-4)。
-            不要回傳任何 JSON 以外的文字說明。`;
-
+            const prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。${hint}。格式為 JSON 陣列，包含 q, a1, a2, a3, a4, ans(1-4)。`;
             const response = await puter.ai.chat(prompt);
             let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
             const questions = JSON.parse(rawData);
@@ -173,13 +161,13 @@
             lastGeneratedQuestions = questions;
             downloadKahootExcel(questions, timeLimit, topic);
             
-            statusTxt.innerText = "題目生成完成！Excel 檔案已自動下載。";
+            statusTxt.innerText = "題目生成完成並已啟動下載！";
             document.getElementById('reDownloadBtn').style.display = "block";
         } catch (e) { 
-            statusTxt.innerText = "發生錯誤: " + e.message; 
+            statusTxt.innerText = "錯誤: " + e.message; 
             console.error(e);
         } finally {
-            // 生成結束後恢復按鍵使用
+            // 2. 題目生成結束後（無論成功或失敗），恢復按鍵使用
             genBtn.disabled = false;
         }
     };
