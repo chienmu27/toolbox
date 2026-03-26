@@ -18,6 +18,7 @@
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .main-btn:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.8; }
         .download-again-btn { width: 100%; padding: 12px; background-color: var(--success-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px; display: none; }
         #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; }
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
@@ -71,17 +72,19 @@
 </div>
 
 <script>
+    // GAS 連結保留
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
     let userUUID = "";
     let lastGeneratedQuestions = null;
 
+    // 身份驗證邏輯保留
     async function initAuth() {
         if (!puter.auth.isSignedIn()) {
             document.getElementById('authOverlay').classList.remove('hidden');
             return;
         }
         const user = await puter.auth.getUser();
-        userUUID = user.uuid; // 改用系統提供的唯一 UUID
+        userUUID = user.uuid; 
         checkPermission(userUUID);
     }
 
@@ -133,29 +136,43 @@
         location.reload();
     };
 
-    // --- AI 生成功能 ---
+    // --- AI 生成功能 (已修改按鍵鎖定邏輯) ---
     document.getElementById('generateBtn').onclick = async () => {
+        const genBtn = document.getElementById('generateBtn');
+        const statusTxt = document.getElementById('status');
+        
         const topic = document.getElementById('topic').value.trim();
         const hint = document.getElementById('hint').value.trim();
         const count = document.getElementById('count').value;
         const timeLimit = document.getElementById('timeLimit').value;
+
         if (!topic) return alert("請輸入主題");
 
-        document.getElementById('generateBtn').disabled = true;
-        document.getElementById('status').innerText = "AI 思考中...";
+        // 1. 立即停止按鍵使用
+        genBtn.disabled = true;
+        statusTxt.innerText = "AI 正在思考與生成題目中，請稍候...";
+        
         try {
             const prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。${hint}。格式為 JSON 陣列，包含 q, a1, a2, a3, a4, ans(1-4)。`;
             const response = await puter.ai.chat(prompt);
             let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
             const questions = JSON.parse(rawData);
+            
             lastGeneratedQuestions = questions;
             downloadKahootExcel(questions, timeLimit, topic);
-            document.getElementById('status').innerText = "下載成功！";
+            
+            statusTxt.innerText = "題目生成完成並已啟動下載！";
             document.getElementById('reDownloadBtn').style.display = "block";
-        } catch (e) { document.getElementById('status').innerText = "錯誤: " + e.message; }
-        document.getElementById('generateBtn').disabled = false;
+        } catch (e) { 
+            statusTxt.innerText = "錯誤: " + e.message; 
+            console.error(e);
+        } finally {
+            // 2. 題目生成結束後（無論成功或失敗），恢復按鍵使用
+            genBtn.disabled = false;
+        }
     };
 
+    // Excel 處理保留
     function downloadKahootExcel(questions, timeLimit, topicName) {
         const header = [
             ["Quiz template", "", "", "", "", "", ""],
