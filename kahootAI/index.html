@@ -3,271 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kahoot 題目 AI 自動生成器</title>
-    <!-- 引入外部函式庫 -->
+    <title>Kahoot AI 自動生成器</title>
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --primary-color: #46178f;
-            --secondary-color: #250850;
-            --success-color: #108548;
-            --danger-color: #e21b3c;
-        }
-        body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f2f2f2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 600px;
-            position: relative;
-        }
-        /* 權限覆蓋層 */
-        #authOverlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white; border-radius: 12px; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 20px; box-sizing: border-box;
-        }
-        .auth-box {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 101;
-        }
-        .logout-btn {
-            background-color: transparent;
-            color: #666;
-            border: 1px solid #ccc;
-            padding: 5px 10px;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+        :root { --primary-color: #46178f; --secondary-color: #250850; --success-color: #108548; --danger-color: #e21b3c; }
+        body { font-family: "Segoe UI", sans-serif; background-color: #f2f2f2; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px 0; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 600px; position: relative; }
+        #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        .auth-box { position: absolute; top: 10px; right: 10px; z-index: 101; }
+        .logout-btn { background-color: transparent; color: #666; border: 1px solid #ccc; padding: 5px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; }
         h1 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .main-btn:disabled { background-color: #ccc; }
         .download-again-btn { width: 100%; padding: 12px; background-color: var(--success-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px; display: none; }
         #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; }
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
         .hidden { display: none !important; }
-        .debug-info { font-size: 10px; color: #ccc; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 登入與權限檢查覆蓋層 -->
+    <!-- 遮罩層 -->
     <div id="authOverlay">
         <h2 id="authMsg">請先登入 Google 帳號</h2>
         <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
         
         <div id="applyForm" class="hidden" style="width:100%">
-            <p id="accountDisplay" style="color:#666; margin-bottom:10px; font-weight: bold;"></p>
-            <p>您目前的帳號尚未獲得使用許可，請填寫申請。</p>
+            <p>您的帳號尚未獲得授權，請填寫申請資料：</p>
+            <div class="form-group" style="text-align:left">
+                <label>您的 Google 信箱</label>
+                <input type="email" id="applyEmail" placeholder="example@gmail.com">
+            </div>
             <div class="form-group" style="text-align:left">
                 <label>申請人姓名</label>
-                <input type="text" id="applyName" placeholder="請輸入您的真實姓名">
+                <input type="text" id="applyName" placeholder="請輸入姓名">
             </div>
-            <button id="applyBtn" class="main-btn">送出存取申請</button>
+            <button id="applyBtn" class="main-btn">送出申請</button>
         </div>
-        <div id="debugBox" class="debug-info"></div>
     </div>
 
-    <!-- 原有功能區域 -->
     <div class="auth-box">
         <button id="logoutBtn" class="logout-btn">登出帳號</button>
     </div>
 
     <h1>Kahoot AI 生成器</h1>
-    
+    <div class="form-group"><label>題目主題</label><input type="text" id="topic" placeholder="例如：自然科學、數學..." /></div>
+    <div class="form-group"><label>出題要求</label><textarea id="hint" rows="2" placeholder="選填要求..."></textarea></div>
+    <div class="form-group"><label>題數</label><input type="number" id="count" value="5" /></div>
     <div class="form-group">
-        <label for="topic">題目主題</label>
-        <input type="text" id="topic" placeholder="例如：自然科學、數學、社會、英語..." />
-    </div>
-
-    <div class="form-group">
-        <label for="hint">出題要求 (選填)</label>
-        <textarea id="hint" rows="2" placeholder="例如：適合國一學生、針對二次大戰歷史..."></textarea>
-    </div>
-
-    <div class="form-group">
-        <label for="count">題數</label>
-        <input type="number" id="count" value="5" min="1" max="50" />
-    </div>
-
-    <div class="form-group">
-        <label for="timeLimit">每題答題時間</label>
+        <label>答題時間</label>
         <select id="timeLimit">
-            <option value="5">5 秒</option>
-            <option value="10">10 秒</option>
-            <option value="15">15 秒</option>
-            <option value="20" selected>20 秒</option>
-            <option value="30">30 秒</option>
-            <option value="45">45 秒</option>
-            <option value="60">1 分鐘</option>
-            <option value="90">1 分鐘 30 秒</option>
-            <option value="120">2 分鐘</option>
+            <option value="5">5 秒</option><option value="10">10 秒</option><option value="15">15 秒</option>
+            <option value="20" selected>20 秒</option><option value="30">30 秒</option><option value="45">45 秒</option>
+            <option value="60">1 分鐘</option><option value="90">1 分鐘 30 秒</option><option value="120">2 分鐘</option>
         </select>
     </div>
 
     <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
     <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel 檔</button>
-    
     <div id="status">準備就緒</div>
 
-    <div class="footer">
-        Powered by Google Gemini (via Puter.js) <br>
-        產生的 Excel 檔案可直接上傳至 Kahoot <br>
-        © 2026 chienmu.tai 保留所有權利
-    </div>
+    <div class="footer">Powered by Google Gemini (via Puter.js) <br>© 2026 chienmu.tai 保留所有權利</div>
 </div>
 
 <script>
-    // ⚠️ 務必更換為您的 GAS 部署網址
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec";
-
-    const generateBtn = document.getElementById('generateBtn');
-    const reDownloadBtn = document.getElementById('reDownloadBtn');
-    const statusDiv = document.getElementById('status');
-    const authOverlay = document.getElementById('authOverlay');
-    const authMsg = document.getElementById('authMsg');
-    const authLoginBtn = document.getElementById('authLoginBtn');
-    const applyForm = document.getElementById('applyForm');
-    const applyBtn = document.getElementById('applyBtn');
-    const debugBox = document.getElementById('debugBox');
-
-    let userEmail = "";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
+    let userUUID = "";
     let lastGeneratedQuestions = null;
 
-    // 初始化與身份檢查
     async function initAuth() {
         if (!puter.auth.isSignedIn()) {
-            authOverlay.classList.remove('hidden');
+            document.getElementById('authOverlay').classList.remove('hidden');
             return;
         }
-        
-        try {
-            const user = await puter.auth.getUser();
-            console.log("Puter User Object:", user);
-            
-            // 修正點：Puter 的 Email 有可能在 email 欄位，也可能在 username 欄位
-            userEmail = user.email || user.username;
-
-            // 再次檢查 userEmail 格式是否包含 @ (確保是 Email)
-            if (!userEmail || !userEmail.includes('@')) {
-                authMsg.innerText = "無法辨識您的 Google Email。";
-                debugBox.innerText = "偵錯資訊: " + JSON.stringify(user);
-                authLoginBtn.classList.remove('hidden');
-                return;
-            }
-
-            checkPermission(userEmail);
-        } catch (err) {
-            authMsg.innerText = "取得使用者資料失敗。";
-            authLoginBtn.classList.remove('hidden');
-        }
+        const user = await puter.auth.getUser();
+        userUUID = user.uuid; // 改用系統提供的唯一 UUID
+        checkPermission(userUUID);
     }
 
-    async function checkPermission(email) {
-        authMsg.innerText = "正在核對授權狀態...";
-        authLoginBtn.classList.add('hidden');
-
+    async function checkPermission(uuid) {
+        document.getElementById('authMsg').innerText = "檢查授權狀態...";
         try {
             const resp = await fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "checkStatus", email: email })
+                body: JSON.stringify({ action: "checkStatus", uuid: uuid })
             });
             const result = await resp.json();
-
             if (result.status === "Approved") {
-                authOverlay.classList.add('hidden');
+                document.getElementById('authOverlay').classList.add('hidden');
             } else if (result.status === "Pending") {
-                authMsg.innerText = "您的申請已在審核中，請稍候。";
+                document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
+                document.getElementById('authLoginBtn').classList.add('hidden');
             } else {
-                authMsg.innerText = "帳號未授權";
-                document.getElementById('accountDisplay').innerText = "目前帳號: " + email;
-                applyForm.classList.remove('hidden');
+                document.getElementById('authMsg').innerText = "帳號未授權";
+                document.getElementById('authLoginBtn').classList.add('hidden');
+                document.getElementById('applyForm').classList.remove('hidden');
             }
-        } catch (e) {
-            authMsg.innerText = "連線 GAS 伺服器失敗，請檢查網路或 GAS 網址。";
-        }
+        } catch (e) { console.error(e); }
     }
 
-    applyBtn.onclick = async () => {
+    document.getElementById('applyBtn').onclick = async () => {
+        const email = document.getElementById('applyEmail').value.trim();
         const name = document.getElementById('applyName').value.trim();
-        if (!name) return alert("請輸入姓名");
-        
-        applyBtn.disabled = true;
-        authMsg.innerText = "提交申請中...";
+        if(!email || !name) return alert("請填寫完整資料");
 
+        document.getElementById('applyBtn').disabled = true;
+        document.getElementById('authMsg').innerText = "提交中...";
         try {
             await fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "apply", email: userEmail, name: name })
+                body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
             });
-            authMsg.innerText = "申請已送出！請通知管理員 chienmu@dhips.ttct.edu.tw 核可。";
-            applyForm.classList.add('hidden');
-        } catch (e) {
-            alert("提交失敗");
-            applyBtn.disabled = false;
-        }
+            document.getElementById('authMsg').innerText = "申請已送出！請等待審核。";
+            document.getElementById('applyForm').classList.add('hidden');
+        } catch (e) { alert("提交失敗"); }
     };
 
-    authLoginBtn.onclick = async () => {
+    document.getElementById('authLoginBtn').onclick = async () => {
         await puter.auth.signIn();
-        // 登入後延遲一下再初始化，確保 Session 已同步
-        setTimeout(initAuth, 1000);
+        initAuth();
     };
 
     document.getElementById('logoutBtn').onclick = () => {
         puter.auth.signOut();
-        window.location.reload();
+        location.reload();
     };
 
-    // 原有生成與下載功能保留
-    generateBtn.addEventListener('click', async () => {
+    // --- AI 生成功能 ---
+    document.getElementById('generateBtn').onclick = async () => {
         const topic = document.getElementById('topic').value.trim();
         const hint = document.getElementById('hint').value.trim();
         const count = document.getElementById('count').value;
         const timeLimit = document.getElementById('timeLimit').value;
-        if (!topic) { alert('請輸入主題！'); return; }
+        if (!topic) return alert("請輸入主題");
 
-        generateBtn.disabled = true;
-        reDownloadBtn.style.display = 'none';
-        statusDiv.innerText = "AI 正在思考題目中，請稍候...";
-
+        document.getElementById('generateBtn').disabled = true;
+        document.getElementById('status').innerText = "AI 思考中...";
         try {
-            const prompt = `你是一位專業出題老師。請幫我出 ${count} 題關於「${topic}」的選擇題用於 Kahoot。要求：${hint}。請務必以 JSON 陣列格式回傳，包含欄位 q, a1, a2, a3, a4, ans (1-4)。不要有解釋文字。`;
+            const prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。${hint}。格式為 JSON 陣列，包含 q, a1, a2, a3, a4, ans(1-4)。`;
             const response = await puter.ai.chat(prompt);
             let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
             const questions = JSON.parse(rawData);
-            
             lastGeneratedQuestions = questions;
             downloadKahootExcel(questions, timeLimit, topic);
-            statusDiv.innerText = "生成成功！";
-            reDownloadBtn.style.display = 'block'; 
-        } catch (error) {
-            statusDiv.innerText = "發生錯誤：" + error.message;
-        } finally {
-            generateBtn.disabled = false;
-        }
-    });
+            document.getElementById('status').innerText = "下載成功！";
+            document.getElementById('reDownloadBtn').style.display = "block";
+        } catch (e) { document.getElementById('status').innerText = "錯誤: " + e.message; }
+        document.getElementById('generateBtn').disabled = false;
+    };
 
     function downloadKahootExcel(questions, timeLimit, topicName) {
         const header = [
@@ -279,15 +166,14 @@
             ["Question - max 95 characters", "Answer 1 - max 60 characters", "Answer 2 - max 60 characters", "Answer 3 - max 60 characters", "Answer 4 - max 60 characters", "Time limit (sec) – 5, 10, 20, 30, 60, 90, 120, or 240 secs", "Correct answer(s) - choose at least one"]
         ];
         const rows = questions.map(q => [q.q, q.a1, q.a2, q.a3, q.a4, parseInt(timeLimit), q.ans.toString()]);
-        const fullData = header.concat(rows);
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(fullData);
+        const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
         XLSX.utils.book_append_sheet(wb, ws, "Questions");
         XLSX.writeFile(wb, `Kahoot_${topicName}.xlsx`);
     }
 
-    reDownloadBtn.onclick = () => {
-        if (lastGeneratedQuestions) downloadKahootExcel(lastGeneratedQuestions, document.getElementById('timeLimit').value, document.getElementById('topic').value);
+    document.getElementById('reDownloadBtn').onclick = () => {
+        if(lastGeneratedQuestions) downloadKahootExcel(lastGeneratedQuestions, document.getElementById('timeLimit').value, document.getElementById('topic').value);
     };
 
     initAuth();
