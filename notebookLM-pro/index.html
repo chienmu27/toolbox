@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kahoot 綜合工具箱 - AI 增強版 (含 NotebookLM 轉檔)</title>
+    <title>NotebookLM 轉檔工具 - 授權版</title>
     
-    <!-- 引入外部資源 (Kahoot) -->
+    <!-- 引入外部資源 (系統框架) -->
     <script src="https://js.puter.com/v2/"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     
-    <!-- 引入外部資源 (NotebookLM) -->
+    <!-- 引入外部資源 (NotebookLM 轉檔功能) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -36,60 +34,38 @@
             padding: 40px 0; 
         }
 
-        /* 初始容器寬度 */
+        /* 調整容器為寬版以利圖片操作 */
         .container { 
             background: white; 
             padding: 2rem; 
             border-radius: 12px; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
-            width: 90%; 
-            max-width: 750px; 
+            width: 95%; 
+            max-width: 1200px; 
             position: relative; 
             min-height: 550px;
-            transition: max-width 0.3s ease;
-        }
-
-        /* 當切換到 NotebookLM 時加寬容器 */
-        .container.wide {
-            max-width: 1200px;
         }
 
         .nav-header {
             display: flex;
             align-items: center;
-            justify-content: flex-start; 
+            justify-content: space-between; 
             margin-bottom: 30px; 
             border-bottom: 2px solid #eee;
             padding-bottom: 15px;
-            flex-wrap: wrap; 
-            gap: 10px;
-        }
-
-        .tab-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
         }
 
         .tab-btn {
-            padding: 8px 14px;
+            padding: 8px 18px;
             border: 2px solid var(--primary-color);
-            background: white;
-            color: var(--primary-color);
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            font-size: 0.9rem;
-        }
-
-        .tab-btn.active {
             background: var(--primary-color);
             color: white;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
         }
 
         .logout-btn { 
-            margin-left: auto;
             background-color: #fff; 
             color: #d9534f; 
             border: 1px solid #d9534f; 
@@ -101,6 +77,7 @@
         }
         .logout-btn:hover { background-color: #fdf7f7; }
 
+        /* 登入遮罩 */
         #authOverlay { 
             position: absolute; 
             top: 0; left: 0; 
@@ -121,17 +98,8 @@
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         
-        /* 避免 Tailwind 影響基礎 input 樣式 */
         .kahoot-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
-        .file-upload-area { 
-            border: 2px dashed #bbb; 
-            padding: 15px; 
-            background: #fafafa; 
-            border-radius: 6px;
-            text-align: center;
-        }
-
         .main-btn { 
             width: 100%; padding: 12px; 
             background-color: var(--primary-color); 
@@ -139,21 +107,11 @@
             font-size: 1.1rem; cursor: pointer; font-weight: bold; 
             margin-top: 10px; 
         }
-        .main-btn:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.8; }
         
-        .download-again-btn { 
-            width: 100%; padding: 12px; 
-            background-color: var(--success-color); 
-            color: white; border: none; border-radius: 6px; 
-            font-size: 1.1rem; cursor: pointer; font-weight: bold; 
-            margin-top: 10px; display: none; 
-        }
-
-        #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; font-weight: bold; }
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
         .hidden { display: none !important; }
 
-        /* NotebookLM 專屬樣式 */
+        /* NotebookLM 轉檔工具專屬樣式 */
         #pdf-render-canvas { display: none; }
         .img-card.selected { border-color: #3b82f6; background-color: #eff6ff; }
         .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
@@ -164,12 +122,12 @@
 <body>
 
 <div id="appContainer" class="container">
-    <!-- 身份驗證遮罩層 -->
+    <!-- 身份驗證遮罩層 (保留) -->
     <div id="authOverlay">
-        <h2 id="authMsg">請先登入 Google 帳號以使用工具</h2>
+        <h2 id="authMsg">請先登入 Google 帳號以使用 NotebookLM 工具</h2>
         <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
         
-        <div id="applyForm" class="hidden" style="width:100%">
+        <div id="applyForm" class="hidden" style="width:100%; max-width: 400px;">
             <p>您的帳號尚未獲得授權，請填寫申請資料：</p>
             <div class="form-group">
                 <label>您的 Google 信箱</label>
@@ -187,75 +145,14 @@
     <div id="mainContent" class="hidden">
         <div class="nav-header">
             <div class="tab-group">
-                <button class="tab-btn active" id="btnGen" onclick="switchTab('generator')">Kahoot AI 生成器</button>
-                <button class="tab-btn" id="btnCalc" onclick="switchTab('calculator')">成績計算器</button>
-                <button class="tab-btn" id="btnNotebook" onclick="switchTab('notebook')">Notebook LM 轉檔</button>
+                <button class="tab-btn">Notebook LM 轉檔工具</button>
             </div>
             <button id="logoutBtn" class="logout-btn">登出帳號</button>
         </div>
 
-        <!-- 分頁 1：AI 生成器 -->
-        <div id="generatorView">
-            <h1>Kahoot AI 生成器</h1>
-            <div class="form-group">
-                <label>1. 題目主題</label>
-                <input type="text" id="topic" class="kahoot-input" placeholder="例如：生活科技、地理知識、英文單字..." />
-            </div>
-            <div class="form-group">
-                <label>2. 出題提示語 / 額外要求 (選填)</label>
-                <textarea id="hint" class="kahoot-input" rows="2" placeholder="例如：難度適中、適合國一學生、聚焦在課本第三章內容..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>3. 上傳參考檔案 (選填)</label>
-                <div class="file-upload-area">
-                    <input type="file" id="refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">支援：TXT, CSV, Word, Excel, 圖片 (識圖出題)</p>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>4. 設定參數</label>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.9rem;">題數</span>
-                        <input type="number" id="count" class="kahoot-input" value="5" min="1" max="20" />
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.9rem;">秒數</span>
-                        <select id="timeLimit" class="kahoot-input">
-                            <option value="5">5 秒</option><option value="10">10 秒</option>
-                            <option value="20" selected>20 秒</option><option value="30">30 秒</option>
-                            <option value="60">1 分鐘</option><option value="120">2 分鐘</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
-            <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel</button>
-            <div id="status">系統就緒</div>
-        </div>
-
-        <!-- 分頁 2：成績計算器 -->
-        <div id="calculatorView" class="hidden">
-            <h1>Kahoot 成績計算網頁</h1>
-            <div style="text-align: center; padding: 20px;">
-                <p>請上傳包含 "Final Scores" 工作表的 Kahoot Excel 報表</p>
-                <input type="file" id="scoreUpload" accept=".xlsx, .xls" />
-                <br><br>
-                <button class="main-btn" onclick="processExcel()">轉換並下載計算後的成績單</button>
-                <div style="font-size: 0.85rem; color: #666; margin-top: 20px; text-align: left; background: #eee; padding: 10px; border-radius: 5px;">
-                    💡 <strong>功能說明：</strong><br>
-                    1. 自動提取 Final Scores 工作表數據。<br>
-                    2. 新增「正確率 (%)」欄位：(正確數 / 總題數) * 100。<br>
-                    3. 依據 Player (選手名稱/學號) 自動排序。
-                </div>
-            </div>
-        </div>
-
-        <!-- 分頁 3：NotebookLM 轉檔 (整合原始碼) -->
-        <div id="notebookView" class="hidden">
+        <div id="notebookView">
             <header class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">NotebookLM 簡報轉圖工具</h1>
+                <h1 class="text-2xl font-bold text-gray-800">NotebookLM 簡報轉圖工具 Pro</h1>
                 <p class="text-gray-600 text-sm">支援拖曳上傳、高品質轉檔與批次打包</p>
             </header>
 
@@ -265,10 +162,11 @@
                 <label for="pdf-input" class="cursor-pointer">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                     <span class="mt-4 block text-lg font-semibold text-gray-700">將 PDF 拖放到此處 或 點擊上傳</span>
+                    <span class="mt-2 block text-sm text-gray-400">支援 NotebookLM 匯出的簡報 PDF</span>
                 </label>
             </div>
 
-            <!-- 控制列 -->
+            <!-- 控制列 (解析後顯示) -->
             <div id="controls" class="hidden mt-6 bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-4 border border-gray-200">
                 <div class="flex items-center gap-4">
                     <div class="flex bg-gray-100 p-1 rounded-md">
@@ -281,32 +179,39 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <select id="format-select" class="border p-2 rounded text-sm bg-white">
-                        <option value="image/jpeg">JPG</option>
-                        <option value="image/png">PNG</option>
-                    </select>
-                    <select id="quality-select" class="border p-2 rounded text-sm bg-white">
-                        <option value="1.5">標準畫質</option>
-                        <option value="2.5" selected>高畫質</option>
-                        <option value="3.5">超高畫質</option>
-                    </select>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">格式:</label>
+                        <select id="format-select" class="border p-2 rounded text-sm bg-white">
+                            <option value="image/jpeg">JPG</option>
+                            <option value="image/png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-600">畫質:</label>
+                        <select id="quality-select" class="border p-2 rounded text-sm bg-white">
+                            <option value="1.5">標準 (300KB)</option>
+                            <option value="2.5" selected>高畫質 (800KB)</option>
+                            <option value="3.5">超高畫質 (1.5MB)</option>
+                            <option value="5.0">極致畫質 (3.0MB)</option>
+                        </select>
+                    </div>
                     <button id="btn-export-trigger" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition text-sm">匯出選取圖片</button>
                     <button id="btn-reset" class="px-3 py-2 bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg text-sm transition">重置</button>
                 </div>
             </div>
 
-            <!-- 圖片顯示區 -->
+            <!-- 圖片預覽區 -->
             <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8"></div>
         </div>
 
         <div class="footer">
-            Powered by Google Gemini & Puter.js & PDF.js<br>
+            NotebookLM 轉檔工具授權系統<br>
             © 2026 chienmu.tai 保留所有權利
         </div>
     </div>
 </div>
 
-<!-- 獨立層級：載入中狀態 (NotebookLM) -->
+<!-- 載入中遮罩 -->
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000]">
     <div class="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-xs w-full">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-16 w-16 mb-4 mx-auto"></div>
@@ -315,29 +220,27 @@
     </div>
 </div>
 
-<!-- 獨立層級：匯出彈窗 (NotebookLM) -->
+<!-- 匯出方式彈窗 -->
 <div id="export-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[2001]">
     <div class="bg-white p-8 rounded-2xl max-w-sm w-full shadow-2xl">
         <h3 class="text-xl font-bold mb-2 text-gray-800">選擇匯出方式</h3>
         <p class="text-sm text-gray-500 mb-6">將根據您選擇的畫質進行轉檔</p>
         <div class="flex flex-col gap-3">
-            <button id="btn-download-zip" class="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition flex items-center justify-center gap-2">
-                打包成 ZIP 檔
-            </button>
+            <button id="btn-download-zip" class="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition">打包成 ZIP 檔</button>
             <button id="btn-download-each" class="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold transition">逐張分別下載</button>
             <button id="btn-close-modal" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition">取消</button>
         </div>
     </div>
 </div>
 
+<!-- 隱藏的渲染用畫布 -->
 <canvas id="pdf-render-canvas"></canvas>
 
 <script>
+    // --- 授權系統設定 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
     let userUUID = "";
-    let lastGeneratedQuestions = null;
 
-    // --- 權限驗證邏輯 ---
     async function initAuth() {
         if (!puter.auth.isSignedIn()) {
             document.getElementById('authOverlay').classList.remove('hidden');
@@ -395,170 +298,13 @@
         location.reload();
     };
 
-    // --- 分頁切換 ---
-    function switchTab(view) {
-        const genView = document.getElementById('generatorView');
-        const calcView = document.getElementById('calculatorView');
-        const notebookView = document.getElementById('notebookView');
-        const appContainer = document.getElementById('appContainer');
-        
-        const btnGen = document.getElementById('btnGen');
-        const btnCalc = document.getElementById('btnCalc');
-        const btnNotebook = document.getElementById('btnNotebook');
-
-        // 隱藏所有
-        [genView, calcView, notebookView].forEach(v => v.classList.add('hidden'));
-        [btnGen, btnCalc, btnNotebook].forEach(b => b.classList.remove('active'));
-
-        // 寬度調整
-        if (view === 'notebook') {
-            appContainer.classList.add('wide');
-            notebookView.classList.remove('hidden');
-            btnNotebook.classList.add('active');
-        } else if (view === 'generator') {
-            appContainer.classList.remove('wide');
-            genView.classList.remove('hidden');
-            btnGen.classList.add('active');
-        } else {
-            appContainer.classList.remove('wide');
-            calcView.classList.remove('hidden');
-            btnCalc.classList.add('active');
-        }
-    }
-
-    // --- Kahoot AI 生成器相關功能 (略，保持不變) ---
-    async function parseFile(file) {
-        const name = file.name.toLowerCase();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            if (name.endsWith('.txt') || name.endsWith('.csv')) {
-                reader.onload = (e) => resolve({ type: 'text', content: e.target.result });
-                reader.readAsText(file);
-            } else if (name.endsWith('.docx')) {
-                reader.onload = (e) => {
-                    mammoth.extractRawText({ arrayBuffer: e.target.result })
-                        .then(result => resolve({ type: 'text', content: result.value }))
-                        .catch(reject);
-                };
-                reader.readAsArrayBuffer(file);
-            } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
-                reader.onload = (e) => {
-                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-                    let text = "";
-                    workbook.SheetNames.forEach(sheetName => {
-                        text += `[Sheet: ${sheetName}]\n` + XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]) + "\n";
-                    });
-                    resolve({ type: 'text', content: text });
-                };
-                reader.readAsArrayBuffer(file);
-            } else if (file.type.startsWith('image/')) {
-                reader.onload = (e) => resolve({ type: 'image', content: e.target.result });
-                reader.readAsDataURL(file);
-            } else {
-                resolve({ type: 'text', content: "" });
-            }
-        });
-    }
-
-    document.getElementById('generateBtn').onclick = async () => {
-        const genBtn = document.getElementById('generateBtn');
-        const statusTxt = document.getElementById('status');
-        const fileInput = document.getElementById('refFile');
-        const topic = document.getElementById('topic').value.trim();
-        const hint = document.getElementById('hint').value.trim();
-        const count = document.getElementById('count').value;
-        const timeLimit = document.getElementById('timeLimit').value;
-
-        if (!topic) return alert("請輸入主題");
-        genBtn.disabled = true;
-        statusTxt.innerText = "正在分析檔案與準備 AI 請求...";
-        
-        try {
-            let contextData = null;
-            if (fileInput.files.length > 0) contextData = await parseFile(fileInput.files[0]);
-
-            let prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。`;
-            if (hint) prompt += `額外指示：${hint}。`;
-            if (contextData && contextData.type === 'text') prompt += `參考資料：\n${contextData.content}\n`;
-            prompt += `輸出格式：僅回傳 JSON 陣列，內含 q, a1, a2, a3, a4, ans(1-4)。`;
-
-            statusTxt.innerText = "AI 正在生成題目...";
-            let response;
-            if (contextData && contextData.type === 'image') {
-                response = await puter.ai.chat([{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: contextData.content } }]}]);
-            } else {
-                response = await puter.ai.chat(prompt);
-            }
-
-            let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
-            const questions = JSON.parse(rawData);
-            lastGeneratedQuestions = questions;
-            downloadKahootExcel(questions, timeLimit, topic);
-            statusTxt.innerText = "✅ 生成成功！";
-            document.getElementById('reDownloadBtn').style.display = "block";
-        } catch (e) { 
-            statusTxt.innerText = "❌ 錯誤: " + e.message; 
-        } finally { genBtn.disabled = false; }
-    };
-
-    function downloadKahootExcel(questions, timeLimit, topicName) {
-        const header = [
-            ["Quiz template", "", "", "", "", "", ""],
-            ["Add questions, at least two answer alternatives, time limit and choose correct answers (at least one). Have fun creating your awesome quiz!", "", "", "", "", "", ""],
-            ["Remember: questions have a limit of 95 characters and answers can have 60 characters max.", "", "", "", "", "", ""],
-            ["See an example question below (don't forget to overwrite this with your first question!)", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", ""],["", "", "", "", "", "", ""],["", "", "", "", "", "", ""],
-            ["Question - max 95 characters", "Answer 1 - max 60 characters", "Answer 2 - max 60 characters", "Answer 3 - max 60 characters", "Answer 4 - max 60 characters", "Time limit (sec) – 5, 10, 20, 30, 60, 90, 120, or 240 secs", "Correct answer(s) - choose at least one"]
-        ];
-        const rows = questions.map(q => [q.q, q.a1, q.a2, q.a3, q.a4, parseInt(timeLimit), q.ans.toString()]);
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
-        XLSX.utils.book_append_sheet(wb, ws, "Questions");
-        XLSX.writeFile(wb, `Kahoot_${topicName}.xlsx`);
-    }
-
-    // --- Kahoot 成績計算邏輯 ---
-    function processExcel() {
-        const fileInput = document.getElementById('scoreUpload');
-        if (fileInput.files.length === 0) return alert("請先選擇報表檔案！");
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets["Final Scores"];
-                if (!worksheet) return alert("找不到 'Final Scores' 工作表");
-                let rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                const topHeaders = rows.slice(0, 2); 
-                const tableHeader = rows[2];       
-                let dataRows = rows.slice(3);    
-                tableHeader[6] = "正確率 (%)";
-                dataRows.forEach(row => {
-                    if (row.length > 0) {
-                        const correct = parseFloat(row[4]) || 0;
-                        const incorrect = parseFloat(row[5]) || 0;
-                        const total = correct + incorrect;
-                        row[6] = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : 0;
-                    }
-                });
-                dataRows.sort((a, b) => String(a[1]).localeCompare(String(b[1]), undefined, {numeric: true}));
-                const finalData = [...topHeaders, tableHeader, ...dataRows];
-                const newSheet = XLSX.utils.aoa_to_sheet(finalData);
-                const newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, newSheet, "Final Scores");
-                XLSX.writeFile(newWorkbook, "Kahoot_分析成績單.xlsx");
-            } catch (err) { alert("計算失敗：" + err.message); }
-        };
-        reader.readAsArrayBuffer(fileInput.files[0]);
-    }
-
-    // --- NotebookLM 轉檔核心邏輯 ---
+    // --- NotebookLM 轉檔邏輯 ---
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
     const pdfInput = document.getElementById('pdf-input');
     const uploadSection = document.getElementById('upload-section');
     const previewGrid = document.getElementById('preview-grid');
-    const notebookControls = document.getElementById('controls');
+    const controls = document.getElementById('controls');
     const selectedCountLabel = document.getElementById('selected-count');
     const totalCountLabel = document.getElementById('total-count');
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -570,7 +316,7 @@
 
     pdfInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) processNotebookFile(file);
+        if (file) processFile(file);
     });
 
     uploadSection.addEventListener('dragover', (e) => { e.preventDefault(); uploadSection.classList.add('drag-over'); });
@@ -579,11 +325,11 @@
         e.preventDefault();
         uploadSection.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
-        if (file && file.type === 'application/pdf') processNotebookFile(file);
+        if (file && file.type === 'application/pdf') processFile(file);
     });
 
-    async function processNotebookFile(file) {
-        showNLMLoading("正在解析 PDF...");
+    async function processFile(file) {
+        showLoading("正在解析 PDF...");
         const reader = new FileReader();
         reader.onload = async function() {
             pdfFileData = new Uint8Array(this.result);
@@ -597,7 +343,7 @@
     async function renderPreviews() {
         previewGrid.innerHTML = '';
         uploadSection.classList.add('hidden');
-        notebookControls.classList.remove('hidden');
+        controls.classList.remove('hidden');
 
         for (let i = 1; i <= pdfDoc.numPages; i++) {
             loadingText.innerText = `生成預覽中 (${i} / ${pdfDoc.numPages})`;
@@ -610,7 +356,7 @@
             await page.render({ canvasContext: context, viewport: viewport }).promise;
             createImageCard(canvas.toDataURL('image/jpeg', 0.6), i);
         }
-        hideNLMLoading();
+        hideLoading();
         updateSelectionCount();
     }
 
@@ -658,16 +404,16 @@
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         await page.render({ canvasContext: context, viewport: viewport }).promise;
-        return new Promise(resolve => canvas.toBlob(blob => resolve(blob), format, 0.95));
+        return new Promise(resolve => canvas.toBlob(blob => resolve(blob), format, 0.92));
     }
 
     window.downloadSingle = async function(index) {
-        showNLMLoading(`正在產出圖檔...`);
+        showLoading(`正在產出圖檔...`);
         const format = document.getElementById('format-select').value;
         const ext = format === 'image/png' ? 'png' : 'jpg';
         const blob = await getHighQualityBlob(index);
         saveAs(blob, `Slide_${index}.${ext}`);
-        hideNLMLoading();
+        hideLoading();
     };
 
     document.getElementById('btn-download-each').onclick = async () => {
@@ -677,12 +423,12 @@
         const ext = format === 'image/png' ? 'png' : 'jpg';
         for (let i = 0; i < selectedCbs.length; i++) {
             const id = parseInt(selectedCbs[i].dataset.id);
-            showNLMLoading(`處理中 ${i+1}/${selectedCbs.length}`);
+            showLoading(`處理中 ${i+1}/${selectedCbs.length}`);
             const blob = await getHighQualityBlob(id);
             saveAs(blob, `Slide_${id}.${ext}`);
             await new Promise(r => setTimeout(r, 400));
         }
-        hideNLMLoading();
+        hideLoading();
     };
 
     document.getElementById('btn-download-zip').onclick = async () => {
@@ -693,14 +439,14 @@
         const ext = format === 'image/png' ? 'png' : 'jpg';
         for (let i = 0; i < selectedCbs.length; i++) {
             const id = parseInt(selectedCbs[i].dataset.id);
-            showNLMLoading(`打包中: ${i+1}/${selectedCbs.length}`);
+            showLoading(`打包中: ${i+1}/${selectedCbs.length}`);
             const blob = await getHighQualityBlob(id);
             zip.file(`Slide_${id}.${ext}`, blob);
         }
-        showNLMLoading("正在壓縮...");
+        showLoading("正在壓縮...");
         const content = await zip.generateAsync({type: "blob"});
         saveAs(content, "NotebookLM_Slides.zip");
-        hideNLMLoading();
+        hideLoading();
     };
 
     document.getElementById('btn-select-all').onclick = () => {
@@ -714,7 +460,8 @@
     document.getElementById('btn-reset').onclick = () => {
         previewGrid.innerHTML = '';
         uploadSection.classList.remove('hidden');
-        notebookControls.classList.add('hidden');
+        controls.classList.add('hidden');
+        pdfInput.value = "";
     };
     document.getElementById('btn-export-trigger').onclick = () => {
         if (document.querySelectorAll('.page-checkbox:checked').length === 0) return alert("請至少選取一張圖片");
@@ -722,10 +469,10 @@
     };
     document.getElementById('btn-close-modal').onclick = () => exportModal.classList.add('hidden');
 
-    function showNLMLoading(text) { loadingText.innerText = text; loadingOverlay.classList.remove('hidden'); }
-    function hideNLMLoading() { loadingOverlay.classList.add('hidden'); }
+    function showLoading(text) { loadingText.innerText = text; loadingOverlay.classList.remove('hidden'); }
+    function hideLoading() { loadingOverlay.classList.add('hidden'); }
 
-    // 初始化授權
+    // 初始化啟動
     initAuth();
 </script>
 
