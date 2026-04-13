@@ -40,7 +40,6 @@
             min-height: 600px;
         }
 
-        /* 身份驗證遮罩層 */
         #authOverlay { 
             position: absolute; 
             top: 0; left: 0; 
@@ -85,7 +84,6 @@
             transition: 0.2s;
         }
 
-        /* 轉檔工具專用樣式 */
         #pdf-render-canvas { display: none; }
         .img-card.selected { border-color: #3b82f6; background-color: #eff6ff; }
         .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
@@ -98,7 +96,7 @@
 <div class="app-container">
     <!-- 身份驗證遮罩層 -->
     <div id="authOverlay">
-        <h2 id="authMsg" class="text-2xl font-bold mb-4" style="color:var(--primary-color)">正在確認登入狀態...</h2>
+        <h2 id="authMsg" class="text-2xl font-bold mb-4" style="color:var(--primary-color)">正在連線伺服器...</h2>
         <button id="authLoginBtn" class="main-btn hidden">登入 Google 帳號</button>
         
         <!-- 申請表單 -->
@@ -133,8 +131,8 @@
                 <input type="file" id="pdf-input" accept="application/pdf" class="hidden">
                 <label for="pdf-input" class="cursor-pointer">
                     <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <span class="mt-4 block text-lg font-semibold text-gray-700">將 PDF 拖放到此處 或 點擊上傳</span>
-                    <span class="mt-2 block text-sm text-gray-400">支援 NotebookLM 匯出的簡報 PDF</span>
+                    <span class="mt-4 block text-lg font-semibold text-gray-700">點擊上傳 或 將 PDF 拖放到此處</span>
+                    <span class="mt-2 block text-sm text-gray-400">NotebookLM 匯出的簡報 PDF 專用</span>
                 </label>
             </div>
 
@@ -146,7 +144,7 @@
                         <button id="btn-deselect-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">取消全選</button>
                     </div>
                     <span class="text-blue-600 font-bold text-lg">
-                        已選取：<span id="selected-count">0</span> / <span id="total-count">0</span>
+                        已選：<span id="selected-count">0</span> / <span id="total-count">0</span>
                     </span>
                 </div>
                 
@@ -171,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- 預覽區 -->
             <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8"></div>
         </div>
 
@@ -182,7 +179,7 @@
     </div>
 </div>
 
-<!-- 載入動畫遮罩 -->
+<!-- 載入動畫 -->
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1100]">
     <div class="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-xs w-full">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-16 w-16 mb-4 mx-auto"></div>
@@ -190,13 +187,13 @@
     </div>
 </div>
 
-<!-- 匯出選擇視窗 -->
+<!-- 匯出視窗 -->
 <div id="export-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1101]">
     <div class="bg-white p-8 rounded-2xl max-w-sm w-full shadow-2xl">
         <h3 class="text-xl font-bold mb-4">選擇下載方式</h3>
         <div class="flex flex-col gap-3">
-            <button id="btn-download-zip" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">打包成 ZIP</button>
-            <button id="btn-download-each" class="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold">逐張下載</button>
+            <button id="btn-download-zip" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold">打包成 ZIP 檔</button>
+            <button id="btn-download-each" class="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold">逐張分別下載</button>
             <button id="btn-close-modal" class="w-full py-2 text-gray-500">取消</button>
         </div>
     </div>
@@ -205,14 +202,13 @@
 <canvas id="pdf-render-canvas"></canvas>
 
 <script>
-    // --- GAS 參數 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let userUUID = "";
     let pdfDoc = null;
 
-    // --- 修正後的身份驗證邏輯 ---
+    // --- 改進後的身份驗證邏輯 ---
     async function initAuth() {
         const authMsg = document.getElementById('authMsg');
         const loginBtn = document.getElementById('authLoginBtn');
@@ -229,8 +225,8 @@
             userUUID = user.uuid;
             checkPermission(userUUID);
         } catch (err) {
-            authMsg.innerText = "登入失敗，請重試";
-            loginBtn.classList.remove('hidden');
+            authMsg.innerText = "系統初始化失敗，請重新整理";
+            console.error(err);
         }
     }
 
@@ -239,24 +235,21 @@
         const applyForm = document.getElementById('applyForm');
         
         try {
-            // 使用 fetch POST，並處理 GAS 的導向問題
+            // 使用 POST 請求，但 Header 設定為 text/plain 以避開預檢 (Preflight)
+            // GAS 腳本會收到字串後透過 JSON.parse 處理
             const response = await fetch(GAS_URL, {
                 method: "POST",
-                mode: "no-cors", // 避免某些瀏覽器 CORS 預檢卡死
+                headers: { "Content-Type": "text/plain" }, 
                 body: JSON.stringify({ action: "checkStatus", uuid: uuid })
             });
 
-            // 因為 no-cors 無法讀取內容，我們必須再次使用 GET 來確認真實狀態
-            // 這是處理 GAS 轉向最穩定的做法
-            const checkUrl = `${GAS_URL}?action=checkStatus&uuid=${uuid}`;
-            const getResp = await fetch(checkUrl);
-            const result = await getResp.json();
+            const result = await response.json();
 
             if (result.status === "Approved") {
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
             } else if (result.status === "Pending") {
-                authMsg.innerText = "您的申請正在審核中，請稍後再試。";
+                authMsg.innerText = "您的申請正在審核中，請連繫管理員。";
                 document.getElementById('authLoginBtn').classList.add('hidden');
             } else {
                 authMsg.innerText = "帳號尚未獲得授權";
@@ -264,12 +257,11 @@
                 applyForm.classList.remove('hidden');
             }
         } catch (e) {
-            console.error(e);
-            authMsg.innerText = "授權主機連線逾時，請重新整理網頁。";
+            console.error("授權檢查出錯:", e);
+            authMsg.innerText = "伺服器回應逾時，請檢查網路後重新整理。";
         }
     }
 
-    // --- 申請按鈕 ---
     document.getElementById('applyBtn').onclick = async () => {
         const email = document.getElementById('applyEmail').value.trim();
         const name = document.getElementById('applyName').value.trim();
@@ -282,14 +274,15 @@
         try {
             await fetch(GAS_URL, {
                 method: "POST",
-                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
             });
-            document.getElementById('authMsg').innerText = "申請已成功送出！請聯繫管理員核可。";
+            document.getElementById('authMsg').innerText = "申請已成功送出！請等待核可。";
             document.getElementById('applyForm').classList.add('hidden');
         } catch (e) {
             alert("提交失敗，請檢查網路連線");
             btn.disabled = false;
+            btn.innerText = "送出使用申請";
         }
     };
 
@@ -303,7 +296,7 @@
         location.reload();
     };
 
-    // --- NotebookLM 功能邏輯 (維持原狀) ---
+    // --- NotebookLM 功能邏輯 ---
     const pdfInput = document.getElementById('pdf-input');
     const uploadSection = document.getElementById('upload-section');
     const previewGrid = document.getElementById('preview-grid');
@@ -317,7 +310,7 @@
     pdfInput.onchange = (e) => { if(e.target.files[0]) processFile(e.target.files[0]); };
 
     async function processFile(file) {
-        showLoading("正在讀取 PDF...");
+        showLoading("正在解析 PDF...");
         const reader = new FileReader();
         reader.onload = async function() {
             const data = new Uint8Array(this.result);
@@ -333,7 +326,7 @@
         uploadSection.classList.add('hidden');
         controls.classList.remove('hidden');
         for (let i = 1; i <= pdfDoc.numPages; i++) {
-            loadingText.innerText = `生成預覽中 (${i}/${pdfDoc.numPages})`;
+            loadingText.innerText = `生成預覽 (${i}/${pdfDoc.numPages})`;
             const page = await pdfDoc.getPage(i);
             const viewport = page.getViewport({ scale: 0.5 });
             const canvas = document.createElement('canvas');
@@ -349,7 +342,7 @@
 
     function createCard(src, idx) {
         const div = document.createElement('div');
-        div.className = "img-card bg-white p-3 rounded-xl shadow-sm border-2 border-transparent relative cursor-pointer selected";
+        div.className = "img-card bg-white p-3 rounded-xl shadow-sm border-2 border-transparent relative cursor-pointer selected hover:shadow-md transition-all";
         div.innerHTML = `
             <input type="checkbox" checked class="page-checkbox absolute top-4 left-4 w-5 h-5 z-10" data-id="${idx}">
             <img src="${src}" class="w-full rounded-lg">
@@ -388,21 +381,30 @@
         document.getElementById('export-modal').classList.add('hidden');
         const zip = new JSZip();
         const selected = document.querySelectorAll('.page-checkbox:checked');
+        if(selected.length === 0) return alert("尚未選取圖片");
+        
         const ext = document.getElementById('format-select').value === 'image/png' ? 'png' : 'jpg';
         for(let i=0; i<selected.length; i++) {
             const idx = parseInt(selected[i].dataset.id);
-            showLoading(`打包中 (${i+1}/${selected.length})`);
+            showLoading(`正在轉檔 (${i+1}/${selected.length})`);
             zip.file(`Page_${idx}.${ext}`, await getBlob(idx));
         }
-        showLoading("正在壓縮...");
-        saveAs(await zip.generateAsync({type:"blob"}), "Slides_Export.zip");
+        showLoading("正在壓縮中...");
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, "NotebookLM_Slides.zip");
         hideLoading();
     };
 
-    window.downloadSingle = async (idx) => {
-        showLoading("正在生成...");
+    document.getElementById('btn-download-each').onclick = async () => {
+        document.getElementById('export-modal').classList.add('hidden');
+        const selected = document.querySelectorAll('.page-checkbox:checked');
         const ext = document.getElementById('format-select').value === 'image/png' ? 'png' : 'jpg';
-        saveAs(await getBlob(idx), `Page_${idx}.${ext}`);
+        for(let i=0; i<selected.length; i++) {
+            const idx = parseInt(selected[i].dataset.id);
+            showLoading(`下載中 (${i+1}/${selected.length})`);
+            saveAs(await getBlob(idx), `Page_${idx}.${ext}`);
+            await new Promise(r => setTimeout(r, 300));
+        }
         hideLoading();
     };
 
@@ -419,7 +421,7 @@
     function showLoading(t) { loadingText.innerText = t; loadingOverlay.classList.remove('hidden'); }
     function hideLoading() { loadingOverlay.classList.add('hidden'); }
 
-    // 初始化啟動
+    // 初始化
     initAuth();
 </script>
 
