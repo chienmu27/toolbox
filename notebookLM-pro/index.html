@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotebookLM 轉檔工具 - 授權版</title>
+    <title>NotebookLM 轉檔工具 - 專業授權版</title>
     
-    <!-- 引入外部資源 (系統框架) -->
+    <!-- 引入系統資源 -->
     <script src="https://js.puter.com/v2/"></script>
-    
-    <!-- 引入外部資源 (NotebookLM 轉檔功能) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -18,8 +16,6 @@
         :root { 
             --primary-color: #46178f; 
             --secondary-color: #250850; 
-            --success-color: #108548; 
-            --danger-color: #e21b3c; 
             --bg-color: #f2f2f2;
         }
 
@@ -34,7 +30,6 @@
             padding: 40px 0; 
         }
 
-        /* 調整容器為寬版以利圖片操作 */
         .container { 
             background: white; 
             padding: 2rem; 
@@ -46,38 +41,7 @@
             min-height: 550px;
         }
 
-        .nav-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between; 
-            margin-bottom: 30px; 
-            border-bottom: 2px solid #eee;
-            padding-bottom: 15px;
-        }
-
-        .tab-btn {
-            padding: 8px 18px;
-            border: 2px solid var(--primary-color);
-            background: var(--primary-color);
-            color: white;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1rem;
-        }
-
-        .logout-btn { 
-            background-color: #fff; 
-            color: #d9534f; 
-            border: 1px solid #d9534f; 
-            padding: 8px 16px; 
-            font-size: 0.85rem; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        .logout-btn:hover { background-color: #fdf7f7; }
-
-        /* 登入遮罩 */
+        /* 身份驗證遮罩層 */
         #authOverlay { 
             position: absolute; 
             top: 0; left: 0; 
@@ -94,11 +58,36 @@
             box-sizing: border-box; 
         }
 
-        h1, h2 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1.2rem; text-align: left; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-        
-        .kahoot-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .tool-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .logout-btn { 
+            background-color: #fff; 
+            color: #d9534f; 
+            border: 1px solid #d9534f; 
+            padding: 8px 16px; 
+            font-size: 0.85rem; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .logout-btn:hover { background-color: #fdf7f7; }
+
+        .form-group { margin-bottom: 1.2rem; text-align: left; width: 100%; max-width: 350px; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #444; }
+        .input-field { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
         .main-btn { 
             width: 100%; padding: 12px; 
@@ -107,11 +96,9 @@
             font-size: 1.1rem; cursor: pointer; font-weight: bold; 
             margin-top: 10px; 
         }
-        
-        .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
-        .hidden { display: none !important; }
+        .main-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
-        /* NotebookLM 轉檔工具專屬樣式 */
+        /* NotebookLM 轉檔工具樣式 */
         #pdf-render-canvas { display: none; }
         .img-card.selected { border-color: #3b82f6; background-color: #eff6ff; }
         .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
@@ -122,91 +109,80 @@
 <body>
 
 <div id="appContainer" class="container">
-    <!-- 身份驗證遮罩層 (保留) -->
+    <!-- 1. 身份驗證與授權檢查層 -->
     <div id="authOverlay">
-        <h2 id="authMsg">請先登入 Google 帳號以使用 NotebookLM 工具</h2>
+        <h2 id="authMsg" class="text-xl font-bold mb-4">請先登入 Google 帳號以使用 NotebookLM 工具</h2>
         <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
         
-        <div id="applyForm" class="hidden" style="width:100%; max-width: 400px;">
-            <p>您的帳號尚未獲得授權，請填寫申請資料：</p>
+        <!-- 授權申請表單 (預設隱藏) -->
+        <div id="applyForm" class="hidden flex flex-col items-center">
+            <p class="text-gray-600 mb-4">您的帳號尚未獲得授權，請填寫申請資料：</p>
             <div class="form-group">
-                <label>您的 Google 信箱</label>
-                <input type="email" id="applyEmail" class="kahoot-input" placeholder="example@gmail.com">
+                <label>Google 電子信箱</label>
+                <input type="email" id="applyEmail" class="input-field" placeholder="example@gmail.com">
             </div>
             <div class="form-group">
                 <label>申請人姓名</label>
-                <input type="text" id="applyName" class="kahoot-input" placeholder="請輸入姓名">
+                <input type="text" id="applyName" class="input-field" placeholder="請輸入您的姓名">
             </div>
             <button id="applyBtn" class="main-btn">送出申請</button>
         </div>
     </div>
 
-    <!-- 登入後顯示的主內容 -->
+    <!-- 2. 主程式內容 (授權通過後顯示) -->
     <div id="mainContent" class="hidden">
         <div class="nav-header">
-            <div class="tab-group">
-                <button class="tab-btn">Notebook LM 轉檔工具</button>
-            </div>
+            <div class="tool-title">NotebookLM 專業轉檔工具</div>
             <button id="logoutBtn" class="logout-btn">登出帳號</button>
         </div>
 
-        <div id="notebookView">
-            <header class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">NotebookLM 簡報轉圖工具 Pro</h1>
-                <p class="text-gray-600 text-sm">支援拖曳上傳、高品質轉檔與批次打包</p>
-            </header>
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">NotebookLM 簡報轉圖 Pro</h1>
+            <p class="text-gray-600 mt-2">高品質 PDF 轉檔、批次選取與打包</p>
+        </header>
 
-            <!-- 上傳區 -->
-            <div id="upload-section" class="max-w-xl mx-auto bg-white p-10 rounded-xl shadow-md text-center border-2 border-dashed border-gray-300 hover:border-blue-400 transition-all cursor-pointer">
-                <input type="file" id="pdf-input" accept="application/pdf" class="hidden">
-                <label for="pdf-input" class="cursor-pointer">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <span class="mt-4 block text-lg font-semibold text-gray-700">將 PDF 拖放到此處 或 點擊上傳</span>
-                    <span class="mt-2 block text-sm text-gray-400">支援 NotebookLM 匯出的簡報 PDF</span>
-                </label>
-            </div>
-
-            <!-- 控制列 (解析後顯示) -->
-            <div id="controls" class="hidden mt-6 bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-4 border border-gray-200">
-                <div class="flex items-center gap-4">
-                    <div class="flex bg-gray-100 p-1 rounded-md">
-                        <button id="btn-select-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">全選</button>
-                        <button id="btn-deselect-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">取消全選</button>
-                    </div>
-                    <span class="text-blue-600 font-bold text-base">
-                        已選取：<span id="selected-count">0</span> / <span id="total-count">0</span>
-                    </span>
-                </div>
-                
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-600">格式:</label>
-                        <select id="format-select" class="border p-2 rounded text-sm bg-white">
-                            <option value="image/jpeg">JPG</option>
-                            <option value="image/png">PNG</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-gray-600">畫質:</label>
-                        <select id="quality-select" class="border p-2 rounded text-sm bg-white">
-                            <option value="1.5">標準 (300KB)</option>
-                            <option value="2.5" selected>高畫質 (800KB)</option>
-                            <option value="3.5">超高畫質 (1.5MB)</option>
-                            <option value="5.0">極致畫質 (3.0MB)</option>
-                        </select>
-                    </div>
-                    <button id="btn-export-trigger" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md transition text-sm">匯出選取圖片</button>
-                    <button id="btn-reset" class="px-3 py-2 bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg text-sm transition">重置</button>
-                </div>
-            </div>
-
-            <!-- 圖片預覽區 -->
-            <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8"></div>
+        <!-- 上傳區 -->
+        <div id="upload-section" class="max-w-xl mx-auto bg-white p-12 rounded-xl shadow-md text-center border-2 border-dashed border-gray-300 hover:border-blue-400 transition-all cursor-pointer">
+            <input type="file" id="pdf-input" accept="application/pdf" class="hidden">
+            <label for="pdf-input" class="cursor-pointer">
+                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <span class="mt-4 block text-lg font-semibold text-gray-700">將 PDF 拖放到此處 或 點擊上傳</span>
+            </label>
         </div>
 
-        <div class="footer">
-            NotebookLM 轉檔工具授權系統<br>
-            © 2026 chienmu.tai 保留所有權利
+        <!-- 控制列 -->
+        <div id="controls" class="hidden mt-8 bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-4 border border-gray-200">
+            <div class="flex items-center gap-4">
+                <div class="flex bg-gray-100 p-1 rounded-md">
+                    <button id="btn-select-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">全選</button>
+                    <button id="btn-deselect-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">取消全選</button>
+                </div>
+                <span class="text-blue-600 font-bold">
+                    已選取：<span id="selected-count">0</span> / <span id="total-count">0</span>
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <select id="format-select" class="border p-2 rounded text-sm bg-white">
+                    <option value="image/jpeg">JPG</option>
+                    <option value="image/png">PNG</option>
+                </select>
+                <select id="quality-select" class="border p-2 rounded text-sm bg-white">
+                    <option value="1.5">標準畫質</option>
+                    <option value="2.5" selected>高畫質</option>
+                    <option value="3.5">超高畫質</option>
+                    <option value="5.0">極致畫質</option>
+                </select>
+                <button id="btn-export-trigger" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg transition">匯出選取圖片</button>
+                <button id="btn-reset" class="px-4 py-2 bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg text-sm transition">重置</button>
+            </div>
+        </div>
+
+        <!-- 預覽格點 -->
+        <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8"></div>
+
+        <div class="footer mt-12 text-center text-gray-400 text-sm">
+            © 2026 chienmu.tai - NotebookLM 工具授權版
         </div>
     </div>
 </div>
@@ -233,11 +209,10 @@
     </div>
 </div>
 
-<!-- 隱藏的渲染用畫布 -->
 <canvas id="pdf-render-canvas"></canvas>
 
 <script>
-    // --- 授權系統設定 ---
+    // --- 授權系統核心邏輯 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
     let userUUID = "";
 
@@ -252,40 +227,54 @@
     }
 
     async function checkPermission(uuid) {
-        document.getElementById('authMsg').innerText = "驗證授權中...";
+        document.getElementById('authMsg').innerText = "驗證授權中，請稍候...";
+        document.getElementById('authLoginBtn').classList.add('hidden');
         try {
             const resp = await fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "checkStatus", uuid: uuid })
             });
             const result = await resp.json();
+            
             if (result.status === "Approved") {
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
             } else if (result.status === "Pending") {
-                document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
+                document.getElementById('authMsg').innerText = "您的申請正在審核中，請聯繫管理員。";
                 document.getElementById('authLoginBtn').classList.add('hidden');
+                document.getElementById('applyForm').classList.add('hidden');
             } else {
-                document.getElementById('authMsg').innerText = "帳號尚未獲得授權";
-                document.getElementById('authLoginBtn').classList.add('hidden');
+                // 未申請或未在清單中
+                document.getElementById('authMsg').innerText = "您尚未獲得授權";
                 document.getElementById('applyForm').classList.remove('hidden');
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e);
+            document.getElementById('authMsg').innerText = "連線伺服器失敗，請重新整理頁面。";
+        }
     }
 
+    // 提交申請
     document.getElementById('applyBtn').onclick = async () => {
         const email = document.getElementById('applyEmail').value.trim();
         const name = document.getElementById('applyName').value.trim();
-        if(!email || !name) return alert("請填寫完整資料");
+        if(!email || !name) return alert("請填寫完整的姓名與信箱");
+        
         document.getElementById('applyBtn').disabled = true;
+        document.getElementById('applyBtn').innerText = "提交中...";
+        
         try {
             await fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
             });
-            document.getElementById('authMsg').innerText = "申請已送出！請等待管理員審核。";
+            document.getElementById('authMsg').innerText = "申請已成功送出！請等待管理員審核。";
             document.getElementById('applyForm').classList.add('hidden');
-        } catch (e) { alert("提交失敗"); }
+        } catch (e) { 
+            alert("提交失敗，請稍後再試。");
+            document.getElementById('applyBtn').disabled = false;
+            document.getElementById('applyBtn').innerText = "送出申請";
+        }
     };
 
     document.getElementById('authLoginBtn').onclick = async () => {
@@ -298,7 +287,7 @@
         location.reload();
     };
 
-    // --- NotebookLM 轉檔邏輯 ---
+    // --- NotebookLM 轉檔工具核心邏輯 ---
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
     const pdfInput = document.getElementById('pdf-input');
@@ -329,7 +318,7 @@
     });
 
     async function processFile(file) {
-        showLoading("正在解析 PDF...");
+        showLoading("正在載入 PDF...");
         const reader = new FileReader();
         reader.onload = async function() {
             pdfFileData = new Uint8Array(this.result);
@@ -346,7 +335,7 @@
         controls.classList.remove('hidden');
 
         for (let i = 1; i <= pdfDoc.numPages; i++) {
-            loadingText.innerText = `生成預覽中 (${i} / ${pdfDoc.numPages})`;
+            loadingText.innerText = `解析中 (${i} / ${pdfDoc.numPages})`;
             const page = await pdfDoc.getPage(i);
             const viewport = page.getViewport({ scale: 0.6 });
             const canvas = document.createElement('canvas');
@@ -367,8 +356,8 @@
             <input type="checkbox" checked class="page-checkbox absolute top-4 left-4 w-6 h-6 z-10 cursor-pointer accent-blue-600" data-id="${index}">
             <img src="${src}" class="w-full h-auto rounded-lg mb-3">
             <div class="flex justify-between items-center">
-                <span class="text-sm font-bold text-gray-500">Page ${index}</span>
-                <button onclick="downloadSingle(${index})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-xs font-bold hover:bg-blue-600 hover:text-white transition">下載單張</button>
+                <span class="text-sm font-bold text-gray-400">PAGE ${index}</span>
+                <button onclick="downloadSingle(${index})" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-md text-xs font-bold hover:bg-blue-600 hover:text-white transition">單張下載</button>
             </div>
         `;
         div.onclick = (e) => {
@@ -404,15 +393,15 @@
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         await page.render({ canvasContext: context, viewport: viewport }).promise;
-        return new Promise(resolve => canvas.toBlob(blob => resolve(blob), format, 0.92));
+        return new Promise(resolve => canvas.toBlob(blob => resolve(blob), format, 0.95));
     }
 
     window.downloadSingle = async function(index) {
-        showLoading(`正在產出圖檔...`);
+        showLoading(`正在生成高品質圖片...`);
         const format = document.getElementById('format-select').value;
         const ext = format === 'image/png' ? 'png' : 'jpg';
         const blob = await getHighQualityBlob(index);
-        saveAs(blob, `Slide_${index}.${ext}`);
+        saveAs(blob, `NotebookLM_Slide_${index}.${ext}`);
         hideLoading();
     };
 
@@ -423,7 +412,7 @@
         const ext = format === 'image/png' ? 'png' : 'jpg';
         for (let i = 0; i < selectedCbs.length; i++) {
             const id = parseInt(selectedCbs[i].dataset.id);
-            showLoading(`處理中 ${i+1}/${selectedCbs.length}`);
+            showLoading(`轉檔中 ${i+1}/${selectedCbs.length}`);
             const blob = await getHighQualityBlob(id);
             saveAs(blob, `Slide_${id}.${ext}`);
             await new Promise(r => setTimeout(r, 400));
@@ -443,9 +432,9 @@
             const blob = await getHighQualityBlob(id);
             zip.file(`Slide_${id}.${ext}`, blob);
         }
-        showLoading("正在壓縮...");
+        showLoading("正在壓縮檔案...");
         const content = await zip.generateAsync({type: "blob"});
-        saveAs(content, "NotebookLM_Slides.zip");
+        saveAs(content, "NotebookLM_Export.zip");
         hideLoading();
     };
 
@@ -457,12 +446,7 @@
         document.querySelectorAll('.page-checkbox').forEach(cb => { cb.checked = false; cb.closest('.img-card').classList.remove('selected'); });
         updateSelectionCount();
     };
-    document.getElementById('btn-reset').onclick = () => {
-        previewGrid.innerHTML = '';
-        uploadSection.classList.remove('hidden');
-        controls.classList.add('hidden');
-        pdfInput.value = "";
-    };
+    document.getElementById('btn-reset').onclick = () => location.reload();
     document.getElementById('btn-export-trigger').onclick = () => {
         if (document.querySelectorAll('.page-checkbox:checked').length === 0) return alert("請至少選取一張圖片");
         exportModal.classList.remove('hidden');
@@ -472,7 +456,7 @@
     function showLoading(text) { loadingText.innerText = text; loadingOverlay.classList.remove('hidden'); }
     function hideLoading() { loadingOverlay.classList.add('hidden'); }
 
-    // 初始化啟動
+    // 初始化授權系統
     initAuth();
 </script>
 
