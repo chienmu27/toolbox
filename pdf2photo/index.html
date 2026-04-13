@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotebookLM 簡報轉圖工具</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- 引入 JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        .loader { border-top-color: #3498db; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .img-card.selected { border: 4px solid #3b82f6; background-color: #eff6ff; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- 標題與上傳區 -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6 text-center">
+            <h1 class="text-2xl font-bold mb-4">NotebookLM 簡報圖檔轉換器</h1>
+            <div id="upload-area" class="border-2 border-dashed border-gray-300 p-8 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                <input type="file" id="file-input" class="hidden" accept="application/pdf">
+                <p class="text-gray-500">點擊或拖拽 NotebookLM 簡報 PDF 檔至此</p>
+                <p class="text-xs text-gray-400 mt-2">支援批次轉換與高品質導出</p>
+            </div>
+            
+            <!-- 控制列 (上傳後顯示) -->
+            <div id="controls" class="hidden mt-6 flex flex-wrap gap-4 items-center justify-between border-t pt-6">
+                <div class="flex gap-2">
+                    <button id="btn-select-all" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">全選</button>
+                    <button id="btn-deselect-all" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">取消全選</button>
+                    <button id="btn-reset" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">繼續上傳/重置</button>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium">格式：</label>
+                        <select id="format-select" class="border rounded px-2 py-1">
+                            <option value="image/jpeg">JPG</option>
+                            <option value="image/png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium">畫質：</label>
+                        <select id="quality-select" class="border rounded px-2 py-1">
+                            <option value="1">標準畫質 (約300KB)</option>
+                            <option value="1.5">高畫質 (約800KB)</option>
+                            <option value="2.5">超高畫質 (約1.5MB)</option>
+                            <option value="4">極致畫質 (約3.0MB)</option>
+                        </select>
+                    </div>
+                    <div class="text-lg font-bold text-blue-600">
+                        選取數：<span id="selected-count">0</span> / <span id="total-count">0</span>
+                    </div>
+                    <button id="btn-export-main" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 shadow-lg">匯出選取圖片</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 圖片顯示區 -->
+        <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </div>
+
+    <!-- 導出彈窗 -->
+    <div id="export-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-xl font-bold mb-4 text-center">選擇匯出方式</h3>
+            <div class="flex flex-col gap-3">
+                <button id="export-zip" class="bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700">打包成 ZIP 檔</button>
+                <button id="export-individual" class="bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">逐張分別下載</button>
+                <button id="close-modal" class="bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 mt-2">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 讀取中遮罩 -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-[60]">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+        <p class="text-xl font-semibold" id="loading-text">正在處理 PDF...</p>
+    </div>
+
+    <script>
+        // 設定 PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const fileInput = document.getElementById('file-input');
+        const uploadArea = document.getElementById('upload-area');
+        const previewGrid = document.getElementById('preview-grid');
+        const controls = document.getElementById('controls');
+        const selectedCountLabel = document.getElementById('selected-count');
+        const totalCountLabel = document.getElementById('total-count');
+        const exportModal = document.getElementById('export-modal');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        let pdfDoc = null;
+        let imagesData = []; // 存儲每一頁的資訊
+
+        // 點擊上傳
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', handleFile);
+
+        async function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file || file.type !== 'application/pdf') return;
+
+            showLoading(true, "讀取 PDF 中...");
+            const arrayBuffer = await file.arrayBuffer();
+            
+            try {
+                pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+                totalCountLabel.textContent = pdfDoc.numPages;
+                imagesData = [];
+                previewGrid.innerHTML = '';
+                
+                // 渲染預覽圖 (使用低解析度以節省效能)
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: 0.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    const thumbUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    addImageCard(i, thumbUrl);
+                    imagesData.push({ pageIndex: i, selected: false });
+                }
+                
+                uploadArea.classList.add('hidden');
+                controls.classList.remove('hidden');
+            } catch (error) {
+                alert("讀取失敗：" + error.message);
+            }
+            showLoading(false);
+        }
+
+        function addImageCard(index, src) {
+            const div = document.createElement('div');
+            div.className = "img-card bg-white p-2 rounded shadow hover:shadow-lg transition relative group cursor-pointer";
+            div.dataset.index = index;
+            div.innerHTML = `
+                <div class="absolute top-2 left-2 z-10">
+                    <input type="checkbox" class="w-5 h-5 card-checkbox" data-index="${index}">
+                </div>
+                <img src="${src}" class="w-full h-auto rounded">
+                <div class="mt-2 flex justify-between items-center text-sm">
+                    <span class="text-gray-500">第 ${index} 頁</span>
+                    <button class="single-download bg-blue-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition">下載此張</button>
+                </div>
+            `;
+
+            // 點擊卡片切換選取
+            div.addEventListener('click', (e) => {
+                if (e.target.classList.contains('single-download')) {
+                    downloadSingle(index);
+                    return;
+                }
+                toggleSelect(index);
+            });
+
+            previewGrid.appendChild(div);
+        }
+
+        function toggleSelect(index) {
+            const card = document.querySelector(`.img-card[data-index="${index}"]`);
+            const checkbox = card.querySelector('.card-checkbox');
+            const data = imagesData.find(d => d.pageIndex == index);
+            
+            data.selected = !data.selected;
+            checkbox.checked = data.selected;
+            card.classList.toggle('selected', data.selected);
+            updateCount();
+        }
+
+        function updateCount() {
+            const count = imagesData.filter(d => d.selected).length;
+            selectedCountLabel.textContent = count;
+        }
+
+        // 全選 / 取消全選
+        document.getElementById('btn-select-all').onclick = () => {
+            imagesData.forEach(d => d.selected = true);
+            syncUI();
+        };
+        document.getElementById('btn-deselect-all').onclick = () => {
+            imagesData.forEach(d => d.selected = false);
+            syncUI();
+        };
+        
+        function syncUI() {
+            document.querySelectorAll('.img-card').forEach(card => {
+                const idx = card.dataset.index;
+                const isSel = imagesData.find(d => d.pageIndex == idx).selected;
+                card.querySelector('.card-checkbox').checked = isSel;
+                card.classList.toggle('selected', isSel);
+            });
+            updateCount();
+        }
+
+        // 重置
+        document.getElementById('btn-reset').onclick = () => {
+            location.reload();
+        };
+
+        // 匯出彈窗控制
+        document.getElementById('btn-export-main').onclick = () => {
+            const count = imagesData.filter(d => d.selected).length;
+            if (count === 0) {
+                alert("請先選取圖片！");
+                return;
+            }
+            exportModal.classList.remove('hidden');
+        };
+
+        document.getElementById('close-modal').onclick = () => {
+            exportModal.classList.add('hidden');
+        };
+
+        // 核心下載邏輯
+        async function getHighResBlob(pageIndex) {
+            const scale = parseFloat(document.getElementById('quality-select').value);
+            const format = document.getElementById('format-select').value;
+            const page = await pdfDoc.getPage(pageIndex);
+            const viewport = page.getViewport({ scale: scale });
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            
+            return new Promise(resolve => {
+                canvas.toBlob(blob => resolve(blob), format, 0.92);
+            });
+        }
+
+        async function downloadSingle(index) {
+            showLoading(true, "產生高畫質檔案...");
+            const format = document.getElementById('format-select').value;
+            const ext = format === 'image/jpeg' ? 'jpg' : 'png';
+            const blob = await getHighResBlob(index);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Slide_${index}.${ext}`;
+            a.click();
+            showLoading(false);
+        }
+
+        // 打包 ZIP
+        document.getElementById('export-zip').onclick = async () => {
+            exportModal.classList.add('hidden');
+            showLoading(true, "正在打包圖片，請稍候...");
+            
+            const zip = new JSZip();
+            const selected = imagesData.filter(d => d.selected);
+            const format = document.getElementById('format-select').value;
+            const ext = format === 'image/jpeg' ? 'jpg' : 'png';
+
+            for (const item of selected) {
+                const blob = await getHighResBlob(item.pageIndex);
+                zip.file(`Slide_${item.pageIndex}.${ext}`, blob);
+            }
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "notebookLM_slides.zip";
+            a.click();
+            
+            showLoading(false);
+        };
+
+        // 逐張下載
+        document.getElementById('export-individual').onclick = async () => {
+            exportModal.classList.add('hidden');
+            const selected = imagesData.filter(d => d.selected);
+            
+            if (selected.length > 10) {
+                if (!confirm(`您選取了 ${selected.length} 張圖片，瀏覽器將會彈出多個下載視窗，是否繼續？`)) return;
+            }
+
+            showLoading(true, "準備下載中...");
+            const format = document.getElementById('format-select').value;
+            const ext = format === 'image/jpeg' ? 'jpg' : 'png';
+
+            for (const item of selected) {
+                const blob = await getHighResBlob(item.pageIndex);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Slide_${item.pageIndex}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                // 稍微延遲避免瀏覽器當機
+                await new Promise(r => setTimeout(r, 300));
+            }
+            showLoading(false);
+        };
+
+        function showLoading(show, text = "") {
+            loadingOverlay.classList.toggle('hidden', !show);
+            if (text) document.getElementById('loading-text').textContent = text;
+        }
+    </script>
+</body>
+</html>
