@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kahoot 綜合工具箱 - AI 增強版</title>
+    <title>Kahoot AI 自動生成器 - 增強版</title>
     <!-- 引入外部資源 -->
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -41,42 +41,24 @@
             min-height: 550px;
         }
 
-        /* 導覽列與按鈕間距優化 */
-        .nav-header {
+        /* 頂部標頭佈局：確保標題與登出按鈕間距加大不重疊 */
+        .header-bar {
             display: flex;
             align-items: center;
-            justify-content: flex-start; /* 改為靠左起點 */
-            margin-bottom: 30px; 
+            justify-content: space-between;
+            margin-bottom: 25px; 
             border-bottom: 2px solid #eee;
             padding-bottom: 15px;
-            flex-wrap: wrap; /* 防止窄螢幕強制併排 */
-            gap: 15px;
         }
 
-        .tab-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .tab-btn {
-            padding: 10px 18px;
-            border: 2px solid var(--primary-color);
-            background: white;
+        .header-title {
             color: var(--primary-color);
-            border-radius: 6px;
-            cursor: pointer;
+            font-size: 1.5rem;
             font-weight: bold;
-            transition: 0.3s;
+            margin: 0;
         }
 
-        .tab-btn.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        /* 登出按鈕：使用 margin-left: auto 推到最右邊，並加上左右間距防止重疊 */
         .logout-btn { 
-            margin-left: auto;
             background-color: #fff; 
             color: #d9534f; 
             border: 1px solid #d9534f; 
@@ -85,6 +67,7 @@
             border-radius: 4px; 
             cursor: pointer; 
             transition: 0.2s;
+            margin-left: 20px; /* 確保與左側內容有足夠間距 */
         }
         .logout-btn:hover { background-color: #fdf7f7; }
 
@@ -105,7 +88,7 @@
             box-sizing: border-box; 
         }
 
-        h1, h2 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
+        h1 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
         .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
@@ -138,9 +121,6 @@
         #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; font-weight: bold; }
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
         .hidden { display: none !important; }
-
-        /* 成績計算區塊檔案欄位調整 */
-        #scoreUpload { margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -148,7 +128,7 @@
 <div class="container">
     <!-- 身份驗證遮罩層 -->
     <div id="authOverlay">
-        <h2 id="authMsg">請先登入 Google 帳號以使用工具</h2>
+        <h2 id="authMsg">請先登入 Google 帳號</h2>
         <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
         
         <div id="applyForm" class="hidden" style="width:100%">
@@ -167,71 +147,55 @@
 
     <!-- 登入後顯示的主內容 -->
     <div id="mainContent" class="hidden">
-        <div class="nav-header">
-            <div class="tab-group">
-                <button class="tab-btn active" id="btnGen" onclick="switchTab('generator')">Kahoot AI 生成器</button>
-                <button class="tab-btn" id="btnCalc" onclick="switchTab('calculator')">成績計算器</button>
-            </div>
+        <div class="header-bar">
+            <p class="header-title">Kahoot 工具箱</p>
             <button id="logoutBtn" class="logout-btn">登出帳號</button>
         </div>
 
-        <!-- 分頁 1：AI 生成器 -->
-        <div id="generatorView">
-            <h1>Kahoot AI 生成器</h1>
-            <div class="form-group">
-                <label>1. 題目主題</label>
-                <input type="text" id="topic" placeholder="例如：生活科技、地理知識、英文單字..." />
-            </div>
-            <div class="form-group">
-                <label>2. 出題提示語 / 額外要求 (選填)</label>
-                <textarea id="hint" rows="2" placeholder="例如：難度適中、適合國一學生、聚焦在課本第三章內容..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>3. 上傳參考檔案 (選填)</label>
-                <div class="file-upload-area">
-                    <input type="file" id="refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
-                    <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">支援：TXT, CSV, Word, Excel, 圖片 (識圖出題)</p>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>4. 設定參數</label>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.9rem;">題數</span>
-                        <input type="number" id="count" value="5" min="1" max="20" />
-                    </div>
-                    <div style="flex: 1;">
-                        <span style="font-size: 0.9rem;">秒數</span>
-                        <select id="timeLimit">
-                            <option value="5">5 秒</option><option value="10">10 秒</option>
-                            <option value="20" selected>20 秒</option><option value="30">30 秒</option>
-                            <option value="60">1 分鐘</option><option value="120">2 分鐘</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
-            <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel</button>
-            <div id="status">系統就緒</div>
+        <h1>Kahoot AI 生成器</h1>
+        
+        <div class="form-group">
+            <label>1. 題目主題</label>
+            <input type="text" id="topic" placeholder="例如：生活科技、地理知識、英文單字..." />
         </div>
-
-        <!-- 分頁 2：成績計算器 -->
-        <div id="calculatorView" class="hidden">
-            <h1>Kahoot 成績計算網頁</h1>
-            <div style="text-align: center; padding: 20px;">
-                <p>請上傳包含 "Final Scores" 工作表的 Kahoot Excel 報表</p>
-                <input type="file" id="scoreUpload" accept=".xlsx, .xls" />
-                <br><br>
-                <button class="main-btn" onclick="processExcel()">轉換並下載計算後的成績單</button>
-                <div style="font-size: 0.85rem; color: #666; margin-top: 20px; text-align: left; background: #eee; padding: 10px; border-radius: 5px;">
-                    💡 <strong>功能說明：</strong><br>
-                    1. 自動提取 Final Scores 工作表數據。<br>
-                    2. 新增「正確率 (%)」欄位：(正確數 / 總題數) * 100。<br>
-                    3. 依據 Player (選手名稱/學號) 自動排序。
+        
+        <div class="form-group">
+            <label>2. 出題提示語 / 額外要求 (選填)</label>
+            <textarea id="hint" rows="2" placeholder="例如：難度適中、適合國小五年級、聚焦在環境保護內容..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>3. 上傳參考檔案 (選填)</label>
+            <div class="file-upload-area">
+                <input type="file" id="refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
+                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">支援：TXT, CSV, Word, Excel, 圖片 (識圖出題)</p>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>4. 設定參數</label>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <span style="font-size: 0.9rem;">題數</span>
+                    <input type="number" id="count" value="5" min="1" max="20" />
+                </div>
+                <div style="flex: 1;">
+                    <span style="font-size: 0.9rem;">秒數</span>
+                    <select id="timeLimit">
+                        <option value="5">5 秒</option>
+                        <option value="10">10 秒</option>
+                        <option value="20" selected>20 秒</option>
+                        <option value="30">30 秒</option>
+                        <option value="60">1 分鐘</option>
+                        <option value="120">2 分鐘</option>
+                    </select>
                 </div>
             </div>
         </div>
+
+        <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
+        <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel</button>
+        <div id="status">系統就緒</div>
 
         <div class="footer">
             Powered by Google Gemini (Vision) & Puter.js & Mammoth.js<br>
@@ -275,7 +239,10 @@
                 document.getElementById('authLoginBtn').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById('authMsg').innerText = "連線失敗，請重試。";
+        }
     }
 
     document.getElementById('applyBtn').onclick = async () => {
@@ -303,38 +270,16 @@
         location.reload();
     };
 
-    // --- 分頁切換 ---
-    function switchTab(view) {
-        const genView = document.getElementById('generatorView');
-        const calcView = document.getElementById('calculatorView');
-        const btnGen = document.getElementById('btnGen');
-        const btnCalc = document.getElementById('btnCalc');
-
-        if (view === 'generator') {
-            genView.classList.remove('hidden');
-            calcView.classList.add('hidden');
-            btnGen.classList.add('active');
-            btnCalc.classList.remove('active');
-        } else {
-            genView.classList.add('hidden');
-            calcView.classList.remove('hidden');
-            btnGen.classList.remove('active');
-            btnCalc.classList.add('active');
-        }
-    }
-
     // --- 檔案解析功能 ---
     async function parseFile(file) {
         const name = file.name.toLowerCase();
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
 
-            // 1. 文字與 CSV
             if (name.endsWith('.txt') || name.endsWith('.csv')) {
                 reader.onload = (e) => resolve({ type: 'text', content: e.target.result });
                 reader.readAsText(file);
             } 
-            // 2. Word (.docx)
             else if (name.endsWith('.docx')) {
                 reader.onload = (e) => {
                     mammoth.extractRawText({ arrayBuffer: e.target.result })
@@ -343,7 +288,6 @@
                 };
                 reader.readAsArrayBuffer(file);
             }
-            // 3. Excel (.xlsx, .xls)
             else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
                 reader.onload = (e) => {
                     const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
@@ -355,12 +299,11 @@
                 };
                 reader.readAsArrayBuffer(file);
             }
-            // 4. 圖片
             else if (file.type.startsWith('image/')) {
                 reader.onload = (e) => resolve({ type: 'image', content: e.target.result });
                 reader.readAsDataURL(file);
             } else {
-                resolve({ type: 'text', content: "" }); // 未知格式不處理
+                resolve({ type: 'text', content: "" });
             }
         });
     }
@@ -379,7 +322,7 @@
         if (!topic) return alert("請輸入主題");
 
         genBtn.disabled = true;
-        statusTxt.innerText = "正在分析檔案與準備 AI 請求...";
+        statusTxt.innerText = "正在分析資料...";
         
         try {
             let contextData = null;
@@ -394,11 +337,10 @@
             }
             prompt += `輸出格式：請僅回傳一個 JSON 陣列，內含物件欄位為 q, a1, a2, a3, a4, ans(1-4)。`;
 
-            statusTxt.innerText = "AI 正在思考與生成題目中，請稍候...";
+            statusTxt.innerText = "AI 正在生成題目中，請稍候...";
             
             let response;
             if (contextData && contextData.type === 'image') {
-                // 使用 Puter 多模態（圖片）出題
                 response = await puter.ai.chat([
                     { role: "user", content: [
                         { type: "text", text: prompt + " (請根據附圖內容出題)" },
@@ -415,7 +357,7 @@
             lastGeneratedQuestions = questions;
             downloadKahootExcel(questions, timeLimit, topic);
             
-            statusTxt.innerText = "✅ 生成成功！Excel 下載已啟動。";
+            statusTxt.innerText = "✅ 生成成功！Excel 下載中。";
             document.getElementById('reDownloadBtn').style.display = "block";
         } catch (e) { 
             statusTxt.innerText = "❌ 發生錯誤: " + e.message; 
@@ -445,48 +387,6 @@
         if(lastGeneratedQuestions) downloadKahootExcel(lastGeneratedQuestions, document.getElementById('timeLimit').value, document.getElementById('topic').value);
     };
 
-    // --- 成績計算器邏輯 ---
-    function processExcel() {
-        const fileInput = document.getElementById('scoreUpload');
-        if (fileInput.files.length === 0) return alert("請先選擇報表檔案！");
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets["Final Scores"];
-                if (!worksheet) return alert("找不到 'Final Scores' 工作表");
-
-                let rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                const topHeaders = rows.slice(0, 2); 
-                const tableHeader = rows[2];       
-                let dataRows = rows.slice(3);    
-                
-                tableHeader[6] = "正確率 (%)";
-                dataRows.forEach(row => {
-                    if (row.length > 0) {
-                        const correct = parseFloat(row[4]) || 0;
-                        const incorrect = parseFloat(row[5]) || 0;
-                        const total = correct + incorrect;
-                        row[6] = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : 0;
-                    }
-                });
-
-                dataRows.sort((a, b) => String(a[1]).localeCompare(String(b[1]), undefined, {numeric: true}));
-                const finalData = [...topHeaders, tableHeader, ...dataRows];
-                const newSheet = XLSX.utils.aoa_to_sheet(finalData);
-                if (worksheet['!merges']) newSheet['!merges'] = worksheet['!merges'];
-                
-                const newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, newSheet, "Final Scores");
-                XLSX.writeFile(newWorkbook, "Kahoot_分析成績單.xlsx");
-            } catch (err) { alert("計算失敗：" + err.message); }
-        };
-        reader.readAsArrayBuffer(fileInput.files[0]);
-    }
-
-    // 啟動身份驗證
     initAuth();
 </script>
 
