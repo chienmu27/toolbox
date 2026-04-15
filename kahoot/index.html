@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kahoot 綜合工具箱</title>
+    <title>Kahoot AI 自動生成器 - 增強版</title>
     <!-- 引入外部資源 -->
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- 引入 Mammoth.js 用於處理 Word 文檔 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
     <style>
         :root { 
             --primary-color: #46178f; 
@@ -33,53 +36,40 @@
             border-radius: 12px; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
             width: 90%; 
-            max-width: 700px; 
+            max-width: 750px; 
             position: relative; 
-            min-height: 500px;
+            min-height: 550px;
         }
 
-        /* 導覽列與按鈕樣式 */
-        .nav-header {
+        /* 頂部標頭佈局：確保標題與登出按鈕間距加大不重疊 */
+        .header-bar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px; /* 加大與下方內容的間距 */
+            justify-content: space-between;
+            margin-bottom: 25px; 
             border-bottom: 2px solid #eee;
             padding-bottom: 15px;
         }
 
-        .tab-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        .tab-btn {
-            padding: 8px 16px;
-            border: 2px solid var(--primary-color);
-            background: white;
+        .header-title {
             color: var(--primary-color);
-            border-radius: 6px;
-            cursor: pointer;
+            font-size: 1.5rem;
             font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .tab-btn.active {
-            background: var(--primary-color);
-            color: white;
+            margin: 0;
         }
 
         .logout-btn { 
             background-color: #fff; 
-            color: #666; 
-            border: 1px solid #ccc; 
-            padding: 6px 12px; 
+            color: #d9534f; 
+            border: 1px solid #d9534f; 
+            padding: 8px 16px; 
             font-size: 0.85rem; 
             border-radius: 4px; 
             cursor: pointer; 
-            margin-left: 20px; /* 確保與分頁按鈕有足夠距離 */
+            transition: 0.2s;
+            margin-left: 20px; /* 確保與左側內容有足夠間距 */
         }
-        .logout-btn:hover { background-color: #f0f0f0; }
+        .logout-btn:hover { background-color: #fdf7f7; }
 
         /* 遮罩層 */
         #authOverlay { 
@@ -98,11 +88,19 @@
             box-sizing: border-box; 
         }
 
-        h1, h2 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; text-align: left; }
+        h1 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.2rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         
+        .file-upload-area { 
+            border: 2px dashed #bbb; 
+            padding: 15px; 
+            background: #fafafa; 
+            border-radius: 6px;
+            text-align: center;
+        }
+
         .main-btn { 
             width: 100%; padding: 12px; 
             background-color: var(--primary-color); 
@@ -120,13 +118,9 @@
             margin-top: 10px; display: none; 
         }
 
-        #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; }
+        #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; font-weight: bold; }
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
-        .note { font-size: 13px; color: #666; margin-top: 15px; line-height: 1.5; }
         .hidden { display: none !important; }
-
-        /* 成績計算器專用樣式修正 */
-        #calculatorView input[type="file"] { margin: 20px 0; border: 1px dashed #ccc; padding: 20px; width: 100%; }
     </style>
 </head>
 <body>
@@ -151,85 +145,74 @@
         </div>
     </div>
 
-    <!-- 登入後顯示的主內容區 -->
+    <!-- 登入後顯示的主內容 -->
     <div id="mainContent" class="hidden">
-        <div class="nav-header">
-            <div class="tab-group">
-                <button class="tab-btn active" onclick="switchTab('generator')">AI 生成器</button>
-                <button class="tab-btn" onclick="switchTab('calculator')">成績計算器</button>
-            </div>
+        <div class="header-bar">
+            <p class="header-title">Kahoot 工具箱</p>
             <button id="logoutBtn" class="logout-btn">登出帳號</button>
         </div>
 
-        <!-- 區塊一：AI 生成器 -->
-        <div id="generatorView">
-            <h1>Kahoot AI 生成器</h1>
-            <div class="form-group">
-                <label>題目主題</label>
-                <input type="text" id="topic" placeholder="例如：自然科學、數學、社會、英語..." />
-            </div>
-            <div class="form-group">
-                <label>出題提示語 / 額外要求 (選填)</label>
-                <textarea id="hint" rows="2" placeholder="例如：國小中年級社會、難度要深一點、語氣要幽默、著重於歷史事件..."></textarea>
-            </div>
-            <div class="form-group">
-                <label>題數</label>
-                <input type="number" id="count" value="5" />
-            </div>
-            <div class="form-group">
-                <label>答題時間</label>
-                <select id="timeLimit">
-                    <option value="5">5 秒</option>
-                    <option value="10">10 秒</option>
-                    <option value="15">15 秒</option>
-                    <option value="20" selected>20 秒</option>
-                    <option value="30">30 秒</option>
-                    <option value="45">45 秒</option>
-                    <option value="60">1 分鐘</option>
-                    <option value="90">1 分鐘 30 秒</option>
-                    <option value="120">2 分鐘</option>
-                </select>
-            </div>
-
-            <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
-            <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel 檔</button>
-            <div id="status">準備就緒</div>
+        <h1>Kahoot AI 生成器</h1>
+        
+        <div class="form-group">
+            <label>1. 題目主題</label>
+            <input type="text" id="topic" placeholder="例如：生活科技、地理知識、英文單字..." />
         </div>
-
-        <!-- 區塊二：成績計算器 -->
-        <div id="calculatorView" class="hidden">
-            <h1>Kahoot 成績計算工具</h1>
-            <div style="text-align: center;">
-                <p>請上傳 Kahoot 原始下載的報告 Excel 檔案<br>(須包含 "Final Scores" 工作表)</p>
-                <input type="file" id="upload" accept=".xlsx, .xls" />
-                <button class="main-btn" onclick="processExcel()">轉換並下載計算後的 Excel</button>
-                <div class="note">
-                    <strong>計算邏輯：</strong><br>
-                    1. 自動抓取 Final Scores 分頁數據。<br>
-                    2. 計算公式：(正確數 / 總題數) * 100。<br>
-                    3. 結果依 Player (學號/名稱) 由小至大排序。
+        
+        <div class="form-group">
+            <label>2. 出題提示語 / 額外要求 (選填)</label>
+            <textarea id="hint" rows="2" placeholder="例如：難度適中、適合國小五年級、聚焦在環境保護內容..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>3. 上傳參考檔案 (選填)</label>
+            <div class="file-upload-area">
+                <input type="file" id="refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
+                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">支援：TXT, CSV, Word, Excel, 圖片 (識圖出題)</p>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>4. 設定參數</label>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <span style="font-size: 0.9rem;">題數</span>
+                    <input type="number" id="count" value="5" min="1" max="20" />
+                </div>
+                <div style="flex: 1;">
+                    <span style="font-size: 0.9rem;">秒數</span>
+                    <select id="timeLimit">
+                        <option value="5">5 秒</option>
+                        <option value="10">10 秒</option>
+                        <option value="20" selected>20 秒</option>
+                        <option value="30">30 秒</option>
+                        <option value="60">1 分鐘</option>
+                        <option value="120">2 分鐘</option>
+                    </select>
                 </div>
             </div>
         </div>
 
+        <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
+        <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel</button>
+        <div id="status">系統就緒</div>
+
         <div class="footer">
-            Powered by Google Gemini & SheetJS<br>
+            Powered by Google Gemini (Vision) & Puter.js & Mammoth.js<br>
             © 2026 chienmu.tai 保留所有權利
         </div>
     </div>
 </div>
 
 <script>
-    // --- 基礎設定與授權變數 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
     let userUUID = "";
     let lastGeneratedQuestions = null;
 
-    // --- 身份驗證邏輯 ---
+    // --- 權限驗證邏輯 ---
     async function initAuth() {
         if (!puter.auth.isSignedIn()) {
             document.getElementById('authOverlay').classList.remove('hidden');
-            document.getElementById('mainContent').classList.add('hidden');
             return;
         }
         const user = await puter.auth.getUser();
@@ -238,7 +221,7 @@
     }
 
     async function checkPermission(uuid) {
-        document.getElementById('authMsg').innerText = "檢查授權狀態...";
+        document.getElementById('authMsg').innerText = "驗證授權中...";
         try {
             const resp = await fetch(GAS_URL, {
                 method: "POST",
@@ -252,13 +235,13 @@
                 document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
                 document.getElementById('authLoginBtn').classList.add('hidden');
             } else {
-                document.getElementById('authMsg').innerText = "帳號未授權";
+                document.getElementById('authMsg').innerText = "帳號尚未獲得授權";
                 document.getElementById('authLoginBtn').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
             }
         } catch (e) { 
             console.error(e); 
-            document.getElementById('authMsg').innerText = "連線檢查失敗，請重試。";
+            document.getElementById('authMsg').innerText = "連線失敗，請重試。";
         }
     }
 
@@ -266,15 +249,13 @@
         const email = document.getElementById('applyEmail').value.trim();
         const name = document.getElementById('applyName').value.trim();
         if(!email || !name) return alert("請填寫完整資料");
-
         document.getElementById('applyBtn').disabled = true;
-        document.getElementById('authMsg').innerText = "提交中...";
         try {
             await fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
             });
-            document.getElementById('authMsg').innerText = "申請已送出！請等待審核。";
+            document.getElementById('authMsg').innerText = "申請已送出！請等待管理員審核。";
             document.getElementById('applyForm').classList.add('hidden');
         } catch (e) { alert("提交失敗"); }
     };
@@ -289,29 +270,49 @@
         location.reload();
     };
 
-    // --- 分頁切換邏輯 ---
-    function switchTab(tab) {
-        const genView = document.getElementById('generatorView');
-        const calcView = document.getElementById('calculatorView');
-        const btns = document.querySelectorAll('.tab-btn');
+    // --- 檔案解析功能 ---
+    async function parseFile(file) {
+        const name = file.name.toLowerCase();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
 
-        btns.forEach(btn => btn.classList.remove('active'));
-
-        if (tab === 'generator') {
-            genView.classList.remove('hidden');
-            calcView.classList.add('hidden');
-            btns[0].classList.add('active');
-        } else {
-            genView.classList.add('hidden');
-            calcView.classList.remove('hidden');
-            btns[1].classList.add('active');
-        }
+            if (name.endsWith('.txt') || name.endsWith('.csv')) {
+                reader.onload = (e) => resolve({ type: 'text', content: e.target.result });
+                reader.readAsText(file);
+            } 
+            else if (name.endsWith('.docx')) {
+                reader.onload = (e) => {
+                    mammoth.extractRawText({ arrayBuffer: e.target.result })
+                        .then(result => resolve({ type: 'text', content: result.value }))
+                        .catch(reject);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+                reader.onload = (e) => {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    let text = "";
+                    workbook.SheetNames.forEach(sheetName => {
+                        text += `[Sheet: ${sheetName}]\n` + XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]) + "\n";
+                    });
+                    resolve({ type: 'text', content: text });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            else if (file.type.startsWith('image/')) {
+                reader.onload = (e) => resolve({ type: 'image', content: e.target.result });
+                reader.readAsDataURL(file);
+            } else {
+                resolve({ type: 'text', content: "" });
+            }
+        });
     }
 
-    // --- 功能一：AI 生成題目邏輯 ---
+    // --- AI 生成題目 ---
     document.getElementById('generateBtn').onclick = async () => {
         const genBtn = document.getElementById('generateBtn');
         const statusTxt = document.getElementById('status');
+        const fileInput = document.getElementById('refFile');
         
         const topic = document.getElementById('topic').value.trim();
         const hint = document.getElementById('hint').value.trim();
@@ -321,21 +322,45 @@
         if (!topic) return alert("請輸入主題");
 
         genBtn.disabled = true;
-        statusTxt.innerText = "AI 正在思考與生成題目中，請稍候...";
+        statusTxt.innerText = "正在分析資料...";
         
         try {
-            const prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。${hint}。格式為 JSON 陣列，包含 q, a1, a2, a3, a4, ans(1-4)。`;
-            const response = await puter.ai.chat(prompt);
+            let contextData = null;
+            if (fileInput.files.length > 0) {
+                contextData = await parseFile(fileInput.files[0]);
+            }
+
+            let prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。`;
+            if (hint) prompt += `額外指示：${hint}。`;
+            if (contextData && contextData.type === 'text') {
+                prompt += `請基於以下參考資料內容出題：\n${contextData.content}\n`;
+            }
+            prompt += `輸出格式：請僅回傳一個 JSON 陣列，內含物件欄位為 q, a1, a2, a3, a4, ans(1-4)。`;
+
+            statusTxt.innerText = "AI 正在生成題目中，請稍候...";
+            
+            let response;
+            if (contextData && contextData.type === 'image') {
+                response = await puter.ai.chat([
+                    { role: "user", content: [
+                        { type: "text", text: prompt + " (請根據附圖內容出題)" },
+                        { type: "image_url", image_url: { url: contextData.content } }
+                    ]}
+                ]);
+            } else {
+                response = await puter.ai.chat(prompt);
+            }
+
             let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
             const questions = JSON.parse(rawData);
             
             lastGeneratedQuestions = questions;
             downloadKahootExcel(questions, timeLimit, topic);
             
-            statusTxt.innerText = "題目生成完成並已啟動下載！";
+            statusTxt.innerText = "✅ 生成成功！Excel 下載中。";
             document.getElementById('reDownloadBtn').style.display = "block";
         } catch (e) { 
-            statusTxt.innerText = "錯誤: " + e.message; 
+            statusTxt.innerText = "❌ 發生錯誤: " + e.message; 
             console.error(e);
         } finally {
             genBtn.disabled = false;
@@ -362,73 +387,6 @@
         if(lastGeneratedQuestions) downloadKahootExcel(lastGeneratedQuestions, document.getElementById('timeLimit').value, document.getElementById('topic').value);
     };
 
-    // --- 功能二：成績計算邏輯 ---
-    function processExcel() {
-        const fileInput = document.getElementById('upload');
-        if (fileInput.files.length === 0) {
-            alert("請先選擇一個檔案！");
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = "Final Scores";
-                const worksheet = workbook.Sheets[sheetName];
-
-                if (!worksheet) {
-                    alert("找不到 'Final Scores' 工作表，請確認您上傳的是 Kahoot 原始報告檔案。");
-                    return;
-                }
-
-                let rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                const topHeaders = rows.slice(0, 2); 
-                const tableHeader = rows[2];       
-                let dataRows = rows.slice(3);    
-
-                // 增加 G 欄位標題
-                tableHeader[6] = "成績";
-
-                dataRows.forEach(row => {
-                    if (row && row.length > 0) {
-                        const correct = parseFloat(row[4]) || 0; 
-                        const incorrect = parseFloat(row[5]) || 0; 
-                        const total = correct + incorrect;
-                        let accuracy = (total > 0) ? (correct / total) * 100 : 0;
-                        row[6] = parseFloat(accuracy.toFixed(2));
-                    }
-                });
-
-                // 依據 Player (Index 1) 排序
-                dataRows.sort((a, b) => {
-                    let valA = a[1] ? a[1].toString() : "";
-                    let valB = b[1] ? b[1].toString() : "";
-                    // 嘗試以數字排序，若非數字則以字串排序
-                    return valA.localeCompare(valB, undefined, {numeric: true, sensitivity: 'base'});
-                });
-
-                const finalData = [...topHeaders, tableHeader, ...dataRows];
-                const newSheet = XLSX.utils.aoa_to_sheet(finalData);
-                
-                if (worksheet['!merges']) newSheet['!merges'] = worksheet['!merges'];
-                
-                const newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
-                XLSX.writeFile(newWorkbook, "Kahoot_分析後的成績單.xlsx");
-                alert("計算完成，Excel 已開始下載！");
-            } catch (err) {
-                console.error(err);
-                alert("處理 Excel 時發生錯誤，請檢查檔案格式。");
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    // 初始化啟動
     initAuth();
 </script>
 
