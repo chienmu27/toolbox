@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教學工具整合系統 - 授權版</title>
+    
+    <!-- 引入外部資源 -->
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root { 
+            --primary-color: #46178f; 
+            --secondary-color: #250850; 
+            --success-color: #108548; 
+            --danger-color: #e21b3c; 
+            --bg-color: #f2f2f2;
+            --exam-primary: #6c5ce7;
+            --exam-success: #00b894;
+            --exam-download: #0984e3;
+            --exam-upload: #e17055;
+        }
+
+        body { 
+            font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            background-color: var(--bg-color); 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0; 
+        }
+
+        .container { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            width: 95%; 
+            max-width: 1200px; 
+            position: relative; 
+            min-height: 600px;
+        }
+
+        /* 導覽列樣式 */
+        .nav-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; 
+            margin-bottom: 20px; 
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            background: #eee;
+            color: #666;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .logout-btn { 
+            background-color: #fff; 
+            color: #d9534f; 
+            border: 1px solid #d9534f; 
+            padding: 8px 16px; 
+            font-size: 0.85rem; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .logout-btn:hover { background-color: #fdf7f7; }
+
+        /* 驗證遮罩層 */
+        #authOverlay { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: white; 
+            border-radius: 12px; 
+            z-index: 1000; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+
+        .form-group { margin-bottom: 1.2rem; text-align: left; width: 100%; max-width: 400px; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        .input-field { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        .main-btn { 
+            width: 100%; padding: 12px; 
+            background-color: var(--primary-color); 
+            color: white; border: none; border-radius: 6px; 
+            font-size: 1.1rem; cursor: pointer; font-weight: bold; 
+            margin-top: 10px; 
+        }
+
+        /* 考試系統專用樣式 */
+        .exam-card { background: white; padding: 1.5rem; border-radius: 15px; border: 1px solid #eee; width: 100%; max-width: 600px; margin: 0 auto; text-align: center; }
+        .hidden { display: none !important; }
+        .exam-select, .exam-input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .exam-button { background: var(--exam-primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; transition: 0.3s; }
+        .exam-button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-download { background: var(--exam-download); margin-top: 5px; }
+        .btn-upload { background: var(--exam-upload); margin-top: 5px; }
+        .admin-section { border-bottom: 2px dashed #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; }
+        .option-btn:hover { border-color: var(--exam-primary); background: #f9f9ff; }
+        .option-btn.selected { background: var(--exam-primary); color: white; border-color: var(--exam-primary); }
+        #qr-container img { margin: 20px auto; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
+        .progress { color: #666; font-size: 0.9rem; margin-bottom: 10px; text-align: right; }
+        #question-text { font-size: 1.25rem; margin: 20px 0; line-height: 1.4; color: #2d3436; text-align: left; }
+
+        /* NotebookLM 專用樣式 */
+        .img-card.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .drag-over { border-color: #3b82f6; background-color: #f0f7ff; }
+
+        .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 身份驗證遮罩層 -->
+    <div id="authOverlay">
+        <h2 id="authMsg" class="text-xl font-bold mb-4">請先登入 Google 帳號以使用工具</h2>
+        <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
+        
+        <div id="applyForm" class="hidden" style="width:100%; max-width: 400px;">
+            <p class="mb-4">您的帳號尚未獲得授權，請填寫申請資料：</p>
+            <div class="form-group">
+                <label>您的 Google 信箱</label>
+                <input type="email" id="applyEmail" class="input-field" placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label>申請人姓名</label>
+                <input type="text" id="applyName" class="input-field" placeholder="請輸入姓名">
+            </div>
+            <button id="applyBtn" class="main-btn">送出申請</button>
+        </div>
+    </div>
+
+    <!-- 登入後顯示的主內容 -->
+    <div id="mainContent" class="hidden">
+        <div class="nav-header">
+            <div class="tabs">
+                <div id="tab-notebook" class="tab-btn active" onclick="switchTab('notebook')">NotebookLM 轉檔</div>
+                <div id="tab-exam" class="tab-btn" onclick="switchTab('exam')">線上考試系統</div>
+            </div>
+            <button id="logoutBtn" class="logout-btn">登出帳號</button>
+        </div>
+
+        <!-- 分頁 1: NotebookLM 轉檔工具 -->
+        <div id="notebookView">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">NotebookLM 簡報轉圖工具</h1>
+                <p class="text-gray-600 mt-2">支援拖曳上傳、多種畫質選擇與批次打包</p>
+            </header>
+
+            <div id="upload-section" class="max-w-xl mx-auto bg-white p-12 rounded-xl shadow-md text-center border-2 border-dashed border-gray-300 hover:border-blue-400 transition-all cursor-pointer">
+                <input type="file" id="pdf-input" accept="application/pdf" class="hidden">
+                <label for="pdf-input" class="cursor-pointer">
+                    <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <span class="mt-4 block text-lg font-semibold text-gray-700">將 PDF 拖放到此處 或 點擊上傳</span>
+                </label>
+            </div>
+
+            <div id="controls" class="hidden mt-8 bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center justify-between gap-4 border border-gray-200">
+                <div class="flex items-center gap-4">
+                    <div class="flex bg-gray-100 p-1 rounded-md">
+                        <button id="btn-select-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">全選</button>
+                        <button id="btn-deselect-all" class="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded transition text-sm font-medium">取消全選</button>
+                    </div>
+                    <span class="text-blue-600 font-bold text-lg">已選取：<span id="selected-count">0</span> / <span id="total-count">0</span></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="format-select" class="border p-2 rounded text-sm bg-white">
+                        <option value="image/jpeg">JPG</option>
+                        <option value="image/png">PNG</option>
+                    </select>
+                    <select id="quality-select" class="border p-2 rounded text-sm bg-white">
+                        <option value="1.5">標準畫質</option>
+                        <option value="2.5" selected>高畫質</option>
+                        <option value="3.5">超高畫質</option>
+                        <option value="5.0">極致畫質</option>
+                    </select>
+                    <button id="btn-export-trigger" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-lg">匯出圖片</button>
+                    <button id="btn-reset" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">重置</button>
+                </div>
+            </div>
+            <div id="preview-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8"></div>
+        </div>
+
+        <!-- 分頁 2: 線上考試系統 -->
+        <div id="examView" class="hidden">
+            <div class="exam-card">
+                <!-- 管理者設定區 -->
+                <div id="view-admin" class="hidden">
+                    <h2 class="text-2xl font-bold mb-4">考試管理者設定</h2>
+                    <div class="admin-section">
+                        <label class="block text-left text-sm text-gray-600">上傳新題目 (Excel):</label>
+                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                        <button class="exam-button btn-upload" id="btn-do-upload" onclick="handleUpload()">上傳題目資料</button>
+                    </div>
+                    <div class="admin-section">
+                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                        <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
+                        <button class="exam-button" onclick="generateQRCode()">生成考試 QR-Code</button>
+                        <button class="exam-button btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
+                    </div>
+                    <div id="qr-container" class="hidden">
+                        <img id="qr-image" src="" alt="QR Code">
+                        <p class="text-sm text-gray-400">請掃描 QR-Code 開始考試</p>
+                    </div>
+                </div>
+
+                <!-- 學生登入區 -->
+                <div id="view-student-login" class="hidden">
+                    <h2 id="exam-title" class="text-2xl font-bold mb-4">載入考試資訊...</h2>
+                    <input type="text" id="pin-input" placeholder="請輸入您的 PIN 碼" inputmode="numeric" class="exam-input">
+                    <button class="exam-button" onclick="studentLogin()">進入測驗</button>
+                </div>
+
+                <!-- 測驗進行區 -->
+                <div id="view-quiz" class="hidden">
+                    <div class="progress" id="quiz-progress"></div>
+                    <div id="question-text"></div>
+                    <div id="options-box"></div>
+                    <button id="btn-next" class="exam-button hidden" onclick="nextQuestion()">下一題</button>
+                    <button id="btn-submit" class="exam-button hidden" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+                </div>
+
+                <!-- 結果區 -->
+                <div id="view-result" class="hidden">
+                    <h2 class="text-2xl font-bold" style="color: var(--exam-success);">測驗結束</h2>
+                    <div id="result-stat" style="font-size: 1.5rem; margin: 20px 0;"></div>
+                    <button class="exam-button" onclick="switchTab('exam'); location.reload();">返回系統首頁</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Powered by PDF.js, SheetJS & Puter.js<br>
+            © 2026 chienmu.tai 保留所有權利
+        </div>
+    </div>
+</div>
+
+<!-- 全域輔助組件 -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000]">
+    <div class="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-xs w-full">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-16 w-16 mb-4 mx-auto"></div>
+        <p id="loading-text" class="text-gray-800 font-bold text-lg">正在處理...</p>
+    </div>
+</div>
+
+<div id="export-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[2001]">
+    <div class="bg-white p-8 rounded-2xl max-w-sm w-full shadow-2xl">
+        <h3 class="text-xl font-bold mb-2">選擇匯出方式</h3>
+        <div class="flex flex-col gap-3">
+            <button id="btn-download-zip" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold">打包成 ZIP 檔</button>
+            <button id="btn-download-each" class="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold">逐張分別下載</button>
+            <button onclick="document.getElementById('export-modal').classList.add('hidden')" class="w-full py-3 bg-gray-100 text-gray-600 rounded-xl">取消</button>
+        </div>
+    </div>
+</div>
+
+<canvas id="pdf-render-canvas" class="hidden"></canvas>
+
+<script>
+    /** --- 配置與全域變數 --- **/
+    const GAS_AUTH_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec";
+    const GAS_EXAM_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec";
+    const BASE_URL = window.location.href.split('?')[0];
+
+    let userUUID = "";
+    // 考試系統變數
+    let configData = {}; 
+    let currentExam = { class: "", unit: "" };
+    let quizData = [];
+    let currentIdx = 0;
+    let userAnswers = [];
+    let studentInfo = {};
+
+    /** --- 1. 身份驗證邏輯 --- **/
+    async function initAuth() {
+        if (!puter.auth.isSignedIn()) {
+            document.getElementById('authOverlay').classList.remove('hidden');
+            return;
+        }
+        const user = await puter.auth.getUser();
+        userUUID = user.uuid; 
+        checkPermission(userUUID);
+    }
+
+    async function checkPermission(uuid) {
+        document.getElementById('authMsg').innerText = "驗證授權中...";
+        try {
+            const resp = await fetch(GAS_AUTH_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "checkStatus", uuid: uuid })
+            });
+            const result = await resp.json();
+            if (result.status === "Approved") {
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                initSystem();
+            } else if (result.status === "Pending") {
+                document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
+                document.getElementById('authLoginBtn').classList.add('hidden');
+            } else {
+                document.getElementById('authMsg').innerText = "帳號尚未獲得授權";
+                document.getElementById('authLoginBtn').classList.add('hidden');
+                document.getElementById('applyForm').classList.remove('hidden');
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    document.getElementById('authLoginBtn').onclick = async () => { await puter.auth.signIn(); initAuth(); };
+    document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
+    
+    document.getElementById('applyBtn').onclick = async () => {
+        const email = document.getElementById('applyEmail').value.trim();
+        const name = document.getElementById('applyName').value.trim();
+        if(!email || !name) return alert("請填寫完整資料");
+        try {
+            await fetch(GAS_AUTH_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
+            });
+            document.getElementById('authMsg').innerText = "申請已送出！請等待審核。";
+            document.getElementById('applyForm').classList.add('hidden');
+        } catch (e) { alert("提交失敗"); }
+    };
+
+    /** --- 2. 分頁切換邏輯 --- **/
+    function switchTab(tab) {
+        document.getElementById('notebookView').classList.add('hidden');
+        document.getElementById('examView').classList.add('hidden');
+        document.getElementById('tab-notebook').classList.remove('active');
+        document.getElementById('tab-exam').classList.remove('active');
+
+        if (tab === 'notebook') {
+            document.getElementById('notebookView').classList.remove('hidden');
+            document.getElementById('tab-notebook').classList.add('active');
+        } else {
+            document.getElementById('examView').classList.remove('hidden');
+            document.getElementById('tab-exam').classList.add('active');
+            if (Object.keys(configData).length === 0) fetchConfig();
+        }
+    }
+
+    function initSystem() {
+        const params = new URLSearchParams(window.location.search);
+        const c = params.get('c');
+        const u = params.get('u');
+        if (c && u) {
+            switchTab('exam');
+            currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u) };
+            showExamView('view-student-login');
+            document.getElementById('exam-title').innerText = `${currentExam.class} - ${currentExam.unit}`;
+        } else {
+            // 預設進轉檔工具
+        }
+    }
+
+    /** --- 3. NotebookLM 轉檔核心邏輯 --- **/
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    let pdfDoc = null;
+    const pdfInput = document.getElementById('pdf-input');
+    const uploadSection = document.getElementById('upload-section');
+
+    pdfInput.onchange = (e) => processFile(e.target.files[0]);
+    uploadSection.onclick = () => pdfInput.click();
+
+    async function processFile(file) {
+        if (!file || file.type !== 'application/pdf') return alert("請上傳 PDF");
+        showLoading("正在解析 PDF...");
+        const reader = new FileReader();
+        reader.onload = async function() {
+            pdfDoc = await pdfjsLib.getDocument({data: new Uint8Array(this.result)}).promise;
+            document.getElementById('total-count').innerText = pdfDoc.numPages;
+            await renderPreviews();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function renderPreviews() {
+        const grid = document.getElementById('preview-grid');
+        grid.innerHTML = '';
+        uploadSection.classList.add('hidden');
+        document.getElementById('controls').classList.remove('hidden');
+
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+            showLoading(`預覽中 (${i}/${pdfDoc.numPages})`);
+            const page = await pdfDoc.getPage(i);
+            const viewport = page.getViewport({ scale: 0.5 });
+            const canvas = document.createElement('canvas');
+            canvas.height = viewport.height; canvas.width = viewport.width;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            
+            const div = document.createElement('div');
+            div.className = "img-card bg-white p-3 rounded-xl shadow-sm border-2 border-transparent relative cursor-pointer";
+            div.innerHTML = `
+                <input type="checkbox" checked class="page-checkbox absolute top-4 left-4 w-6 h-6 z-10 accent-blue-600" data-id="${i}">
+                <img src="${canvas.toDataURL('image/jpeg', 0.6)}" class="w-full rounded-lg mb-2">
+                <div class="flex justify-between items-center text-sm font-bold">Page ${i} <button onclick="downloadSingle(${i})" class="text-blue-600">下載</button></div>
+            `;
+            div.onclick = (e) => {
+                if(e.target.type !== 'checkbox' && e.target.tagName !== 'BUTTON') {
+                    const cb = div.querySelector('.page-checkbox');
+                    cb.checked = !cb.checked;
+                    div.classList.toggle('selected', cb.checked);
+                    updateCount();
+                }
+            };
+            grid.appendChild(div);
+            div.classList.add('selected');
+        }
+        updateCount();
+        hideLoading();
+    }
+
+    function updateCount() { document.getElementById('selected-count').innerText = document.querySelectorAll('.page-checkbox:checked').length; }
+
+    async function getHQBlob(idx) {
+        const scale = parseFloat(document.getElementById('quality-select').value);
+        const format = document.getElementById('format-select').value;
+        const page = await pdfDoc.getPage(idx);
+        const vp = page.getViewport({ scale });
+        const canvas = document.getElementById('pdf-render-canvas');
+        canvas.height = vp.height; canvas.width = vp.width;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        return new Promise(r => canvas.toBlob(r, format, 0.95));
+    }
+
+    window.downloadSingle = async (i) => {
+        showLoading("產生圖檔...");
+        const blob = await getHQBlob(i);
+        saveAs(blob, `Slide_${i}.jpg`);
+        hideLoading();
+    };
+
+    document.getElementById('btn-export-trigger').onclick = () => document.getElementById('export-modal').classList.remove('hidden');
+    
+    document.getElementById('btn-download-zip').onclick = async () => {
+        const zip = new JSZip();
+        const cbs = document.querySelectorAll('.page-checkbox:checked');
+        for (let i = 0; i < cbs.length; i++) {
+            const id = parseInt(cbs[i].dataset.id);
+            showLoading(`打包中 ${i+1}/${cbs.length}`);
+            zip.file(`Slide_${id}.jpg`, await getHQBlob(id));
+        }
+        const content = await zip.generateAsync({type: "blob"});
+        saveAs(content, "Slides.zip");
+        hideLoading();
+        document.getElementById('export-modal').classList.add('hidden');
+    };
+
+    document.getElementById('btn-reset').onclick = () => location.reload();
+
+    /** --- 4. 線上考試系統核心邏輯 --- **/
+    async function fetchConfig() {
+        try {
+            showLoading("載入系統設定...");
+            const res = await fetch(`${GAS_EXAM_URL}?action=getConfig`);
+            configData = await res.json();
+            const clsSelect = document.getElementById('select-class');
+            clsSelect.innerHTML = '<option value="">選擇班級</option>';
+            configData.classes.forEach(c => clsSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            showExamView('view-admin');
+            hideLoading();
+        } catch (e) { console.error(e); }
+    }
+
+    function updateUnitDropdown() {
+        const cls = document.getElementById('select-class').value;
+        const untSelect = document.getElementById('select-unit');
+        untSelect.innerHTML = '<option value="">選擇單元</option>';
+        if (configData.units[cls]) {
+            configData.units[cls].forEach(u => untSelect.innerHTML += `<option value="${u}">${u}</option>`);
+        }
+    }
+
+    async function handleUpload() {
+        const fileInput = document.getElementById('upload-file');
+        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔");
+        const reader = new FileReader();
+        showLoading("上傳中...");
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            const dataRows = rows.slice(1).filter(r => r.length > 0);
+            const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", rows: dataRows }) });
+            const result = await res.json();
+            alert(result.message);
+            location.reload();
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
+    }
+
+    function generateQRCode() {
+        const c = document.getElementById('select-class').value;
+        const u = document.getElementById('select-unit').value;
+        if (!c || !u) return alert("請選擇班級與單元");
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}`;
+        document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(examUrl)}`;
+        document.getElementById('qr-container').classList.remove('hidden');
+    }
+
+    async function downloadResults() {
+        const c = document.getElementById('select-class').value;
+        const u = document.getElementById('select-unit').value;
+        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
+        const data = await res.json();
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Results");
+        XLSX.writeFile(wb, `${c}_${u}_成績.xlsx`);
+    }
+
+    async function studentLogin() {
+        const pin = document.getElementById('pin-input').value.trim();
+        showLoading("驗證中...");
+        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class }) });
+        const data = await res.json();
+        hideLoading();
+        if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
+    }
+
+    async function startQuiz() {
+        showExamView('view-quiz');
+        showLoading("下載試卷...");
+        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
+        quizData = await res.json();
+        hideLoading();
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = quizData[currentIdx];
+        document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
+        document.getElementById('question-text').innerText = q.question;
+        const box = document.getElementById('options-box');
+        box.innerHTML = "";
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
+        q.options.forEach((text, i) => {
+            if(!text) return;
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = text;
+            btn.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                userAnswers[currentIdx] = { question: q.question, userAns: i+1, correctAns: q.correct };
+                if (currentIdx < quizData.length - 1) document.getElementById('btn-next').classList.remove('hidden');
+                else document.getElementById('btn-submit').classList.remove('hidden');
+            };
+            box.appendChild(btn);
+        });
+    }
+
+    function nextQuestion() { currentIdx++; renderQuestion(); }
+
+    async function submitExam() {
+        showLoading("提交試卷中...");
+        const res = await fetch(GAS_EXAM_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "submitExam", name: studentInfo.name, className: studentInfo.className, unit: currentExam.unit, answers: userAnswers })
+        });
+        const result = await res.json();
+        hideLoading();
+        showExamView('view-result');
+        document.getElementById('result-stat').innerText = `您的得分：${result.score}`;
+    }
+
+    function showExamView(viewId) {
+        ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    /** --- 輔助函式 --- **/
+    function showLoading(txt) { document.getElementById('loading-text').innerText = txt; document.getElementById('loading-overlay').classList.remove('hidden'); }
+    function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
+
+    // 初始化授權
+    initAuth();
+</script>
+
+</body>
+</html>
