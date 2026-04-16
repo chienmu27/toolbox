@@ -13,56 +13,56 @@
         button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; }
         button:disabled { background: #ccc; }
         .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; font-weight: normal; }
-        .option-btn:hover { border-color: var(--primary); }
         .option-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
-        #qr-container img { margin-top: 20px; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
+        #qr-container img { margin-top: 20px; border: 5px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
         .progress { color: #666; font-size: 0.9rem; margin-bottom: 10px; }
-        h2, h3 { color: #2d3436; }
+        #question-text { font-size: 1.25rem; line-height: 1.4; margin-bottom: 20px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <!-- 管理者設定區 -->
+    <!-- 1. 管理者設定區 -->
     <div id="view-admin" class="hidden">
-        <h2>管理者設定考試</h2>
-        <select id="select-class" onchange="updateUnitDropdown()"><option>載入班級中...</option></select>
+        <h2>建立考試 QR-Code</h2>
+        <select id="select-class" onchange="updateUnitDropdown()"><option>載入中...</option></select>
         <select id="select-unit"><option>請先選擇班級</option></select>
-        <button id="btn-gen-qr" onclick="generateQRCode()">生成考試 QR-Code</button>
+        <button onclick="generateQRCode()">生成 QR-Code</button>
         <div id="qr-container" class="hidden">
             <img id="qr-image" src="" alt="QR Code">
-            <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">請學生掃描進入測驗</p>
+            <p style="color: #666; font-size: 0.85rem;">請答題者掃描進入考試</p>
         </div>
     </div>
 
-    <!-- 學生登入區 -->
+    <!-- 2. 學生登入區 -->
     <div id="view-student-login" class="hidden">
-        <h2 id="exam-title">載入考試資訊...</h2>
-        <p id="exam-subtitle" style="color:#666;"></p>
-        <input type="text" id="pin-input" placeholder="請輸入您的 PIN 碼" inputmode="numeric">
-        <button id="btn-login" onclick="studentLogin()">驗證身分並開始測驗</button>
+        <h2 id="exam-title">考試載入中...</h2>
+        <p>請輸入您的 PIN 碼</p>
+        <input type="text" id="pin-input" placeholder="例如: 1234" inputmode="numeric">
+        <button id="btn-login" onclick="studentLogin()">進入測驗</button>
     </div>
 
-    <!-- 測驗進行區 -->
+    <!-- 3. 測驗進行區 -->
     <div id="view-quiz" class="hidden">
         <div class="progress" id="quiz-progress"></div>
-        <h3 id="question-text">題目載入中...</h3>
+        <div id="question-text"></div>
         <div id="options-box"></div>
         <button id="btn-next" class="hidden" onclick="nextQuestion()">下一題</button>
         <button id="btn-submit" class="hidden" onclick="submitExam()" style="background: var(--success);">提交試卷</button>
     </div>
 
-    <!-- 結果區 -->
+    <!-- 4. 結果區 -->
     <div id="view-result" class="hidden">
         <h2 style="color: var(--success);">測驗結束</h2>
-        <div id="result-stat" style="font-size: 1.5rem; margin: 20px 0;"></div>
+        <div id="result-stat" style="font-size: 2rem; font-weight: bold; margin: 20px 0;"></div>
         <button onclick="location.href='https://chienmu27.github.io/toolbox/repository/'">回首頁</button>
     </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // 務必更換此處
-    const BASE_URL = "https://chienmu27.github.io/toolbox/repository/";
+    // 請務必修改此處為您的 GAS 部署網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec";
+    const APP_URL = "https://chienmu27.github.io/toolbox/repository/";
     
     let configData = {}; 
     let currentExam = { class: "", unit: "" };
@@ -77,32 +77,31 @@
         const u = params.get('u');
 
         if (c && u) {
-            currentExam = { class: decodeURIComponent(c).trim(), unit: decodeURIComponent(u).trim() };
+            // 掃碼進入模式
+            currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u) };
             showView('view-student-login');
-            document.getElementById('exam-title').innerText = currentExam.unit;
-            document.getElementById('exam-subtitle').innerText = `受測班級：${currentExam.class}`;
+            document.getElementById('exam-title').innerText = `${currentExam.class} - ${currentExam.unit}`;
         } else {
+            // 管理者模式
             showView('view-admin');
             fetchConfig();
         }
     };
 
     async function fetchConfig() {
-        try {
-            const res = await fetch(`${GAS_URL}?action=getConfig`);
-            configData = await res.json();
-            const clsSelect = document.getElementById('select-class');
-            clsSelect.innerHTML = '<option value="">請選擇班級</option>';
-            configData.classes.forEach(c => {
-                clsSelect.innerHTML += `<option value="${c}">${c}</option>`;
-            });
-        } catch(e) { alert("無法取得資料，請檢查 GAS 部署是否正確。"); }
+        const res = await fetch(`${GAS_URL}?action=getConfig`);
+        configData = await res.json();
+        const clsSelect = document.getElementById('select-class');
+        clsSelect.innerHTML = '<option value="">選擇班級</option>';
+        configData.classes.forEach(c => {
+            clsSelect.innerHTML += `<option value="${c}">${c}</option>`;
+        });
     }
 
     function updateUnitDropdown() {
         const cls = document.getElementById('select-class').value;
         const untSelect = document.getElementById('select-unit');
-        untSelect.innerHTML = '<option value="">請選擇單元</option>';
+        untSelect.innerHTML = '<option value="">選擇單元</option>';
         if (configData.units[cls]) {
             configData.units[cls].forEach(u => {
                 untSelect.innerHTML += `<option value="${u}">${u}</option>`;
@@ -115,8 +114,9 @@
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇班級與單元");
         
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c.trim())}&u=${encodeURIComponent(u.trim())}`;
-        document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(examUrl)}`;
+        const examUrl = `${APP_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}`;
+        const qrImg = document.getElementById('qr-image');
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
@@ -124,7 +124,10 @@
         const pin = document.getElementById('pin-input').value.trim();
         if (!pin) return alert("請輸入 PIN 碼");
 
-        setBtnLoading('btn-login', true);
+        const btn = document.getElementById('btn-login');
+        btn.disabled = true;
+        btn.innerText = "驗證中...";
+
         try {
             const res = await fetch(GAS_URL, {
                 method: "POST",
@@ -136,9 +139,13 @@
                 startQuiz();
             } else {
                 alert(data.message);
+                btn.disabled = false;
+                btn.innerText = "進入測驗";
             }
-        } catch(e) { alert("登入時發生錯誤"); }
-        setBtnLoading('btn-login', false);
+        } catch (e) {
+            alert("系統連線失敗，請檢查網路");
+            btn.disabled = false;
+        }
     }
 
     async function startQuiz() {
@@ -149,7 +156,7 @@
         });
         quizData = await res.json();
         if(quizData.length === 0) {
-            alert("此單元目前沒有題目！");
+            alert("此單元目前沒有題目。");
             location.reload();
             return;
         }
@@ -166,9 +173,10 @@
         document.getElementById('btn-submit').classList.add('hidden');
 
         q.options.forEach((text, i) => {
+            if (!text) return; // 忽略空白選項
             const btn = document.createElement('button');
             btn.className = 'option-btn';
-            btn.innerText = `${String.fromCharCode(65+i)}. ${text}`; // 顯示 A, B, C, D
+            btn.innerText = `${String.fromCharCode(65 + i)}. ${text}`; // A, B, C, D
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -186,9 +194,8 @@
     }
 
     async function submitExam() {
-        if(!confirm("確定要交卷嗎？")) return;
         showView('view-quiz');
-        document.getElementById('view-quiz').innerHTML = "<h3>正在計算成績並儲存...</h3>";
+        document.getElementById('view-quiz').innerHTML = "<h3>正在計算分數並儲存...</h3>";
         
         const res = await fetch(GAS_URL, {
             method: "POST",
@@ -202,7 +209,7 @@
         });
         const result = await res.json();
         showView('view-result');
-        document.getElementById('result-stat').innerText = `您的得分：${result.score}`;
+        document.getElementById('result-stat').innerText = result.score;
     }
 
     function showView(viewId) {
@@ -210,12 +217,6 @@
             document.getElementById(id).classList.add('hidden');
         });
         document.getElementById(viewId).classList.remove('hidden');
-    }
-
-    function setBtnLoading(id, isLoading) {
-        const btn = document.getElementById(id);
-        btn.disabled = isLoading;
-        btn.innerText = isLoading ? "處理中..." : (id === 'btn-login' ? "驗證身分並開始測驗" : btn.innerText);
     }
 </script>
 </body>
