@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>線上考試系統</title>
+    <!-- 引入 XLSX 函式庫 -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #6c5ce7; --success: #00b894; --bg: #f0f2f5; }
+        :root { --primary: #6c5ce7; --success: #00b894; --download: #0984e3; --bg: #f0f2f5; }
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
         .hidden { display: none; }
         select, input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
-        .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; transition: 0.2s; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; transition: 0.3s; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-download { background: var(--download); margin-top: 5px; }
+        .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; }
         .option-btn:hover { border-color: var(--primary); background: #f9f9ff; }
         .option-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
         #qr-container img { margin-top: 20px; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
@@ -28,6 +32,7 @@
         <select id="select-class" onchange="updateUnitDropdown()"><option>載入中...</option></select>
         <select id="select-unit"><option>請先選擇班級</option></select>
         <button onclick="generateQRCode()">生成考試 QR-Code</button>
+        <button class="btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
         <div id="qr-container" class="hidden">
             <img id="qr-image" src="" alt="QR Code">
             <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">請掃描 QR-Code 開始考試</p>
@@ -42,7 +47,7 @@
         <button onclick="studentLogin()">進入測驗</button>
     </div>
 
-    <!-- 3. 測驗進行區 (Quizizz 風格) -->
+    <!-- 3. 測驗進行區 -->
     <div id="view-quiz" class="hidden">
         <div class="progress" id="quiz-progress"></div>
         <div id="question-text"></div>
@@ -95,7 +100,7 @@
                 clsSelect.innerHTML += `<option value="${c}">${c}</option>`;
             });
         } catch (e) {
-            alert("無法連線至後端系統，請檢查 GAS 部署。");
+            alert("無法連線至後端系統。");
         }
     }
 
@@ -114,42 +119,65 @@
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇班級與單元");
-        
-        // 加入 &openExternalBrowser=1 參數
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&openExternalBrowser=1`;
         const qrImg = document.getElementById('qr-image');
         qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
-    async function studentLogin() {
-        const pin = document.getElementById('pin-input').value.trim();
-        if (!pin) return alert("請輸入 PIN 碼");
+    // 下載 Excel 功能
+    async function downloadResults() {
+        const c = document.getElementById('select-class').value;
+        const u = document.getElementById('select-unit').value;
+        if (!c || !u) return alert("請選擇班級與單元");
 
-        const btn = document.querySelector('#view-student-login button');
+        const btn = document.querySelector('.btn-download');
         btn.disabled = true;
-        btn.innerText = "驗證中...";
+        btn.innerText = "讀取資料中...";
 
         try {
             const res = await fetch(GAS_URL, {
                 method: "POST",
-                body: JSON.stringify({ 
-                    action: "login", 
-                    pin: pin, 
-                    targetClass: currentExam.class 
-                })
+                body: JSON.stringify({ action: "getResults", className: c, unit: u })
             });
             const data = await res.json();
-            if (data.success) {
-                studentInfo = data;
-                startQuiz();
+
+            if (data.length === 0) {
+                alert("查無成績資料");
             } else {
-                alert(data.message);
-                btn.disabled = false;
-                btn.innerText = "進入測驗";
+                // 使用 SheetJS 生成 Excel
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "成績結果");
+                
+                // 下載檔案
+                const fileName = `${c}_${u}_成績統計.xlsx`;
+                XLSX.writeFile(workbook, fileName);
             }
         } catch (e) {
-            alert("登入連線發生錯誤");
+            alert("下載失敗");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "下載成績資料 (Excel)";
+        }
+    }
+
+    async function studentLogin() {
+        const pin = document.getElementById('pin-input').value.trim();
+        if (!pin) return alert("請輸入 PIN 碼");
+        const btn = document.querySelector('#view-student-login button');
+        btn.disabled = true;
+
+        const res = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class })
+        });
+        const data = await res.json();
+        if (data.success) {
+            studentInfo = data;
+            startQuiz();
+        } else {
+            alert(data.message);
             btn.disabled = false;
         }
     }
@@ -174,23 +202,16 @@
         document.getElementById('btn-submit').classList.add('hidden');
 
         q.options.forEach((text, i) => {
-            if(!text) return; // 略過空白選項
+            if(!text) return;
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerText = text;
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
-                userAnswers[currentIdx] = { 
-                    question: q.question, 
-                    userAns: i+1, 
-                    correctAns: q.correct 
-                };
-                if (currentIdx < quizData.length - 1) {
-                    document.getElementById('btn-next').classList.remove('hidden');
-                } else {
-                    document.getElementById('btn-submit').classList.remove('hidden');
-                }
+                userAnswers[currentIdx] = { question: q.question, userAns: i+1, correctAns: q.correct };
+                if (currentIdx < quizData.length - 1) document.getElementById('btn-next').classList.remove('hidden');
+                else document.getElementById('btn-submit').classList.remove('hidden');
             };
             box.appendChild(btn);
         });
@@ -202,7 +223,7 @@
     }
 
     async function submitExam() {
-        document.getElementById('view-quiz').innerHTML = "<h3>正在提交並計算成績...</h3>";
+        document.getElementById('view-quiz').innerHTML = "<h3>正在提交...</h3>";
         const res = await fetch(GAS_URL, {
             method: "POST",
             body: JSON.stringify({
