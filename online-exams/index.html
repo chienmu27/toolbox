@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上考試系統 - 授權版</title>
+    <title>線上考試系統 - 授權管理版</title>
     
     <!-- 引入外部資源 -->
     <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +16,7 @@
     <style>
         :root { 
             --primary-color: #46178f; 
-            --bg-color: #f2f2f2;
+            --bg-color: #f2f2f5;
             --exam-primary: #6c5ce7;
             --exam-success: #00b894;
             --exam-download: #0984e3;
@@ -33,25 +34,32 @@
             padding: 20px 0; 
         }
 
-        /* 響應式容器寬度設定 */
+        /* 調整容器寬度：電腦版 50%，手機版自動調整 */
         .container { 
             background: white; 
             padding: 2rem; 
             border-radius: 12px; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
-            width: 95%; /* 手機預設寬度 */
-            max-width: 1200px; 
+            width: 95%; 
+            max-width: 50%; /* 電腦版寬度 */
             position: relative; 
             min-height: 500px;
         }
 
-        /* 桌面版寬度為 60% */
-        @media (min-width: 768px) {
-            .container {
-                width: 60%;
+        @media (max-width: 1024px) {
+            .container { max-width: 80%; }
+        }
+
+        @media (max-width: 768px) {
+            .container { 
+                max-width: 100%; 
+                width: 100%;
+                border-radius: 0;
+                padding: 1.5rem;
             }
         }
 
+        /* 導覽列樣式 */
         .nav-header {
             display: flex;
             align-items: center;
@@ -61,7 +69,7 @@
             padding-bottom: 15px;
         }
 
-        .tab-title {
+        .sys-title {
             font-size: 1.25rem;
             font-weight: bold;
             color: var(--primary-color);
@@ -73,13 +81,11 @@
             background-color: #fff; 
             color: #d9534f; 
             border: 1px solid #d9534f; 
-            padding: 8px 16px; 
+            padding: 6px 12px; 
             font-size: 0.85rem; 
             border-radius: 4px; 
             cursor: pointer; 
-            transition: 0.2s;
         }
-        .logout-btn:hover { background-color: #fdf7f7; }
 
         /* 驗證遮罩層 */
         #authOverlay { 
@@ -95,38 +101,28 @@
             align-items: center; 
             text-align: center; 
             padding: 20px; 
-            box-sizing: border-box; 
         }
 
-        .form-group { margin-bottom: 1.2rem; text-align: left; width: 100%; max-width: 400px; }
-        .input-field { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        
         .main-btn { 
             width: 100%; padding: 12px; 
             background-color: var(--primary-color); 
             color: white; border: none; border-radius: 6px; 
             font-size: 1.1rem; cursor: pointer; font-weight: bold; 
-            margin-top: 10px; 
+            max-width: 250px;
         }
 
-        /* 考試系統專用樣式 */
-        .exam-card { width: 100%; margin: 0 auto; text-align: center; }
+        /* 考試系統樣式整合 */
         .hidden { display: none !important; }
-        .exam-select, .exam-input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        .exam-button { background: var(--exam-primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; transition: 0.3s; }
-        .exam-button:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-download { background: var(--exam-download); margin-top: 5px; }
-        .btn-upload { background: var(--exam-upload); margin-top: 5px; }
+        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .exam-button { background: var(--exam-primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; }
+        .btn-upload { background: var(--exam-upload); }
+        .btn-download { background: var(--exam-download); }
         .admin-section { border-bottom: 2px dashed #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; }
-        .option-btn:hover { border-color: var(--exam-primary); background: #f9f9ff; }
+        .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; border-color: var(--exam-primary); }
-        #qr-container img { margin: 20px auto; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
-        .progress { color: #666; font-size: 0.9rem; margin-bottom: 10px; text-align: right; }
-        #question-text { font-size: 1.25rem; margin: 20px 0; line-height: 1.4; color: #2d3436; text-align: left; }
-
-        .loader { border-top-color: #3498db; animation: spinner 1.5s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #qr-container img { margin: 20px auto; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 180px; }
+        #question-text { font-size: 1.2rem; margin: 20px 0; text-align: left; line-height: 1.5; color: #333; }
+        .progress { color: #666; font-size: 0.9rem; text-align: right; margin-bottom: 10px; }
 
         .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
     </style>
@@ -134,98 +130,96 @@
 <body>
 
 <div class="container">
-    <!-- 身份驗證遮罩層 (僅管理者需要) -->
+    <!-- 身份驗證遮罩層 (僅管理端需要) -->
     <div id="authOverlay" class="hidden">
-        <h2 id="authMsg" class="text-xl font-bold mb-4">請先登入 Google 帳號以管理系統</h2>
-        <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
+        <h2 id="authMsg" class="text-xl font-bold mb-4">管理員請先登入 Google 帳號</h2>
+        <button id="authLoginBtn" class="main-btn">登入 Google</button>
         
-        <div id="applyForm" class="hidden" style="width:100%; max-width: 400px;">
-            <p class="mb-4">您的帳號尚未獲得授權，請填寫申請資料：</p>
-            <div class="form-group">
-                <label class="font-bold">您的 Google 信箱</label>
-                <input type="email" id="applyEmail" class="input-field" placeholder="example@gmail.com">
-            </div>
-            <div class="form-group">
-                <label class="font-bold">申請人姓名</label>
-                <input type="text" id="applyName" class="input-field" placeholder="請輸入姓名">
-            </div>
-            <button id="applyBtn" class="main-btn">送出申請</button>
+        <div id="applyForm" class="hidden w-full max-w-sm">
+            <p class="mb-4">您的帳號尚未獲得管理授權：</p>
+            <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
+            <input type="text" id="applyName" class="exam-input" placeholder="姓名">
+            <button id="applyBtn" class="main-btn mt-2">送出授權申請</button>
         </div>
     </div>
 
     <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
-        <div class="nav-header" id="adminHeader">
-            <div class="tab-title">線上考試系統 - 管理後台</div>
-            <button id="logoutBtn" class="logout-btn">登出帳號</button>
+        <div class="nav-header">
+            <div class="sys-title">線上考試系統</div>
+            <button id="logoutBtn" class="logout-btn hidden">登出管理員</button>
         </div>
 
         <div id="examView">
-            <div class="exam-card">
-                <!-- 1. 管理者設定區 -->
-                <div id="view-admin" class="hidden">
-                    <h2 class="text-2xl font-bold mb-4 text-gray-800">考試題庫管理</h2>
-                    <div class="admin-section">
-                        <label class="block text-left text-sm text-gray-600">上傳新題目 (Excel):</label>
-                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
-                        <button class="exam-button btn-upload" id="btn-do-upload" onclick="handleUpload()">上傳題目資料</button>
-                    </div>
-                    <div class="admin-section">
-                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
-                        <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
-                        <button class="exam-button" onclick="generateQRCode()">生成考試 QR-Code</button>
-                        <button class="exam-button btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
-                    </div>
-                    <div id="qr-container" class="hidden">
-                        <img id="qr-image" src="" alt="QR Code">
-                        <p class="text-sm text-gray-400 mt-2">提供給學生掃描即可直接進入考試</p>
-                    </div>
+            <!-- 1. 管理者設定區 -->
+            <div id="view-admin" class="hidden">
+                <h2 class="text-xl font-bold mb-4 text-center">考試後台管理</h2>
+                <div class="admin-section">
+                    <label class="text-sm text-gray-500">上傳題目 (Excel):</label>
+                    <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                    <button class="exam-button btn-upload" id="btn-do-upload" onclick="handleUpload()">上傳題目資料</button>
                 </div>
+                <div class="admin-section">
+                    <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                    <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
+                    <button class="exam-button" onclick="generateQRCode()">生成考試 QR-Code</button>
+                    <button class="exam-button btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
+                </div>
+                <div id="qr-container" class="hidden text-center">
+                    <img id="qr-image" src="" alt="QR Code">
+                    <p class="text-xs text-gray-400">請掃描 QR-Code 開始考試</p>
+                </div>
+            </div>
 
-                <!-- 2. 學生登入區 (掃碼後顯示) -->
-                <div id="view-student-login" class="hidden">
-                    <h2 id="exam-title" class="text-2xl font-bold mb-4">載入考試資訊...</h2>
-                    <input type="text" id="pin-input" placeholder="請輸入您的 PIN 碼" inputmode="numeric" class="exam-input">
-                    <button class="exam-button" onclick="studentLogin()">進入測驗</button>
+            <!-- 2. 學生登入區 -->
+            <div id="view-student-login" class="hidden">
+                <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800">載入考試資訊...</h2>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
+                    <input type="text" id="pin-input" placeholder="例如：1234" inputmode="numeric" class="exam-input text-center text-xl tracking-widest">
+                    <button class="exam-button mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
                 </div>
+            </div>
 
-                <!-- 3. 測驗進行區 -->
-                <div id="view-quiz" class="hidden">
-                    <div class="progress" id="quiz-progress"></div>
-                    <div id="question-text"></div>
-                    <div id="options-box"></div>
-                    <button id="btn-next" class="exam-button hidden" onclick="nextQuestion()">下一題</button>
-                    <button id="btn-submit" class="exam-button hidden" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
-                </div>
+            <!-- 3. 測驗進行區 -->
+            <div id="view-quiz" class="hidden">
+                <div class="progress" id="quiz-progress"></div>
+                <div id="question-text"></div>
+                <div id="options-box"></div>
+                <button id="btn-next" class="exam-button hidden py-4 text-lg" onclick="nextQuestion()">下一題</button>
+                <button id="btn-submit" class="exam-button hidden py-4 text-lg" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+            </div>
 
-                <!-- 4. 結果區 -->
-                <div id="view-result" class="hidden">
-                    <h2 class="text-2xl font-bold" style="color: var(--exam-success);">測驗結束</h2>
-                    <div id="result-stat" style="font-size: 1.5rem; margin: 20px 0;"></div>
-                    <button class="exam-button" onclick="location.reload()">返回首頁</button>
+            <!-- 4. 結果區 -->
+            <div id="view-result" class="hidden text-center">
+                <div class="mb-6">
+                    <svg class="w-20 h-20 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
+                <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
+                <div id="result-stat" class="text-4xl font-black my-6 text-gray-800"></div>
+                <button class="exam-button" onclick="location.href='https://chienmu27.github.io/toolbox/online-exams/'">返回系統</button>
             </div>
         </div>
 
         <div class="footer">
-            教學工具整合系統 © 2026 chienmu.tai 保留所有權利
+            線上考試系統 © 2026 chienmu.tai<br>
+            系統首頁：https://chienmu27.github.io/toolbox/online-exams/
         </div>
     </div>
 </div>
 
-<!-- 載入中動畫 -->
+<!-- 載入動畫 -->
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000]">
-    <div class="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-xs w-full">
-        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-100 h-16 w-16 mb-4 mx-auto"></div>
-        <p id="loading-text" class="text-gray-800 font-bold text-lg">正在處理...</p>
+    <div class="bg-white p-8 rounded-2xl text-center shadow-2xl">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div>
+        <p id="loading-text" class="text-gray-800 font-bold">處理中...</p>
     </div>
 </div>
 
 <script>
-    /** --- 核心配置 --- **/
     const GAS_AUTH_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec";
     const GAS_EXAM_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec";
-    const BASE_URL = window.location.href.split('?')[0];
+    const BASE_URL = "https://chienmu27.github.io/toolbox/online-exams/";
 
     let userUUID = "";
     let configData = {}; 
@@ -235,91 +229,65 @@
     let userAnswers = [];
     let studentInfo = {};
 
-    /** --- 身份驗證與初始化 --- **/
-    async function initAuth() {
+    /** --- 初始化與驗證邏輯 --- **/
+    async function initSystem() {
         const params = new URLSearchParams(window.location.search);
         const c = params.get('c');
         const u = params.get('u');
 
-        // 判斷是否為學生掃碼 (帶參數)
+        // 如果是掃碼進入(帶參數)，不需檢查 Google 驗證，直接進入學生模式
         if (c && u) {
-            // 學生模式：直接顯示，不需要 Puter 登入
-            document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            document.getElementById('adminHeader').classList.add('hidden'); // 隱藏登出按鈕
-            
             currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u) };
-            showExamView('view-student-login');
-            document.getElementById('exam-title').innerText = `${currentExam.class} - ${currentExam.unit}`;
-            return;
-        }
-
-        // 管理者模式：需要驗證
-        if (!puter.auth.isSignedIn()) {
+            showView('view-student-login');
+            document.getElementById('exam-title').innerText = `${currentExam.class}\n${currentExam.unit}`;
+        } else {
+            // 管理端模式：需要驗證
             document.getElementById('authOverlay').classList.remove('hidden');
-            return;
+            checkAdminAuth();
         }
-        
-        const user = await puter.auth.getUser();
-        userUUID = user.uuid; 
-        checkPermission(userUUID);
     }
 
-    async function checkPermission(uuid) {
-        document.getElementById('authOverlay').classList.remove('hidden');
+    async function checkAdminAuth() {
+        if (!puter.auth.isSignedIn()) {
+            document.getElementById('authLoginBtn').classList.remove('hidden');
+            return;
+        }
+        const user = await puter.auth.getUser();
+        userUUID = user.uuid;
         document.getElementById('authMsg').innerText = "驗證授權中...";
+        
         try {
             const resp = await fetch(GAS_AUTH_URL, {
                 method: "POST",
-                body: JSON.stringify({ action: "checkStatus", uuid: uuid })
+                body: JSON.stringify({ action: "checkStatus", uuid: userUUID })
             });
             const result = await resp.json();
             if (result.status === "Approved") {
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
-                fetchConfig(); // 載入管理者設定
-            } else if (result.status === "Pending") {
-                document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
-                document.getElementById('authLoginBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                fetchConfig(); // 載入管理選單
             } else {
-                document.getElementById('authMsg').innerText = "帳號尚未獲得授權";
+                document.getElementById('authMsg').innerText = "管理帳號尚未獲得授權";
                 document.getElementById('authLoginBtn').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { alert("連線錯誤"); }
     }
 
-    // 登入登出事件
-    document.getElementById('authLoginBtn').onclick = async () => { await puter.auth.signIn(); initAuth(); };
-    document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
-    
-    // 申請權限
-    document.getElementById('applyBtn').onclick = async () => {
-        const email = document.getElementById('applyEmail').value.trim();
-        const name = document.getElementById('applyName').value.trim();
-        if(!email || !name) return alert("請填寫完整資料");
-        try {
-            await fetch(GAS_AUTH_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
-            });
-            document.getElementById('authMsg').innerText = "申請已送出！請等待審核。";
-            document.getElementById('applyForm').classList.add('hidden');
-        } catch (e) { alert("提交失敗"); }
-    };
-
-    /** --- 考試系統邏輯 --- **/
+    /** --- 管理端功能 --- **/
     async function fetchConfig() {
+        showLoading("載入設定...");
         try {
-            showLoading("載入系統設定...");
             const res = await fetch(`${GAS_EXAM_URL}?action=getConfig`);
             configData = await res.json();
             const clsSelect = document.getElementById('select-class');
             clsSelect.innerHTML = '<option value="">選擇班級</option>';
             configData.classes.forEach(c => clsSelect.innerHTML += `<option value="${c}">${c}</option>`);
-            showExamView('view-admin');
-            hideLoading();
+            showView('view-admin');
         } catch (e) { console.error(e); }
+        hideLoading();
     }
 
     function updateUnitDropdown() {
@@ -353,8 +321,8 @@
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇班級與單元");
-        // 生成包含參數的 URL，學生掃碼後自動進入該單元
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}`;
+        // 加上 openExternalBrowser=1 保留預設瀏覽器開啟設定
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&openExternalBrowser=1`;
         document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-container').classList.remove('hidden');
     }
@@ -362,22 +330,22 @@
     async function downloadResults() {
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
-        if (!c || !u) return alert("請選擇班級與單元");
-        showLoading("獲取成績中...");
+        if (!c || !u) return alert("請選擇要下載的範圍");
+        showLoading("獲取資料...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
         const data = await res.json();
-        hideLoading();
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Results");
+        XLSX.utils.book_append_sheet(wb, ws, "成績單");
         XLSX.writeFile(wb, `${c}_${u}_成績.xlsx`);
+        hideLoading();
     }
 
-    /** --- 學生答題流程 --- **/
+    /** --- 學生端測驗功能 --- **/
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
         if (!pin) return alert("請輸入 PIN 碼");
-        showLoading("正在進入...");
+        showLoading("驗證 PIN 碼...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class }) });
         const data = await res.json();
         hideLoading();
@@ -388,8 +356,8 @@
     }
 
     async function startQuiz() {
-        showExamView('view-quiz');
-        showLoading("下載試卷...");
+        showView('view-quiz');
+        showLoading("載入試卷中...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
         quizData = await res.json();
         hideLoading();
@@ -398,7 +366,7 @@
 
     function renderQuestion() {
         const q = quizData[currentIdx];
-        document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
+        document.getElementById('quiz-progress').innerText = `進度: ${currentIdx + 1} / ${quizData.length}`;
         document.getElementById('question-text').innerText = q.question;
         const box = document.getElementById('options-box');
         box.innerHTML = "";
@@ -407,7 +375,7 @@
         q.options.forEach((text, i) => {
             if(!text) return;
             const btn = document.createElement('button');
-            btn.className = 'option-btn';
+            btn.className = 'option-btn font-medium';
             btn.innerText = text;
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
@@ -423,28 +391,45 @@
     function nextQuestion() { currentIdx++; renderQuestion(); }
 
     async function submitExam() {
-        showLoading("提交中...");
+        showLoading("正在提交試卷...");
         const res = await fetch(GAS_EXAM_URL, {
             method: "POST",
-            body: JSON.stringify({ action: "submitExam", name: studentInfo.name, className: studentInfo.className, unit: currentExam.unit, answers: userAnswers })
+            body: JSON.stringify({ 
+                action: "submitExam", 
+                name: studentInfo.name, 
+                className: studentInfo.className, 
+                unit: currentExam.unit, 
+                answers: userAnswers 
+            })
         });
         const result = await res.json();
         hideLoading();
-        showExamView('view-result');
-        document.getElementById('result-stat').innerText = `您的得分：${result.score}`;
+        showView('view-result');
+        document.getElementById('result-stat').innerText = `得分：${result.score}`;
     }
 
-    /** --- 通用工具 --- **/
-    function showExamView(viewId) {
-        ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(id => document.getElementById(id).classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
+    /** --- 通用功能 --- **/
+    function showView(id) {
+        ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     }
 
     function showLoading(txt) { document.getElementById('loading-text').innerText = txt; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
 
-    // 啟動授權
-    initAuth();
+    // 授權按鈕事件
+    document.getElementById('authLoginBtn').onclick = async () => { await puter.auth.signIn(); checkAdminAuth(); };
+    document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
+    document.getElementById('applyBtn').onclick = async () => {
+        const email = document.getElementById('applyEmail').value.trim();
+        const name = document.getElementById('applyName').value.trim();
+        if(!email || !name) return alert("請填寫完整");
+        await fetch(GAS_AUTH_URL, { method: "POST", body: JSON.stringify({ action: "apply", uuid: userUUID, email, name }) });
+        alert("申請已送出");
+    };
+
+    // 啟動系統
+    initSystem();
 </script>
 
 </body>
