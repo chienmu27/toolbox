@@ -34,7 +34,7 @@
             padding: 20px 0; 
         }
 
-        /* 調整容器寬度：電腦版 50%，手機版 100% */
+        /* 容器寬度：電腦版 50%，手機版 100% */
         .container { 
             background: white; 
             padding: 2rem; 
@@ -46,18 +46,8 @@
             min-height: 500px;
         }
 
-        @media (max-width: 1024px) {
-            .container { max-width: 80%; }
-        }
-
-        @media (max-width: 768px) {
-            .container { 
-                max-width: 100%; 
-                width: 100%;
-                border-radius: 0;
-                padding: 1.25rem;
-            }
-        }
+        @media (max-width: 1024px) { .container { max-width: 80%; } }
+        @media (max-width: 768px) { .container { max-width: 100%; width: 100%; border-radius: 0; padding: 1.25rem; } }
 
         .nav-header {
             display: flex;
@@ -93,7 +83,14 @@
         .admin-section { border-bottom: 2px dashed #eee; padding-bottom: 20px; margin-bottom: 20px; }
         .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; border-color: var(--exam-primary); }
-        #qr-container img { margin: 20px auto; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 180px; }
+        
+        /* QR Code 樣式與放大手勢 */
+        #qr-container img { margin: 20px auto; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 180px; cursor: zoom-in; }
+        
+        /* QR Code 放大彈窗 */
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+        #qr-modal img { width: 90%; max-width: 500px; border: 15px solid white; border-radius: 10px; cursor: zoom-out; }
+
         #question-text { font-size: 1.2rem; margin: 20px 0; text-align: left; line-height: 1.5; color: #333; }
         .progress { color: #666; font-size: 0.9rem; text-align: right; margin-bottom: 10px; }
 
@@ -103,7 +100,7 @@
 <body>
 
 <div class="container">
-    <!-- 管理員驗證 -->
+    <!-- 管理員驗證遮罩 -->
     <div id="authOverlay" class="hidden">
         <h2 id="authMsg" class="text-xl font-bold mb-4">管理員請先登入 Google 帳號</h2>
         <button id="authLoginBtn" class="main-btn">登入 Google</button>
@@ -142,8 +139,8 @@
                     </div>
                 </div>
                 <div id="qr-container" class="hidden text-center">
-                    <img id="qr-image" src="" alt="QR Code">
-                    <p class="text-xs text-gray-400">請掃描 QR-Code 開始考試</p>
+                    <img id="qr-image" src="" alt="QR Code" onclick="toggleQRModal(true)">
+                    <p class="text-xs text-gray-400">點擊圖片可放大掃描</p>
                 </div>
             </div>
 
@@ -184,6 +181,12 @@
     </div>
 </div>
 
+<!-- QR Code 放大視窗 -->
+<div id="qr-modal" onclick="toggleQRModal(false)">
+    <img id="qr-image-large" src="" alt="Large QR">
+    <p class="text-white mt-4 font-bold">點擊任何地方關閉</p>
+</div>
+
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000]">
     <div class="bg-white p-8 rounded-2xl text-center shadow-2xl">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div>
@@ -204,6 +207,7 @@
     let userAnswers = [];
     let studentInfo = {};
 
+    /** --- 初始化與驗證邏輯 --- **/
     async function initSystem() {
         const params = new URLSearchParams(window.location.search);
         const c = params.get('c');
@@ -244,14 +248,19 @@
         } catch (e) { alert("連線錯誤"); }
     }
 
+    /** --- 後台管理邏輯 (已優化: 不重刷頁面) --- **/
     async function fetchConfig() {
-        showLoading("載入設定...");
+        showLoading("載入選單中...");
         try {
             const res = await fetch(`${GAS_EXAM_URL}?action=getConfig`);
             configData = await res.json();
             const clsSelect = document.getElementById('select-class');
             clsSelect.innerHTML = '<option value="">選擇班級</option>';
             configData.classes.forEach(c => clsSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            
+            // 重置單元選單與 QR Container
+            document.getElementById('select-unit').innerHTML = '<option value="">請先選擇班級</option>';
+            document.getElementById('qr-container').classList.add('hidden');
             showView('view-admin');
         } catch (e) { console.error(e); }
         hideLoading();
@@ -264,13 +273,14 @@
         if (configData.units[cls]) {
             configData.units[cls].forEach(u => untSelect.innerHTML += `<option value="${u}">${u}</option>`);
         }
+        document.getElementById('qr-container').classList.add('hidden');
     }
 
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         if (fileInput.files.length === 0) return alert("請選擇 Excel 檔");
         const reader = new FileReader();
-        showLoading("上傳題目並排序中...");
+        showLoading("上傳題目並重新排序...");
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -279,7 +289,8 @@
             const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", rows: dataRows }) });
             const result = await res.json();
             alert(result.message);
-            location.reload();
+            fileInput.value = ""; // 清空檔案選擇
+            fetchConfig(); // 局部刷新選單
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -289,7 +300,7 @@
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請先選擇班級與單元");
 
-        if (confirm(`確定要刪除「${c} - ${u}」的所有題目資料嗎？\n此動作無法還原！`)) {
+        if (confirm(`確定要刪除「${c} - ${u}」的所有題目資料嗎？\n此動作將自動重新排序！`)) {
             showLoading("正在刪除並重新排序...");
             try {
                 const res = await fetch(GAS_EXAM_URL, {
@@ -298,28 +309,34 @@
                 });
                 const result = await res.json();
                 alert(result.message);
-                if (result.success) location.reload();
-            } catch (e) {
-                alert("刪除失敗");
-            }
+                fetchConfig(); // 局部刷新選單
+            } catch (e) { alert("刪除失敗"); }
             hideLoading();
         }
     }
 
+    /** --- QR Code 功能 --- **/
     function generateQRCode() {
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇班級與單元");
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&openExternalBrowser=1`;
-        document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(examUrl)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
+        document.getElementById('qr-image').src = qrUrl;
+        document.getElementById('qr-image-large').src = qrUrl;
         document.getElementById('qr-container').classList.remove('hidden');
+    }
+
+    function toggleQRModal(show) {
+        const modal = document.getElementById('qr-modal');
+        modal.style.display = show ? 'flex' : 'none';
     }
 
     async function downloadResults() {
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇單元");
-        showLoading("獲取資料...");
+        showLoading("獲取成績...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
         const data = await res.json();
         const ws = XLSX.utils.json_to_sheet(data);
@@ -329,6 +346,7 @@
         hideLoading();
     }
 
+    /** --- 學生測驗與通用功能 --- **/
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
         if (!pin) return alert("請輸入 PIN 碼");
@@ -341,7 +359,7 @@
 
     async function startQuiz() {
         showView('view-quiz');
-        showLoading("載入試卷...");
+        showLoading("下載題目...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
         quizData = await res.json();
         hideLoading();
@@ -350,7 +368,7 @@
 
     function renderQuestion() {
         const q = quizData[currentIdx];
-        document.getElementById('quiz-progress').innerText = `進度: ${currentIdx + 1} / ${quizData.length}`;
+        document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
         document.getElementById('question-text').innerText = q.question;
         const box = document.getElementById('options-box');
         box.innerHTML = "";
@@ -375,7 +393,7 @@
     function nextQuestion() { currentIdx++; renderQuestion(); }
 
     async function submitExam() {
-        showLoading("提交中...");
+        showLoading("提交試卷...");
         const res = await fetch(GAS_EXAM_URL, {
             method: "POST",
             body: JSON.stringify({ action: "submitExam", name: studentInfo.name, className: studentInfo.className, unit: currentExam.unit, answers: userAnswers })
