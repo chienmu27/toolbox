@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>線上考試系統</title>
-    <!-- 引入 XLSX 函式庫 -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --primary: #6c5ce7; --success: #00b894; --download: #0984e3; --bg: #f0f2f5; }
+        :root { --primary: #6c5ce7; --success: #00b894; --download: #0984e3; --upload: #e17055; --bg: #f0f2f5; }
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
         .hidden { display: none; }
@@ -15,12 +14,15 @@
         button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; transition: 0.3s; }
         button:disabled { background: #ccc; cursor: not-allowed; }
         .btn-download { background: var(--download); margin-top: 5px; }
+        .btn-upload { background: var(--upload); margin-top: 5px; }
+        .admin-section { border-bottom: 2px dashed #eee; padding-bottom: 20px; margin-bottom: 20px; }
         .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; font-size: 16px; }
         .option-btn:hover { border-color: var(--primary); background: #f9f9ff; }
         .option-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
         #qr-container img { margin-top: 20px; border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 200px; height: 200px; }
         .progress { color: #666; font-size: 0.9rem; margin-bottom: 10px; text-align: right; }
         #question-text { font-size: 1.25rem; margin: 20px 0; line-height: 1.4; color: #2d3436; }
+        .file-label { display: block; text-align: left; font-size: 0.85rem; color: #666; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -28,11 +30,23 @@
 <div class="card">
     <!-- 1. 管理者設定區 -->
     <div id="view-admin" class="hidden">
-        <h2>管理者設定考試</h2>
-        <select id="select-class" onchange="updateUnitDropdown()"><option>載入中...</option></select>
-        <select id="select-unit"><option>請先選擇班級</option></select>
-        <button onclick="generateQRCode()">生成考試 QR-Code</button>
-        <button class="btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
+        <h2>管理者設定</h2>
+        
+        <!-- 上傳功能 -->
+        <div class="admin-section">
+            <span class="file-label">上傳新題目 (Excel):</span>
+            <input type="file" id="upload-file" accept=".xlsx, .xls">
+            <button class="btn-upload" id="btn-do-upload" onclick="handleUpload()">上傳題目資料</button>
+        </div>
+
+        <!-- 下載與 QR 生成 -->
+        <div class="admin-section">
+            <select id="select-class" onchange="updateUnitDropdown()"><option>載入中...</option></select>
+            <select id="select-unit"><option>請先選擇班級</option></select>
+            <button onclick="generateQRCode()">生成考試 QR-Code</button>
+            <button class="btn-download" onclick="downloadResults()">下載成績資料 (Excel)</button>
+        </div>
+
         <div id="qr-container" class="hidden">
             <img id="qr-image" src="" alt="QR Code">
             <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">請掃描 QR-Code 開始考試</p>
@@ -42,8 +56,7 @@
     <!-- 2. 學生登入區 -->
     <div id="view-student-login" class="hidden">
         <h2 id="exam-title">載入考試資訊...</h2>
-        <p>請輸入您的 PIN 碼進入測驗</p>
-        <input type="text" id="pin-input" placeholder="例如: 1234" inputmode="numeric">
+        <input type="text" id="pin-input" placeholder="請輸入您的 PIN 碼" inputmode="numeric">
         <button onclick="studentLogin()">進入測驗</button>
     </div>
 
@@ -65,7 +78,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // <--- 請填入 GAS 部署網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; 
     const BASE_URL = "https://chienmu27.github.io/toolbox/repository/";
     
     let configData = {}; 
@@ -99,9 +112,7 @@
             configData.classes.forEach(c => {
                 clsSelect.innerHTML += `<option value="${c}">${c}</option>`;
             });
-        } catch (e) {
-            alert("無法連線至後端系統。");
-        }
+        } catch (e) { console.error(e); }
     }
 
     function updateUnitDropdown() {
@@ -115,6 +126,59 @@
         }
     }
 
+    // --- 新增：處理 Excel 上傳題目 ---
+    function handleUpload() {
+        const fileInput = document.getElementById('upload-file');
+        if (fileInput.files.length === 0) return alert("請先選擇 Excel 檔案");
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        const btn = document.getElementById('btn-do-upload');
+
+        btn.disabled = true;
+        btn.innerText = "處理中...";
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // 將 Excel 轉為陣列 (包含標題)
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            // 移除第一列標題列，保留資料列
+            const dataRows = rows.slice(1).filter(r => r.length > 0);
+
+            if (dataRows.length === 0) {
+                alert("檔案中無有效資料");
+                btn.disabled = false;
+                btn.innerText = "上傳題目資料";
+                return;
+            }
+
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "uploadQuestions", rows: dataRows })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(result.message);
+                    location.reload(); // 重新載入以更新選單
+                } else {
+                    alert("上傳失敗：" + result.message);
+                }
+            } catch (err) {
+                alert("連線錯誤");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "上傳題目資料";
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
     function generateQRCode() {
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
@@ -125,49 +189,24 @@
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
-    // 下載 Excel 功能
     async function downloadResults() {
         const c = document.getElementById('select-class').value;
         const u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選擇班級與單元");
-
-        const btn = document.querySelector('.btn-download');
-        btn.disabled = true;
-        btn.innerText = "讀取資料中...";
-
-        try {
-            const res = await fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "getResults", className: c, unit: u })
-            });
-            const data = await res.json();
-
-            if (data.length === 0) {
-                alert("查無成績資料");
-            } else {
-                // 使用 SheetJS 生成 Excel
-                const worksheet = XLSX.utils.json_to_sheet(data);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "成績結果");
-                
-                // 下載檔案
-                const fileName = `${c}_${u}_成績統計.xlsx`;
-                XLSX.writeFile(workbook, fileName);
-            }
-        } catch (e) {
-            alert("下載失敗");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "下載成績資料 (Excel)";
-        }
+        const res = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "getResults", className: c, unit: u })
+        });
+        const data = await res.json();
+        if (data.length === 0) return alert("無成績資料");
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Results");
+        XLSX.writeFile(wb, `${c}_${u}_成績.xlsx`);
     }
 
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
-        if (!pin) return alert("請輸入 PIN 碼");
-        const btn = document.querySelector('#view-student-login button');
-        btn.disabled = true;
-
         const res = await fetch(GAS_URL, {
             method: "POST",
             body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class })
@@ -176,10 +215,7 @@
         if (data.success) {
             studentInfo = data;
             startQuiz();
-        } else {
-            alert(data.message);
-            btn.disabled = false;
-        }
+        } else alert(data.message);
     }
 
     async function startQuiz() {
@@ -200,7 +236,6 @@
         box.innerHTML = "";
         document.getElementById('btn-next').classList.add('hidden');
         document.getElementById('btn-submit').classList.add('hidden');
-
         q.options.forEach((text, i) => {
             if(!text) return;
             const btn = document.createElement('button');
@@ -226,13 +261,7 @@
         document.getElementById('view-quiz').innerHTML = "<h3>正在提交...</h3>";
         const res = await fetch(GAS_URL, {
             method: "POST",
-            body: JSON.stringify({
-                action: "submitExam",
-                name: studentInfo.name,
-                className: studentInfo.className,
-                unit: currentExam.unit,
-                answers: userAnswers
-            })
+            body: JSON.stringify({ action: "submitExam", name: studentInfo.name, className: studentInfo.className, unit: currentExam.unit, answers: userAnswers })
         });
         const result = await res.json();
         showView('view-result');
