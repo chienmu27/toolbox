@@ -5,147 +5,202 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>線上考試系統</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        :root { --primary: #6c5ce7; --success: #00b894; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
         .hidden { display: none; }
-        .option-btn { display: block; width: 100%; margin: 10px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.3s; background: white; font-size: 16px; }
-        .option-btn:hover { background: #e0e0e0; }
-        .option-btn.selected { background: #6c5ce7; color: white; border-color: #6c5ce7; }
-        button#submit-btn { background: #00b894; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px; }
-        h2 { color: #2d3436; }
+        input { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        .qr-section { margin-bottom: 20px; padding: 15px; border-bottom: 1px dashed #ccc; }
+        .option-container { margin-top: 20px; text-align: left; }
+        .option-btn { display: block; width: 100%; background: white; color: #333; border: 2px solid #eee; margin: 8px 0; text-align: left; transition: 0.2s; }
+        .option-btn:hover { border-color: var(--primary); background: #f9f9ff; }
+        .option-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        #question-text { font-size: 1.2rem; margin-bottom: 20px; color: #2d3436; }
+        .progress { font-size: 0.9rem; color: #636e72; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="container" id="login-box">
-    <h2>學生登入</h2>
-    <input type="text" id="pin" placeholder="輸入 PIN 碼" style="padding:10px; width:80%;">
-    <br><br>
-    <button onclick="login()" style="padding:10px 20px;">登入</button>
-</div>
+<div class="card" id="main-card">
+    <!-- 首頁：QR-Code 與 登入 -->
+    <div id="view-login">
+        <div class="qr-section">
+            <p>掃描 QR-Code 進入考試</p>
+            <img id="qr-image" src="" alt="QR Code" style="width: 150px; height: 150px;">
+        </div>
+        <h2>學生登入</h2>
+        <input type="text" id="pin-input" placeholder="請輸入 PIN 碼" maxlength="10">
+        <br>
+        <button onclick="handleLogin()">登入系統</button>
+    </div>
 
-<div class="container hidden" id="setup-box">
-    <h2 id="welcome-msg"></h2>
-    <p>請輸入要考試的單元名稱：</p>
-    <input type="text" id="unit-input" placeholder="例如：第一單元" style="padding:10px; width:80%;">
-    <br><br>
-    <button onclick="startExam()" style="padding:10px 20px;">開始考試</button>
-</div>
+    <!-- 單元選擇 -->
+    <div id="view-unit" class="hidden">
+        <h2 id="welcome-msg">載入中...</h2>
+        <p>請輸入測驗單元名稱</p>
+        <input type="text" id="unit-input" placeholder="例如：第一單元">
+        <br>
+        <button onclick="loadQuestions()">開始測驗</button>
+    </div>
 
-<div class="container hidden" id="quiz-box">
-    <div id="progress">題目載入中...</div>
-    <h2 id="question-text">題目</h2>
-    <div id="options-container"></div>
-    <button id="next-btn" class="hidden" onclick="nextQuestion()" style="margin-top:20px;">下一題</button>
-    <button id="submit-btn" class="hidden" onclick="submitExam()">提交試卷</button>
-</div>
+    <!-- 題目頁面 (Quizizz 介面風格) -->
+    <div id="view-quiz" class="hidden">
+        <div class="progress" id="quiz-progress">題目 1 / 10</div>
+        <div id="question-text">題目載入中...</div>
+        <div id="options-box" class="option-container"></div>
+        <div style="margin-top: 20px;">
+            <button id="btn-next" class="hidden" onclick="nextQuestion()">下一題</button>
+            <button id="btn-submit" class="hidden" onclick="submitExam()" style="background: var(--success);">提交試卷</button>
+        </div>
+    </div>
 
-<div class="container hidden" id="result-box">
-    <h2>考試完成！</h2>
-    <p id="final-score"></p>
-    <button onclick="location.reload()">返回</button>
+    <!-- 結果頁面 -->
+    <div id="view-result" class="hidden">
+        <h2 style="color: var(--success);">測驗結束</h2>
+        <div id="result-stat" style="font-size: 1.2rem; margin: 20px 0;"></div>
+        <button onclick="location.reload()">回首頁</button>
+    </div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // 填入你的 GAS 部署 URL
-    let userData = {};
-    let questions = [];
+    // --- 配置區 ---
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; 
+    const APP_URL = "https://chienmu27.github.io/toolbox/repository/";
+
+    // 初始化：生成 QR Code
+    document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(APP_URL)}`;
+
+    let currentUser = {};
+    let quizData = [];
     let currentIdx = 0;
     let userAnswers = [];
 
-    async function login() {
-        const pin = document.getElementById('pin').value;
+    // --- 邏輯區 ---
+
+    async function handleLogin() {
+        const pin = document.getElementById('pin-input').value;
+        if(!pin) return alert("請輸入PIN碼");
+
+        toggleLoading(true);
         const res = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'login', pin: pin })
+            method: "POST",
+            body: JSON.stringify({ action: "login", pin: pin })
         });
         const data = await res.json();
-        if (data.success) {
-            userData = data;
-            document.getElementById('login-box').classList.add('hidden');
-            document.getElementById('setup-box').classList.remove('hidden');
-            document.getElementById('welcome-msg').innerText = `你好，${data.name} (${data.className})`;
+        toggleLoading(false);
+
+        if(data.success) {
+            currentUser = data;
+            showView('view-unit');
+            document.getElementById('welcome-msg').innerText = `你好，${data.name}`;
         } else {
-            alert('PIN 碼錯誤');
+            alert("登入失敗，請檢查 PIN 碼");
         }
     }
 
-    async function startExam() {
+    async function loadQuestions() {
         const unit = document.getElementById('unit-input').value;
-        if(!unit) return alert('請輸入單元');
-        userData.unit = unit;
+        if(!unit) return alert("請輸入單元名稱");
+        currentUser.unit = unit;
 
+        toggleLoading(true);
         const res = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'getQuestions', className: userData.className, unit: unit })
+            method: "POST",
+            body: JSON.stringify({ action: "getQuestions", className: currentUser.className, unit: unit })
         });
-        questions = await res.json();
-        
-        if (questions.length === 0) {
-            alert('查無此單元題目');
-            return;
-        }
+        quizData = await res.json();
+        toggleLoading(false);
 
-        document.getElementById('setup-box').classList.add('hidden');
-        document.getElementById('quiz-box').classList.remove('hidden');
-        showQuestion();
+        if(quizData.length > 0) {
+            showView('view-quiz');
+            renderQuestion();
+        } else {
+            alert("查無此班級或單元的題目，請確認試算表設定。");
+        }
     }
 
-    function showQuestion() {
-        const q = questions[currentIdx];
-        document.getElementById('progress').innerText = `第 ${currentIdx + 1} 題 / 共 ${questions.length} 題`;
-        document.getElementById('question-text').innerText = q.q;
-        const container = document.getElementById('options-container');
-        container.innerHTML = '';
+    function renderQuestion() {
+        const q = quizData[currentIdx];
+        document.getElementById('quiz-progress').innerText = `題目 ${currentIdx + 1} / ${quizData.length}`;
+        document.getElementById('question-text').innerText = q.question;
+        
+        const box = document.getElementById('options-box');
+        box.innerHTML = "";
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
 
-        q.options.forEach((opt, index) => {
+        q.options.forEach((text, i) => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
-            btn.innerText = opt;
-            btn.onclick = () => selectOption(index + 1, btn);
-            container.appendChild(btn);
+            btn.innerText = `${i+1}. ${text}`;
+            btn.onclick = () => selectOption(i + 1, btn);
+            box.appendChild(btn);
         });
     }
 
-    function selectOption(ans, btn) {
+    function selectOption(idx, btn) {
+        // UI 反饋
         document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
+
+        // 記錄答案
         userAnswers[currentIdx] = {
-            question: questions[currentIdx].q,
-            userAns: ans,
-            correctAns: questions[currentIdx].ans
+            question: quizData[currentIdx].question,
+            userAns: idx,
+            correctAns: quizData[currentIdx].correct
         };
-        
-        if (currentIdx < questions.length - 1) {
-            document.getElementById('next-btn').classList.remove('hidden');
+
+        // 判斷是否為最後一題
+        if (currentIdx < quizData.length - 1) {
+            document.getElementById('btn-next').classList.remove('hidden');
         } else {
-            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('btn-submit').classList.remove('hidden');
         }
     }
 
     function nextQuestion() {
         currentIdx++;
-        document.getElementById('next-btn').classList.add('hidden');
-        showQuestion();
+        renderQuestion();
     }
 
     async function submitExam() {
-        document.getElementById('quiz-box').innerText = "提交中...";
+        if(!confirm("確定要交卷嗎？")) return;
+
+        toggleLoading(true);
         const res = await fetch(GAS_URL, {
-            method: 'POST',
+            method: "POST",
             body: JSON.stringify({
-                action: 'submitExam',
-                name: userData.name,
-                className: userData.className,
-                unit: userData.unit,
+                action: "submitExam",
+                name: currentUser.name,
+                className: currentUser.className,
+                unit: currentUser.unit,
                 answers: userAnswers
             })
         });
         const result = await res.json();
-        document.getElementById('quiz-box').classList.add('hidden');
-        document.getElementById('result-box').classList.remove('hidden');
-        document.getElementById('final-score').innerText = `您的得分：${result.score}`;
+        toggleLoading(false);
+
+        showView('view-result');
+        document.getElementById('result-stat').innerHTML = `
+            正確題數：${result.correct} / ${result.total}<br>
+            得分百分比：<span style="font-size:2rem; font-weight:bold;">${result.score}</span>
+        `;
+    }
+
+    function showView(viewId) {
+        ['view-login', 'view-unit', 'view-quiz', 'view-result'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function toggleLoading(isLoading) {
+        document.querySelector('.card').style.opacity = isLoading ? "0.5" : "1";
+        document.querySelectorAll('button').forEach(b => b.disabled = isLoading);
     }
 </script>
+
 </body>
 </html>
