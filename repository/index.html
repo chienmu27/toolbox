@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Online Quiz System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #461a42; color: white; text-align: center; }
+        .container { max-width: 600px; margin: 50px auto; background: #fff; color: #333; padding: 20px; border-radius: 15px; }
+        .option-btn { display: block; width: 100%; margin: 10px 0; padding: 15px; border: 2px solid #6c5ce7; border-radius: 10px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .option-btn:hover { background: #6c5ce7; color: white; }
+        .hidden { display: none; }
+        #question-text { font-size: 24px; margin-bottom: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="container">
+        <h2>輸入 PIN 碼登入</h2>
+        <input type="text" id="pin-input" placeholder="請輸入PIN">
+        <button onclick="login()">進入考試</button>
+    </div>
+
+    <div id="quiz-section" class="container hidden">
+        <div id="progress"></div>
+        <div id="question-text"></div>
+        <div id="options-container"></div>
+    </div>
+
+    <div id="result-section" class="container hidden">
+        <h2>考試完成！</h2>
+        <div id="final-score" style="font-size: 48px;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec';
+        let currentUser = {};
+        let questions = [];
+        let currentIdx = 0;
+        let userAnswers = [];
+
+        async function login() {
+            const pin = document.getElementById('pin-input').value;
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', pin: pin })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser = data;
+                startQuiz();
+            } else {
+                alert('PIN 碼錯誤');
+            }
+        }
+
+        async function startQuiz() {
+            // 這裡寫死單元，實際可由登入後選擇
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getQuestions', className: currentUser.className, unit: '第一單元' })
+            });
+            questions = await res.json();
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentIdx >= questions.length) {
+                submitQuiz();
+                return;
+            }
+            const q = questions[currentIdx];
+            document.getElementById('question-text').innerText = q.question;
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => selectAnswer(opt);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selected) {
+            const q = questions[currentIdx];
+            userAnswers.push({
+                isCorrect: selected === q.originalCorrect
+            });
+            currentIdx++;
+            showQuestion();
+        }
+
+        async function submitQuiz() {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'submit',
+                    name: currentUser.name,
+                    className: currentUser.className,
+                    unit: '第一單元',
+                    results: userAnswers
+                })
+            });
+            const data = await res.json();
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            document.getElementById('final-score').innerText = data.score;
+        }
+    </script>
+</body>
+</html>
