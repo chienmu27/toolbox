@@ -5,186 +5,147 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>線上考試系統</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
         .hidden { display: none; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { background: #6c5ce7; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; width: 100%; }
-        button:hover { background: #a29bfe; }
-        .option-btn { background: #fff; color: #333; border: 2px solid #6c5ce7; margin: 8px 0; text-align: left; }
-        .option-btn:hover { background: #f0f0ff; }
-        .quiz-header { font-size: 1.2rem; margin-bottom: 20px; font-weight: bold; color: #444; }
-        .progress { font-size: 0.9rem; color: #888; margin-bottom: 10px; }
+        .option-btn { display: block; width: 100%; margin: 10px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.3s; background: white; font-size: 16px; }
+        .option-btn:hover { background: #e0e0e0; }
+        .option-btn.selected { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        button#submit-btn { background: #00b894; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+        h2 { color: #2d3436; }
     </style>
 </head>
 <body>
 
-<div class="container" id="app">
-    <!-- 登入頁面 -->
-    <div id="login-page">
-        <h2>學生登入</h2>
-        <input type="text" id="pin" placeholder="輸入您的 PIN 碼">
-        <button onclick="login()">進入考試</button>
-    </div>
+<div class="container" id="login-box">
+    <h2>學生登入</h2>
+    <input type="text" id="pin" placeholder="輸入 PIN 碼" style="padding:10px; width:80%;">
+    <br><br>
+    <button onclick="login()" style="padding:10px 20px;">登入</button>
+</div>
 
-    <!-- 選擇單元 -->
-    <div id="setup-page" class="hidden">
-        <h2 id="welcome-msg"></h2>
-        <select id="unit-select"></select>
-        <button onclick="startExam()">開始答題</button>
-    </div>
+<div class="container hidden" id="setup-box">
+    <h2 id="welcome-msg"></h2>
+    <p>請輸入要考試的單元名稱：</p>
+    <input type="text" id="unit-input" placeholder="例如：第一單元" style="padding:10px; width:80%;">
+    <br><br>
+    <button onclick="startExam()" style="padding:10px 20px;">開始考試</button>
+</div>
 
-    <!-- 考試頁面 -->
-    <div id="exam-page" class="hidden">
-        <div class="progress" id="progress-text"></div>
-        <div class="quiz-header" id="question-text"></div>
-        <div id="options-container"></div>
-    </div>
+<div class="container hidden" id="quiz-box">
+    <div id="progress">題目載入中...</div>
+    <h2 id="question-text">題目</h2>
+    <div id="options-container"></div>
+    <button id="next-btn" class="hidden" onclick="nextQuestion()" style="margin-top:20px;">下一題</button>
+    <button id="submit-btn" class="hidden" onclick="submitExam()">提交試卷</button>
+</div>
 
-    <!-- 結果頁面 -->
-    <div id="result-page" class="hidden">
-        <h2>考試完成！</h2>
-        <div id="score-details"></div>
-        <button onclick="location.reload()">返回</button>
-    </div>
+<div class="container hidden" id="result-box">
+    <h2>考試完成！</h2>
+    <p id="final-score"></p>
+    <button onclick="location.reload()">返回</button>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // 務必替換此處
-    let user = null;
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // 填入你的 GAS 部署 URL
+    let userData = {};
     let questions = [];
     let currentIdx = 0;
     let userAnswers = [];
 
-    // 1. 登入
     async function login() {
         const pin = document.getElementById('pin').value;
-        const res = await fetch(API_URL, {
+        const res = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'login', pin: pin })
         });
         const data = await res.json();
-        
         if (data.success) {
-            user = data;
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('setup-page').classList.remove('hidden');
-            document.getElementById('welcome-msg').innerText = `你好, ${user.name}`;
-            loadUnits();
+            userData = data;
+            document.getElementById('login-box').classList.add('hidden');
+            document.getElementById('setup-box').classList.remove('hidden');
+            document.getElementById('welcome-msg').innerText = `你好，${data.name} (${data.className})`;
         } else {
             alert('PIN 碼錯誤');
         }
     }
 
-    // 2. 獲取班級單元列表
-    async function loadUnits() {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        const select = document.getElementById('unit-select');
-        data.units.forEach(u => {
-            let opt = document.createElement('option');
-            opt.value = u; opt.innerText = u;
-            select.appendChild(opt);
-        });
-    }
-
-    // 3. 開始考試（隨機選題順序）
     async function startExam() {
-        const unit = document.getElementById('unit-select').value;
-        const res = await fetch(API_URL, {
+        const unit = document.getElementById('unit-input').value;
+        if(!unit) return alert('請輸入單元');
+        userData.unit = unit;
+
+        const res = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'getQuestions', className: user.className, unit: unit })
+            body: JSON.stringify({ action: 'getQuestions', className: userData.className, unit: unit })
         });
         questions = await res.json();
         
         if (questions.length === 0) {
-            alert('該單元目前沒有題目');
+            alert('查無此單元題目');
             return;
         }
 
-        // 隨機排序題目
-        questions.sort(() => Math.random() - 0.5);
-        user.unit = unit;
-        
-        document.getElementById('setup-page').classList.add('hidden');
-        document.getElementById('exam-page').classList.remove('hidden');
+        document.getElementById('setup-box').classList.add('hidden');
+        document.getElementById('quiz-box').classList.remove('hidden');
         showQuestion();
     }
 
-    // 4. 顯示題目
     function showQuestion() {
         const q = questions[currentIdx];
-        document.getElementById('progress-text').innerText = `題目 ${currentIdx + 1} / ${questions.length}`;
-        document.getElementById('question-text').innerText = q.question;
-        
+        document.getElementById('progress').innerText = `第 ${currentIdx + 1} 題 / 共 ${questions.length} 題`;
+        document.getElementById('question-text').innerText = q.q;
         const container = document.getElementById('options-container');
         container.innerHTML = '';
-        
+
         q.options.forEach((opt, index) => {
-            if(!opt) return;
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerText = opt;
-            btn.onclick = () => handleAnswer(opt);
+            btn.onclick = () => selectOption(index + 1, btn);
             container.appendChild(btn);
         });
     }
 
-    // 5. 處理答題
-    function handleAnswer(selected) {
-        userAnswers.push({
-            q: questions[currentIdx].question,
-            selected: selected,
-            correct: questions[currentIdx].answer
-        });
-
-        currentIdx++;
-        if (currentIdx < questions.length) {
-            showQuestion();
+    function selectOption(ans, btn) {
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        userAnswers[currentIdx] = {
+            question: questions[currentIdx].q,
+            userAns: ans,
+            correctAns: questions[currentIdx].ans
+        };
+        
+        if (currentIdx < questions.length - 1) {
+            document.getElementById('next-btn').classList.remove('hidden');
         } else {
-            submitExam();
+            document.getElementById('submit-btn').classList.remove('hidden');
         }
     }
 
-    // 6. 提交並計算分數
+    function nextQuestion() {
+        currentIdx++;
+        document.getElementById('next-btn').classList.add('hidden');
+        showQuestion();
+    }
+
     async function submitExam() {
-        let correctCount = 0;
-        userAnswers.forEach(ans => {
-            if (ans.selected.toString() === ans.correct.toString()) correctCount++;
-        });
-
-        const wrongCount = questions.length - correctCount;
-        const percentage = Math.round((correctCount / questions.length) * 100);
-
-        const payload = {
-            action: 'submit',
-            data: {
-                name: user.name,
-                className: user.className,
-                unit: user.unit,
-                correctCount: correctCount,
-                wrongCount: wrongCount,
-                percentage: percentage,
-                answers: userAnswers
-            }
-        };
-
-        document.getElementById('exam-page').innerHTML = "正在提交結果...";
-
-        await fetch(API_URL, {
+        document.getElementById('quiz-box').innerText = "提交中...";
+        const res = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                action: 'submitExam',
+                name: userData.name,
+                className: userData.className,
+                unit: userData.unit,
+                answers: userAnswers
+            })
         });
-
-        document.getElementById('exam-page').classList.add('hidden');
-        document.getElementById('result-page').classList.remove('hidden');
-        document.getElementById('score-details').innerHTML = `
-            <p>正確題數：${correctCount}</p>
-            <p>錯誤題數：${wrongCount}</p>
-            <p style="font-size: 2rem; color: #6c5ce7;">得分：${percentage}</p>
-        `;
+        const result = await res.json();
+        document.getElementById('quiz-box').classList.add('hidden');
+        document.getElementById('result-box').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `您的得分：${result.score}`;
     }
 </script>
-
 </body>
 </html>
