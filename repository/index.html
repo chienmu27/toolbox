@@ -19,26 +19,24 @@
             --exam-primary: #6c5ce7; --exam-success: #00b894;
             --exam-download: #0984e3; --exam-upload: #e17055; --exam-danger: #d63031;
         }
-        body { font-family: "Segoe UI", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: "Segoe UI", "PingFang TC", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
         .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 800px; position: relative; min-height: 550px; }
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; width: 95%; max-width: 800px; }
-        .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; }
+        .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary-color); }
         .hidden { display: none !important; }
         .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
-        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; }
-        .exam-button { color: white; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; }
+        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .exam-button { color: white; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; transition: 0.2s; }
         .btn-primary { background: var(--exam-primary); }
         .btn-upload { background: var(--exam-upload); }
         .btn-download { background: var(--exam-download); }
         .btn-danger { background: var(--exam-danger); }
         .option-btn { background: white; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; }
-        .file-upload-area { border: 2px dashed #bbb; padding: 15px; background: #fafafa; border-radius: 6px; text-align: center; }
-        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
-        /* 報告卡片樣式 */
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
     </style>
 </head>
 <body>
@@ -50,6 +48,7 @@
 </div>
 
 <div class="container">
+    <!-- 驗證遮罩層 -->
     <div id="authOverlay">
         <h2 id="authMsg" class="text-xl font-bold mb-4">管理員請先登入 Google 帳號</h2>
         <button id="authLoginBtn" class="main-btn max-w-[250px]">登入 Google</button>
@@ -67,7 +66,7 @@
             <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
         </div>
 
-        <!-- 1. 線上考試分頁 -->
+        <!-- 線上考試系統分頁 -->
         <div id="view-exam-tab">
             <div id="examView">
                 <div id="view-admin" class="hidden">
@@ -82,11 +81,8 @@
                         <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
                         <div class="grid grid-cols-1 gap-2 mt-2">
                             <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button class="exam-button btn-download" onclick="downloadResults()">下載成績資料</button>
-                                <button class="exam-button btn-download" onclick="downloadDataLogs()">下載詳細紀錄</button>
-                            </div>
-                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題目</button>
+                            <!-- 刪除了下載成績與下載紀錄按鈕 -->
+                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
                         </div>
                     </div>
                     <div id="qr-container" class="hidden text-center mt-4">
@@ -120,7 +116,7 @@
             </div>
         </div>
 
-        <!-- 2. AI 出題分頁 -->
+        <!-- AI 出題分頁 -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題系統</h1>
             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -129,17 +125,17 @@
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">1. 題目主題</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學..." />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語..." />
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="例如：國小六年級、難度適中..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、難度適中..."></textarea>
             </div>
             <div class="mb-4">
-                <label class="font-bold block mb-1">3. 上傳參考檔案 (選填)</label>
+                <label class="font-bold block mb-1">3. 參考檔案 (選填)</label>
                 <div class="file-upload-area">
                     <input type="file" id="gen-refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
-                    <p class="text-xs text-gray-500 mt-2">支援：TXT, CSV, Word, Excel, PDF, 圖片</p>
+                    <p class="text-xs text-gray-500 mt-2">支援：TXT, Word, Excel, PDF, 圖片</p>
                 </div>
             </div>
             <div class="mb-6">
@@ -150,7 +146,7 @@
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
-        <!-- 3. 報告分頁 -->
+        <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">作答場次報告</h2>
             <div id="report-container" class="space-y-4">
@@ -184,7 +180,7 @@
             document.getElementById('topHeaderUI').classList.add('hidden');
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u), qrId: qid || "手動進入" };
+            currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u), qrId: qid || "MANUAL" };
             showExamSubView('view-student-login');
             document.getElementById('exam-title').innerText = `${currentExam.class}\n${currentExam.unit}`;
         } else { checkAdminAuth(); }
@@ -192,8 +188,7 @@
 
     async function checkAdminAuth() {
         if (!puter.auth.isSignedIn()) { document.getElementById('authOverlay').classList.remove('hidden'); return; }
-        const user = await puter.auth.getUser();
-        userUUID = user.uuid;
+        const user = await puter.auth.getUser(); userUUID = user.uuid;
         try {
             const resp = await fetch(GAS_AUTH_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
             const result = await resp.json();
@@ -235,9 +230,8 @@
     function generateQRCode() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
-        // 自動設定唯一編號
         const qrId = "QR" + Date.now();
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&qid=${qrId}&openExternalBrowser=1`;
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&qid=${qrId}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
@@ -245,46 +239,26 @@
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
-    async function downloadResults() {
-        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (!c || !u) return alert("請選取單元");
-        showLoading("下載中...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
-        saveExcel(await res.json(), `${c}_${u}_成績.xlsx`);
-        hideLoading();
-    }
-
-    async function downloadDataLogs() {
-        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (!c || !u) return alert("請選取單元");
-        showLoading("下載中...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getDataLogs", className: c, unit: u }) });
-        saveExcel(await res.json(), `${c}_${u}_詳細紀錄.xlsx`);
-        hideLoading();
-    }
-
     async function loadReports() {
         const container = document.getElementById('report-container');
         container.innerHTML = "<p class='text-center'>載入報告中...</p>";
         try {
             const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getReportSummary" }) });
-            const data = await res.json();
-            container.innerHTML = "";
-            if (data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400'>尚無作答紀錄</p>"; return; }
+            const data = await res.json(); container.innerHTML = "";
+            if (data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400'>尚無資料</p>"; return; }
             data.forEach(rep => {
                 const card = document.createElement('div');
                 card.className = "report-card";
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <div class="text-xs font-bold text-indigo-500">${rep.qrId}</div>
-                            <div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div>
-                            <div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div>
-                        </div>
+                    <div class="mb-4">
+                        <div class="text-xs font-bold text-indigo-500">${rep.qrId}</div>
+                        <div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div>
+                        <div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div>
                     </div>
-                    <div class="flex gap-2">
-                        <button class="exam-button btn-download text-sm" onclick="downloadReportById('${rep.qrId}', 'results')">下載成績表</button>
-                        <button class="exam-button btn-download text-sm" onclick="downloadReportById('${rep.qrId}', 'logs')">下載詳細日誌</button>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button>
+                        <button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button>
+                        <button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除場次</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -295,8 +269,17 @@
     async function downloadReportById(qrId, type) {
         showLoading("準備檔案...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "downloadById", qrId: qrId, type: type }) });
-        const data = await res.json();
-        saveExcel(data, `報告_${qrId}_${type}.xlsx`);
+        saveExcel(await res.json(), `報告_${qrId}_${type}.xlsx`);
+        hideLoading();
+    }
+
+    async function deleteReportRecord(qrId) {
+        if (!confirm(`確定要永久刪除場次 ${qrId} 的所有作答紀錄嗎？`)) return;
+        showLoading("刪除中...");
+        try {
+            const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", qrId: qrId }) });
+            const result = await res.json(); alert(result.message); loadReports();
+        } catch (e) { alert("刪除失敗"); }
         hideLoading();
     }
 
@@ -305,14 +288,12 @@
         if (!pin) return alert("請輸入 PIN 碼");
         showLoading("驗證中...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class }) });
-        const data = await res.json();
-        hideLoading();
+        const data = await res.json(); hideLoading();
         if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
     }
 
     async function startQuiz() {
-        showExamSubView('view-quiz');
-        showLoading("載入中...");
+        showExamSubView('view-quiz'); showLoading("載入中...");
         const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
         quizData = await res.json(); hideLoading(); renderQuestion();
     }
@@ -343,6 +324,7 @@
 
     async function submitExam() {
         showLoading("提交中...");
+        const score = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
         await fetch(GAS_EXAM_URL, {
             method: "POST",
             body: JSON.stringify({ 
@@ -352,12 +334,12 @@
             })
         });
         hideLoading(); showExamSubView('view-result');
-        document.getElementById('result-stat').innerText = `得分：${Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100)}`;
+        document.getElementById('result-stat').innerText = `得分：${score}`;
     }
 
     async function parseFile(file) {
         const name = file.name.toLowerCase();
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const reader = new FileReader();
             if (name.endsWith('.pdf')) {
                 reader.onload = async (e) => {
@@ -388,28 +370,48 @@
     document.getElementById('generateBtn').onclick = async () => {
         const topic = document.getElementById('gen-topic').value.trim();
         if (!topic) return alert("請輸入主題");
-        const status = document.getElementById('gen-status');
-        status.innerText = "AI 生成中 (分析檔案中)...";
+        const status = document.getElementById('gen-status'); status.innerText = "AI 生成中...";
         try {
             const fileInput = document.getElementById('gen-refFile');
             let context = fileInput.files.length > 0 ? await parseFile(fileInput.files[0]) : null;
             let prompt = `出 ${document.getElementById('gen-count').value} 題「${topic}」選擇題，4個選項。格式：[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確1-4}]。僅回 JSON。`;
-            if (context && context.type === 'text') prompt += `參考：\n${context.content}`;
+            if (context && context.type === 'text') prompt += `參考內容：\n${context.content}`;
             const response = (context && context.type === 'image') 
                 ? await puter.ai.chat([{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: context.content } }] }])
                 : await puter.ai.chat(prompt);
             const raw = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
             downloadExamExcel(JSON.parse(raw), document.getElementById('gen-className').value, document.getElementById('gen-unitName').value);
             status.innerText = "✅ 生成成功";
-        } catch (e) { status.innerText = "❌ 失敗"; console.error(e); }
+        } catch (e) { status.innerText = "❌ 失敗"; }
     };
+
+    async function handleUpload() {
+        const fileInput = document.getElementById('upload-file');
+        if (fileInput.files.length === 0) return alert("請選擇 Excel");
+        const reader = new FileReader(); showLoading("上傳中...");
+        reader.onload = async (e) => {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", rows: rows.slice(1).filter(r => r.length > 0) }) });
+            alert("成功"); fetchConfig(); hideLoading();
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
+    }
+
+    async function confirmDelete() {
+        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
+        if (!c || !u) return alert("請選取單元");
+        if (confirm(`刪除 ${c} - ${u} 題庫？`)) {
+            showLoading("刪除中...");
+            await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", className: c, unit: u }) });
+            fetchConfig(); hideLoading();
+        }
+    }
 
     function saveExcel(data, filename) {
         if (!data || data.length === 0) return alert("尚無資料");
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-        XLSX.writeFile(wb, filename);
+        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
 
     function downloadExamExcel(qs, cls, unt) {
