@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>線上考試工具箱 - 整合版</title>
+    <title>線上考試工具箱 - 整合授權版</title>
     
     <!-- 引入外部資源 -->
     <script src="https://js.puter.com/v2/"></script>
@@ -24,66 +24,90 @@
             --exam-danger: #d63031;
         }
 
-        body { font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
-        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 800px; position: relative; min-height: 550px; }
-        
-        /* 頁籤導覽 */
-        .tab-nav { display: flex; gap: 5px; width: 95%; max-width: 800px; margin-bottom: -2px; z-index: 10; }
-        .tab-btn { padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary-color); border-bottom: 2px solid white; box-shadow: 0 -3px 10px rgba(0,0,0,0.05); }
+        body { 
+            font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            background-color: var(--bg-color); 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0; 
+        }
 
+        .container { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            width: 95%; 
+            max-width: 800px; 
+            position: relative; 
+            min-height: 500px;
+        }
+
+        @media (max-width: 768px) { .container { width: 100%; border-radius: 0; padding: 1.25rem; } }
+
+        /* 分頁按鈕樣式 */
+        .tab-container { display: flex; gap: 5px; width: 95%; max-width: 800px; margin-bottom: -1px; z-index: 10; }
+        .tab-btn { padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; }
+        .tab-btn.active { background: white; color: var(--primary-color); border-top: 3px solid var(--primary-color); }
+
+        .nav-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
-        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .exam-button { color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; transition: 0.2s; }
-        
+        .logout-btn { background-color: #fff; color: #d9534f; border: 1px solid #d9534f; padding: 6px 12px; font-size: 0.85rem; border-radius: 4px; cursor: pointer; }
+
+        #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; max-width: 250px; }
+        .hidden { display: none !important; }
+
+        /* 表單與按鈕 */
+        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; }
+        .exam-button { color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; }
         .btn-primary { background: var(--exam-primary); }
         .btn-upload { background: var(--exam-upload); }
         .btn-download { background: var(--exam-download); }
         .btn-danger { background: var(--exam-danger); }
         .option-btn { background: white; color: #333; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; border-color: var(--exam-primary); }
-
-        #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
-        .hidden { display: none !important; }
-        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+        
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; }
         #qr-modal img { width: 90%; max-width: 500px; border: 15px solid white; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<!-- 分頁按鈕區 -->
-<div id="tabNav" class="tab-nav hidden">
-    <button class="tab-btn active" id="btn-tab-system" onclick="switchTab('system')">線上考試系統</button>
-    <button class="tab-btn" id="btn-tab-gen" onclick="switchTab('gen')">線上 AI 出題</button>
+<div id="tabBar" class="tab-container hidden">
+    <button class="tab-btn active" id="tab-exam" onclick="switchTab('exam')">線上考試系統</button>
+    <button class="tab-btn" id="tab-gen" onclick="switchTab('gen')">AI 自動出題</button>
 </div>
 
 <div class="container">
-    <!-- 管理員驗證遮罩 -->
+    <!-- 驗證遮罩 -->
     <div id="authOverlay">
         <h2 id="authMsg" class="text-xl font-bold mb-4">管理員請先登入 Google 帳號</h2>
-        <button id="authLoginBtn" class="bg-[#46178f] text-white px-8 py-3 rounded font-bold">登入 Google</button>
-        <div id="applyForm" class="hidden w-full max-w-sm mt-4">
+        <button id="authLoginBtn" class="main-btn">登入 Google</button>
+        <div id="applyForm" class="hidden w-full max-w-sm">
             <p class="mb-4">您的帳號尚未獲得管理授權：</p>
             <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
             <input type="text" id="applyName" class="exam-input" placeholder="姓名">
-            <button id="applyBtn" class="bg-[#46178f] text-white w-full py-3 rounded mt-2 font-bold">送出授權申請</button>
+            <button id="applyBtn" class="main-btn mt-2">送出授權申請</button>
         </div>
     </div>
 
     <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
-            <div id="navTitle" class="sys-title">線上考試系統</div>
-            <button id="logoutBtn" class="text-red-500 border border-red-500 px-3 py-1 rounded text-sm">登出管理員</button>
+        <div class="nav-header">
+            <div id="tab-title" class="sys-title">線上考試系統</div>
+            <button id="logoutBtn" class="logout-btn">登出管理員</button>
         </div>
 
-        <!-- 1. 線上考試分頁 -->
-        <div id="tab-system">
+        <!-- 考試系統分頁 -->
+        <div id="content-exam">
             <div id="examView">
-                <!-- 管理者設定區 -->
                 <div id="view-admin" class="hidden">
-                    <div class="border-b pb-4 mb-4">
-                        <label class="text-sm text-gray-500">上傳新題目 (Excel):</label>
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <label class="text-sm font-bold text-gray-600">上傳新題目 (Excel):</label>
                         <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
                         <button class="exam-button btn-upload" onclick="handleUpload()">上傳題目資料</button>
                     </div>
@@ -97,117 +121,146 @@
                         </div>
                     </div>
                     <div id="qr-container" class="hidden text-center mt-4">
-                        <img id="qr-image" class="mx-auto w-40 cursor-zoom-in border-4" src="" alt="QR" onclick="toggleQRModal(true)">
-                        <p class="text-xs text-gray-400">點擊放大</p>
+                        <img id="qr-image" class="mx-auto cursor-zoom-in" style="width:180px" src="" alt="QR Code" onclick="toggleQRModal(true)">
+                        <p class="text-xs text-gray-400 mt-2">點擊圖片放大掃描</p>
                     </div>
                 </div>
 
-                <!-- 學生登入區 -->
                 <div id="view-student-login" class="hidden">
-                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center whitespace-pre-line">載入中...</h2>
-                    <div class="bg-gray-50 p-6 rounded-xl text-center">
-                        <label class="block mb-2 font-medium">請輸入您的 PIN 碼：</label>
-                        <input type="text" id="pin-input" placeholder="PIN" class="exam-input text-center text-2xl">
+                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入考試資訊...</h2>
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <input type="text" id="pin-input" placeholder="請輸入 PIN 碼" inputmode="numeric" class="exam-input text-center text-xl">
                         <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
                     </div>
                 </div>
 
-                <!-- 測驗進行區 -->
                 <div id="view-quiz" class="hidden">
-                    <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
-                    <div id="question-text" class="text-xl mb-6"></div>
+                    <div class="text-right text-gray-500 mb-2" id="quiz-progress"></div>
+                    <div id="question-text" class="text-xl font-bold mb-4"></div>
                     <div id="options-box"></div>
                     <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
                     <button id="btn-submit" class="exam-button hidden py-4 bg-green-600" onclick="submitExam()">提交試卷</button>
                 </div>
 
-                <!-- 結果區 -->
                 <div id="view-result" class="hidden text-center">
                     <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
-                    <div id="result-stat" class="text-4xl font-black my-8"></div>
+                    <div id="result-stat" class="text-4xl font-black my-6"></div>
                     <button class="exam-button btn-primary" onclick="location.reload()">返回</button>
                 </div>
             </div>
         </div>
 
-        <!-- 2. AI 出題分頁 -->
-        <div id="tab-gen" class="hidden">
-            <h1 class="text-xl font-bold text-center mb-6">AI 自動出題系統</h1>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="font-bold">班級</label><input type="text" id="gen-class" class="exam-input" placeholder="例如：五年三班"></div>
-                <div><label class="font-bold">單元</label><input type="text" id="gen-unit" class="exam-input" placeholder="例如：第一單元"></div>
+        <!-- 出題系統分頁 -->
+        <div id="content-gen" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-indigo-800">AI 自動出題</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="gen-className" class="exam-input" placeholder="班級" />
+                <input type="text" id="gen-unitName" class="exam-input" placeholder="單元" />
             </div>
-            <div class="mb-4"><label class="font-bold">主題</label><input type="text" id="gen-topic" class="exam-input" placeholder="例如：生活科技"></div>
-            <div class="mb-4"><label class="font-bold">參考檔案 (選填)</label><input type="file" id="gen-file" class="exam-input" accept=".txt,.docx,.xlsx,image/*"></div>
-            <div class="mb-4"><label class="font-bold">題數</label><input type="number" id="gen-count" class="exam-input" value="5" min="1" max="20"></div>
-            <button id="generateBtn" class="exam-button btn-primary" onclick="generateAIQuestions()">開始 AI 生成題目</button>
-            <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-500">系統就緒</div>
+            <input type="text" id="gen-topic" class="exam-input" placeholder="題目主題 (例如: 生活科技)" />
+            <textarea id="gen-hint" class="exam-input" rows="2" placeholder="額外要求 (選填)"></textarea>
+            <div class="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center bg-gray-50 mb-4">
+                <input type="file" id="gen-refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
+            </div>
+            <div class="w-32 mb-4">
+                <span class="text-sm">題數</span>
+                <input type="number" id="gen-count" class="exam-input" value="5" min="1" max="20" />
+            </div>
+            <button id="generateBtn" class="main-btn w-full" style="max-width:none">開始 AI 生成題目</button>
+            <button id="reDownloadBtn" class="exam-button bg-green-600 hidden mt-4">再次下載 Excel</button>
+            <div id="gen-status" class="mt-4 text-center text-gray-600 font-bold">系統就緒</div>
         </div>
 
+        <div class="mt-12 pt-4 border-t text-center text-xs text-gray-400">
+            線上考試工具箱 © 2026 chienmu.tai
+        </div>
     </div>
 </div>
 
-<div id="qr-modal" onclick="toggleQRModal(false)"><img id="qr-image-large" src=""><p class="text-white mt-4">點擊關閉</p></div>
-<div id="loading-overlay" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[2000]"><div class="bg-white p-6 rounded shadow-lg text-center"><p id="loading-text">處理中...</p></div></div>
+<!-- QR Modal -->
+<div id="qr-modal" onclick="toggleQRModal(false)">
+    <img id="qr-image-large" src="">
+</div>
+
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]">
+    <div class="bg-white p-8 rounded-2xl text-center shadow-2xl">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div>
+        <p id="loading-text" class="text-gray-800 font-bold">處理中...</p>
+    </div>
+</div>
 
 <script>
-    const GAS_AUTH_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec";
-    const GAS_EXAM_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec";
-    const BASE_URL = window.location.href.split('?')[0];
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzCZWT4-jxE0wlUWknG6gA4DSAGbUsuTY--cNSwu79wgD1JgZFid_9bXxolYOvfgqqZ-w/exec"; // 考試系統
+    const AUTH_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; // 權限管理
+    const BASE_URL = window.location.origin + window.location.pathname;
 
-    let userUUID = "", configData = {}, currentExam = {}, quizData = [], currentIdx = 0, userAnswers = [], studentInfo = {};
+    let userUUID = "";
+    let configData = {};
+    let currentExam = { class: "", unit: "" };
+    let quizData = [];
+    let currentIdx = 0;
+    let userAnswers = [];
+    let studentInfo = {};
+    let lastGeneratedQuestions = null;
 
-    async function initSystem() {
+    // --- 初始化與登入 ---
+    async function init() {
         const params = new URLSearchParams(window.location.search);
         const c = params.get('c'), u = params.get('u');
-        if (c && u) {
+
+        if (c && u) { // 學生模式
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('tabBar').classList.add('hidden');
             currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u) };
-            showView('view-student-login');
+            showExamView('view-student-login');
             document.getElementById('exam-title').innerText = `${currentExam.class}\n${currentExam.unit}`;
-        } else {
-            checkAdminAuth();
+        } else { // 管理員模式
+            checkAuth();
         }
     }
 
-    async function checkAdminAuth() {
+    async function checkAuth() {
         if (!puter.auth.isSignedIn()) return;
         const user = await puter.auth.getUser();
         userUUID = user.uuid;
         document.getElementById('authMsg').innerText = "驗證授權中...";
         try {
-            const resp = await fetch(GAS_AUTH_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
+            const resp = await fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
             const result = await resp.json();
             if (result.status === "Approved") {
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
-                document.getElementById('tabNav').classList.remove('hidden');
+                document.getElementById('tabBar').classList.remove('hidden');
                 fetchConfig();
-            } else if (result.status === "Pending") {
-                document.getElementById('authMsg').innerText = "審核中...";
             } else {
+                document.getElementById('authMsg').innerText = "未獲授權";
+                document.getElementById('authLoginBtn').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
             }
         } catch (e) { alert("連線錯誤"); }
     }
 
+    // --- 分頁切換 ---
     function switchTab(tab) {
-        document.getElementById('tab-system').classList.toggle('hidden', tab !== 'system');
-        document.getElementById('tab-gen').classList.toggle('hidden', tab !== 'gen');
-        document.getElementById('btn-tab-system').classList.toggle('active', tab === 'system');
-        document.getElementById('btn-tab-gen').classList.toggle('active', tab === 'gen');
-        document.getElementById('navTitle').innerText = tab === 'system' ? '線上考試系統' : '線上 AI 出題';
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.getElementById('content-exam').classList.toggle('hidden', tab !== 'exam');
+        document.getElementById('content-gen').classList.toggle('hidden', tab !== 'gen');
+        document.getElementById('tab-title').innerText = tab === 'exam' ? '線上考試系統' : '線上出題工具';
     }
 
+    // --- 考試系統邏輯 ---
     async function fetchConfig() {
         showLoading("載入選單...");
-        const res = await fetch(`${GAS_EXAM_URL}?action=getConfig`);
-        configData = await res.json();
-        const clsSelect = document.getElementById('select-class');
-        clsSelect.innerHTML = '<option value="">選擇班級</option>';
-        configData.classes.forEach(c => clsSelect.innerHTML += `<option value="${c}">${c}</option>`);
-        showView('view-admin');
+        try {
+            const res = await fetch(`${GAS_URL}?action=getConfig`);
+            configData = await res.json();
+            const clsSelect = document.getElementById('select-class');
+            clsSelect.innerHTML = '<option value="">選擇班級</option>';
+            configData.classes.forEach(c => clsSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            showExamView('view-admin');
+        } catch (e) { console.error(e); }
         hideLoading();
     }
 
@@ -215,60 +268,28 @@
         const cls = document.getElementById('select-class').value;
         const untSelect = document.getElementById('select-unit');
         untSelect.innerHTML = '<option value="">選擇單元</option>';
-        if (configData.units[cls]) configData.units[cls].forEach(u => untSelect.innerHTML += `<option value="${u}">${u}</option>`);
-    }
-
-    async function handleUpload() {
-        const file = document.getElementById('upload-file').files[0];
-        if (!file) return alert("請選檔案");
-        showLoading("上傳中...");
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", rows: rows.slice(1) }) });
-            alert((await res.json()).message);
-            fetchConfig();
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    function generateQRCode() {
-        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (!c || !u) return alert("請選單元");
-        const url = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}`;
-        document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-        document.getElementById('qr-container').classList.remove('hidden');
-    }
-
-    async function downloadResults() {
-        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        showLoading("下載中...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
-        const data = await res.json();
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "成績");
-        XLSX.writeFile(wb, `${c}_${u}_成績.xlsx`);
-        hideLoading();
+        if (configData.units[cls]) {
+            configData.units[cls].forEach(u => untSelect.innerHTML += `<option value="${u}">${u}</option>`);
+        }
     }
 
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
-        showLoading("登入中...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "login", pin, targetClass: currentExam.class }) });
+        if (!pin) return alert("請輸入 PIN 碼");
+        showLoading("驗證中...");
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", pin: pin, targetClass: currentExam.class }) });
         const data = await res.json();
         hideLoading();
         if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
     }
 
     async function startQuiz() {
-        showView('view-quiz');
-        showLoading("獲取題目...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
+        showExamView('view-quiz');
+        showLoading("下載題目...");
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", className: currentExam.class, unit: currentExam.unit }) });
         quizData = await res.json();
-        renderQuestion();
         hideLoading();
+        renderQuestion();
     }
 
     function renderQuestion() {
@@ -277,60 +298,151 @@
         document.getElementById('question-text').innerText = q.question;
         const box = document.getElementById('options-box');
         box.innerHTML = "";
-        q.options.forEach((txt, i) => {
-            if(!txt) return;
-            const b = document.createElement('button');
-            b.className = 'option-btn';
-            b.innerText = txt;
-            b.onclick = () => {
-                document.querySelectorAll('.option-btn').forEach(x => x.classList.remove('selected'));
-                b.classList.add('selected');
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
+        q.options.forEach((text, i) => {
+            if(!text) return;
+            const btn = document.createElement('button');
+            btn.className = 'option-btn font-medium';
+            btn.innerText = text;
+            btn.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
                 userAnswers[currentIdx] = { question: q.question, userAns: i+1, correctAns: q.correct };
-                document.getElementById(currentIdx < quizData.length - 1 ? 'btn-next' : 'btn-submit').classList.remove('hidden');
+                if (currentIdx < quizData.length - 1) document.getElementById('btn-next').classList.remove('hidden');
+                else document.getElementById('btn-submit').classList.remove('hidden');
             };
-            box.appendChild(b);
+            box.appendChild(btn);
         });
     }
 
-    function nextQuestion() { currentIdx++; renderQuestion(); document.getElementById('btn-next').classList.add('hidden'); }
+    function nextQuestion() { currentIdx++; renderQuestion(); }
 
     async function submitExam() {
         showLoading("提交中...");
-        const res = await fetch(GAS_EXAM_URL, { method: "POST", body: JSON.stringify({ 
-            action: "submitExam", seatNo: studentInfo.seatNo, className: studentInfo.className, unit: currentExam.unit, answers: userAnswers 
-        }) });
+        const res = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                action: "submitExam", 
+                name: studentInfo.name, 
+                className: studentInfo.className, 
+                seatNumber: studentInfo.seatNumber, // 傳送座號
+                unit: currentExam.unit, 
+                answers: userAnswers 
+            })
+        });
+        const result = await res.json();
+        hideLoading();
+        showExamView('view-result');
+        document.getElementById('result-stat').innerText = `得分：${result.score}`;
+    }
+
+    // --- 管理功能 ---
+    function generateQRCode() {
+        const c = document.getElementById('select-class').value;
+        const u = document.getElementById('select-unit').value;
+        if (!c || !u) return alert("請選擇班級與單元");
+        const url = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&openExternalBrowser=1`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+        document.getElementById('qr-image').src = qrUrl;
+        document.getElementById('qr-image-large').src = qrUrl;
+        document.getElementById('qr-container').classList.remove('hidden');
+    }
+
+    async function handleUpload() {
+        const file = document.getElementById('upload-file').files[0];
+        if (!file) return alert("請選擇檔案");
+        const reader = new FileReader();
+        showLoading("上傳中...");
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", rows: rows.slice(1) }) });
+            alert((await res.json()).message);
+            fetchConfig();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    async function downloadResults() {
+        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
+        if (!c || !u) return alert("請選取單元");
+        showLoading("下載中...");
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getResults", className: c, unit: u }) });
         const data = await res.json();
-        showView('view-result');
-        document.getElementById('result-stat').innerText = `得分：${data.score}`;
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "成績");
+        XLSX.writeFile(wb, `${c}_${u}_成績.xlsx`);
         hideLoading();
     }
 
-    async function generateAIQuestions() {
-        const topic = document.getElementById('gen-topic').value, cls = document.getElementById('gen-class').value, unt = document.getElementById('gen-unit').value;
-        if(!topic) return alert("請輸入主題");
-        showLoading("AI 出題中...");
+    async function confirmDelete() {
+        const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
+        if (!c || !u || !confirm("確定刪除？")) return;
+        showLoading("刪除中...");
+        await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", className: c, unit: u }) });
+        fetchConfig();
+    }
+
+    // --- AI 出題邏輯 ---
+    document.getElementById('generateBtn').onclick = async () => {
+        const topic = document.getElementById('gen-topic').value.trim();
+        if (!topic) return alert("請輸入主題");
+        const status = document.getElementById('gen-status');
+        const count = document.getElementById('gen-count').value;
+        const className = document.getElementById('gen-className').value || "未指定";
+        const unitName = document.getElementById('gen-unitName').value || "未指定";
+        
+        status.innerText = "AI 正在思考中...";
+        document.getElementById('generateBtn').disabled = true;
+
         try {
-            const prompt = `請幫我出 ${document.getElementById('gen-count').value} 題關於「${topic}」的選擇題，每題4個選項。輸出JSON格式：[{q, a1, a2, a3, a4, ans}]。其中 ans 是正確選項數字(1-4)。`;
-            const response = await puter.ai.chat(prompt);
-            const questions = JSON.parse(response.toString().replace(/```json/g, '').replace(/```/g, '').trim());
-            const header = [["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"]];
-            const rows = questions.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(header.concat(rows)), "題庫");
-            XLSX.writeFile(wb, `AI題庫_${cls}_${unt}.xlsx`);
-            document.getElementById('gen-status').innerText = "✅ 已生成並下載";
-        } catch(e) { alert("生成失敗"); }
-        hideLoading();
+            let prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。每題 4 個選項。輸出格式為 JSON 陣列，欄位: q, a1, a2, a3, a4, ans (1-4)。`;
+            const file = document.getElementById('gen-refFile').files[0];
+            let response;
+            
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                const imageData = await new Promise(r => { reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
+                response = await puter.ai.chat([{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: imageData } }] }]);
+            } else {
+                response = await puter.ai.chat(prompt);
+            }
+
+            let raw = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
+            lastGeneratedQuestions = JSON.parse(raw);
+            downloadGenExcel(lastGeneratedQuestions, className, unitName);
+            status.innerText = "✅ 生成成功！";
+            document.getElementById('reDownloadBtn').classList.remove('hidden');
+        } catch (e) { status.innerText = "❌ 錯誤: " + e.message; }
+        document.getElementById('generateBtn').disabled = false;
+    };
+
+    function downloadGenExcel(questions, c, u) {
+        const header = [["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"]];
+        const rows = questions.map(q => [c, u, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
+        const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "考題");
+        XLSX.writeFile(wb, `題庫_${c}_${u}.xlsx`);
     }
 
-    function showView(id) { ['view-admin','view-student-login','view-quiz','view-result'].forEach(v => document.getElementById(v).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
+    // --- 工具 ---
+    function showExamView(id) {
+        ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; if(s) document.getElementById('qr-image-large').src = document.getElementById('qr-image').src; }
+    function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
 
-    document.getElementById('authLoginBtn').onclick = () => puter.auth.signIn().then(initSystem);
+    document.getElementById('authLoginBtn').onclick = async () => { await puter.auth.signIn(); checkAuth(); };
     document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
-    initSystem();
+
+    init();
 </script>
+
 </body>
 </html>
