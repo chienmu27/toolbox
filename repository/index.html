@@ -20,12 +20,16 @@
             --exam-download: #0984e3; --exam-upload: #e17055; --exam-danger: #d63031;
         }
         body { font-family: "Segoe UI", "PingFang TC", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
-        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 800px; position: relative; min-height: 550px; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 800px; position: relative; min-height: 550px; display: flex; flex-direction: column; }
+        
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; width: 95%; max-width: 800px; }
         .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary-color); }
+        
         .hidden { display: none !important; }
-        .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
+        .main-btn:hover { opacity: 0.9; }
+
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
         .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .exam-button { color: white; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; transition: 0.2s; }
@@ -33,8 +37,24 @@
         .btn-upload { background: var(--exam-upload); }
         .btn-download { background: var(--exam-download); }
         .btn-danger { background: var(--exam-danger); }
+        
         .option-btn { background: white; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; }
+
+        /* 登入遮罩居中樣式優化 */
+        #authOverlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; border-radius: 12px; z-index: 1000; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box;
+        }
+
+        /* AI 出題檔案上傳區加大 */
+        .file-upload-area { 
+            border: 3px dashed #bbb; padding: 40px 20px; background: #fafafa; border-radius: 12px; text-align: center; transition: 0.3s; cursor: pointer;
+        }
+        .file-upload-area:hover { border-color: var(--primary-color); background: #f0f0f5; }
+        .file-upload-area input[type="file"] { font-size: 1.1rem; cursor: pointer; max-width: 100%; }
+
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
     </style>
@@ -48,25 +68,28 @@
 </div>
 
 <div class="container">
-    <!-- 驗證遮罩層 -->
+    <!-- 驗證遮罩層 (已優化居中) -->
     <div id="authOverlay">
-        <h2 id="authMsg" class="text-xl font-bold mb-4">管理員請先登入 Google 帳號</h2>
-        <button id="authLoginBtn" class="main-btn max-w-[250px]">登入 Google</button>
-        <div id="applyForm" class="hidden w-full max-w-sm mt-4">
-            <p class="mb-4 text-red-600">您的帳號尚未獲得管理授權：</p>
-            <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
-            <input type="text" id="applyName" class="exam-input" placeholder="姓名">
-            <button id="applyBtn" class="main-btn mt-2">送出授權申請</button>
+        <div class="max-w-md w-full">
+            <h2 id="authMsg" class="text-2xl font-bold mb-6 text-gray-800">管理員請先登入 Google 帳號</h2>
+            <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
+            <div id="applyForm" class="hidden w-full mt-6 pt-6 border-t border-gray-100">
+                <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權：</p>
+                <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
+                <input type="text" id="applyName" class="exam-input" placeholder="姓名">
+                <button id="applyBtn" class="main-btn mt-4">送出授權申請</button>
+            </div>
         </div>
     </div>
 
+    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
             <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
         </div>
 
-        <!-- 線上考試系統分頁 -->
+        <!-- 考試系統分頁 -->
         <div id="view-exam-tab">
             <div id="examView">
                 <div id="view-admin" class="hidden">
@@ -81,7 +104,6 @@
                         <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
                         <div class="grid grid-cols-1 gap-2 mt-2">
                             <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
-                            <!-- 刪除了下載成績與下載紀錄按鈕 -->
                             <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
                         </div>
                     </div>
@@ -116,7 +138,7 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 -->
+        <!-- AI 出題分頁 (已加大上傳區) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題系統</h1>
             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -129,32 +151,33 @@
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、難度適中..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、南一版、難度適中..."></textarea>
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">3. 參考檔案 (選填)</label>
                 <div class="file-upload-area">
+                    <p class="text-gray-600 font-bold mb-4">點擊此區域或拖放檔案進行選擇</p>
                     <input type="file" id="gen-refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
-                    <p class="text-xs text-gray-500 mt-2">支援：TXT, Word, Excel, PDF, 圖片</p>
+                    <p class="text-xs text-gray-500 mt-4">支援：TXT, Word, Excel, PDF, 圖片</p>
                 </div>
             </div>
             <div class="mb-6">
                 <label class="font-bold block mb-1">4. 設定題數</label>
                 <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="20" />
             </div>
-            <button id="generateBtn" class="main-btn">開始 AI 生成</button>
+            <button id="generateBtn" class="main-btn">開始 AI 生成題庫 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
         <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
-            <h2 class="text-xl font-bold mb-6 text-center">作答場次報告</h2>
+            <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4">
                 <!-- 卡片動態生成 -->
             </div>
         </div>
 
-        <div id="footerUI" class="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
+        <div id="footerUI" class="mt-auto pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
             線上考試工具箱 © 2025 chienmu.tai<br>Powered by Puter.js & Google Gemini
         </div>
     </div>
@@ -428,8 +451,18 @@
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
+    
     document.getElementById('authLoginBtn').onclick = () => puter.auth.signIn();
     document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
+    
+    document.getElementById('applyBtn').onclick = async () => {
+        const email = document.getElementById('applyEmail').value.trim();
+        const name = document.getElementById('applyName').value.trim();
+        if(!email || !name) return alert("請填寫完整資料");
+        await fetch(GAS_AUTH_URL, { method: "POST", body: JSON.stringify({ action: "apply", uuid: userUUID, email, name }) });
+        alert("申請已送出");
+    };
+
     initSystem();
 </script>
 </body>
