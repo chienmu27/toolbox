@@ -155,7 +155,7 @@
 
         <h1>線上考試 AI 出題系統</h1>
         
-        <!-- 新增：班級與單元設定 -->
+        <!-- 班級與單元設定欄位 -->
         <div class="form-group flex-row">
             <div>
                 <label>班級</label>
@@ -187,20 +187,9 @@
         
         <div class="form-group">
             <label>4. 設定參數</label>
-            <div class="flex-row">
-                <div>
-                    <span style="font-size: 0.9rem;">題數</span>
-                    <input type="number" id="count" value="5" min="1" max="20" />
-                </div>
-                <div>
-                    <span style="font-size: 0.9rem;">每題建議秒數 (僅供參考)</span>
-                    <select id="timeLimit">
-                        <option value="10">10 秒</option>
-                        <option value="20" selected>20 秒</option>
-                        <option value="30">30 秒</option>
-                        <option value="60">1 分鐘</option>
-                    </select>
-                </div>
+            <div style="width: 120px;">
+                <span style="font-size: 0.9rem;">題數</span>
+                <input type="number" id="count" value="5" min="1" max="20" />
             </div>
         </div>
 
@@ -220,7 +209,7 @@
     let userUUID = "";
     let lastGeneratedQuestions = null;
 
-    // --- 權限驗證邏輯 (維持不變) ---
+    // --- 權限驗證邏輯 ---
     async function initAuth() {
         if (!puter.auth.isSignedIn()) {
             document.getElementById('authOverlay').classList.remove('hidden');
@@ -281,7 +270,7 @@
         location.reload();
     };
 
-    // --- 檔案解析功能 (維持不變) ---
+    // --- 檔案解析功能 ---
     async function parseFile(file) {
         const name = file.name.toLowerCase();
         return new Promise((resolve, reject) => {
@@ -318,7 +307,7 @@
         });
     }
 
-    // --- AI 生成題目 (修改提示語與輸出格式) ---
+    // --- AI 生成題目 ---
     document.getElementById('generateBtn').onclick = async () => {
         const genBtn = document.getElementById('generateBtn');
         const statusTxt = document.getElementById('status');
@@ -347,8 +336,7 @@
             if (contextData && contextData.type === 'text') {
                 prompt += `請基於以下參考資料內容出題：\n${contextData.content}\n`;
             }
-            // 要求格式包含 q, a1, a2, a3, a4, ans (1-4 數字)
-            prompt += `輸出格式：請僅回傳一個 JSON 陣列，內含物件欄位為 q, a1, a2, a3, a4, ans。其中 ans 欄位請填入正確答案的選項號碼（例如：若選項1正確，請填 1）。`;
+            prompt += `輸出格式：請僅回傳一個 JSON 陣列，內含物件欄位為 q, a1, a2, a3, a4, ans。其中 ans 欄位請填入正確答案的選項號碼（例如：若選項1正確，則填 1）。`;
 
             statusTxt.innerText = "AI 正在生成題目中，請稍候...";
             
@@ -380,14 +368,14 @@
         }
     };
 
-    // --- 下載 Excel (修改標題列與資料對應) ---
+    // --- 下載 Excel ---
     function downloadExamExcel(questions, className, unitName) {
-        // 1. 定義標題列 (A1:H1)
+        // 第一列標題 A1:H1
         const header = [
             ["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"]
         ];
 
-        // 2. 對應資料列
+        // 資料對應
         const rows = questions.map(q => [
             className, 
             unitName, 
@@ -396,14 +384,13 @@
             q.a2, 
             q.a3, 
             q.a4, 
-            q.ans.toString() // 正確答案號碼 (1-4)
+            q.ans.toString() 
         ]);
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
         XLSX.utils.book_append_sheet(wb, ws, "考題清單");
         
-        // 檔名使用班級與單元
         const fileName = `考試題庫_${className}_${unitName}.xlsx`;
         XLSX.writeFile(wb, fileName);
     }
