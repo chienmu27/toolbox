@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上考試出題系統 - AI 自動生成</title>
+    <!-- 引入外部資源 -->
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- 引入 Mammoth.js 用於處理 Word 文檔 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <style>
+        :root { 
+            --primary-color: #46178f; 
+            --secondary-color: #250850; 
+            --success-color: #108548; 
+            --danger-color: #e21b3c; 
+            --bg-color: #f2f2f2;
+        }
+
+        body { 
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; 
+            background-color: var(--bg-color); 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 40px 0; 
+        }
+
+        .container { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+            width: 90%; 
+            max-width: 750px; 
+            position: relative; 
+            min-height: 550px;
+        }
+
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px; 
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .header-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .logout-btn { 
+            background-color: #fff; 
+            color: #d9534f; 
+            border: 1px solid #d9534f; 
+            padding: 8px 16px; 
+            font-size: 0.85rem; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: 0.2s;
+            margin-left: 20px;
+        }
+        .logout-btn:hover { background-color: #fdf7f7; }
+
+        #authOverlay { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: white; 
+            border-radius: 12px; 
+            z-index: 1000; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            padding: 20px; 
+            box-sizing: border-box; 
+        }
+
+        h1 { color: var(--primary-color); text-align: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.2rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        .file-upload-area { 
+            border: 2px dashed #bbb; 
+            padding: 15px; 
+            background: #fafafa; 
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .main-btn { 
+            width: 100%; padding: 12px; 
+            background-color: var(--primary-color); 
+            color: white; border: none; border-radius: 6px; 
+            font-size: 1.1rem; cursor: pointer; font-weight: bold; 
+            margin-top: 10px; 
+        }
+        .main-btn:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.8; }
+        
+        .download-again-btn { 
+            width: 100%; padding: 12px; 
+            background-color: var(--success-color); 
+            color: white; border: none; border-radius: 6px; 
+            font-size: 1.1rem; cursor: pointer; font-weight: bold; 
+            margin-top: 10px; display: none; 
+        }
+
+        #status { margin-top: 1rem; text-align: center; color: #555; font-size: 0.9rem; font-weight: bold; }
+        .footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: #888; }
+        .hidden { display: none !important; }
+
+        .flex-row { display: flex; gap: 10px; }
+        .flex-row > div { flex: 1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 身份驗證遮罩層 -->
+    <div id="authOverlay">
+        <h2 id="authMsg">請先登入 Google 帳號</h2>
+        <button id="authLoginBtn" class="main-btn" style="width:200px">登入 Google</button>
+        
+        <div id="applyForm" class="hidden" style="width:100%">
+            <p>您的帳號尚未獲得授權，請填寫申請資料：</p>
+            <div class="form-group">
+                <label>您的 Google 信箱</label>
+                <input type="email" id="applyEmail" placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label>申請人姓名</label>
+                <input type="text" id="applyName" placeholder="請輸入姓名">
+            </div>
+            <button id="applyBtn" class="main-btn">送出申請</button>
+        </div>
+    </div>
+
+    <!-- 登入後顯示的主內容 -->
+    <div id="mainContent" class="hidden">
+        <div class="header-bar">
+            <p class="header-title">線上考試工具箱</p>
+            <button id="logoutBtn" class="logout-btn">登出帳號</button>
+        </div>
+
+        <h1>線上考試 AI 出題系統</h1>
+        
+        <!-- 新增：班級與單元設定 -->
+        <div class="form-group flex-row">
+            <div>
+                <label>班級</label>
+                <input type="text" id="className" placeholder="例如：五年三班" />
+            </div>
+            <div>
+                <label>單元</label>
+                <input type="text" id="unitName" placeholder="例如：第一單元" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>1. 題目主題</label>
+            <input type="text" id="topic" placeholder="例如：生活科技、地理知識、英文單字..." />
+        </div>
+        
+        <div class="form-group">
+            <label>2. 出題提示語 / 額外要求 (選填)</label>
+            <textarea id="hint" rows="2" placeholder="例如：難度適中、聚焦在環境保護內容..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>3. 上傳參考檔案 (選填)</label>
+            <div class="file-upload-area">
+                <input type="file" id="refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, image/*" />
+                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">支援：TXT, CSV, Word, Excel, 圖片 (識圖出題)</p>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>4. 設定參數</label>
+            <div class="flex-row">
+                <div>
+                    <span style="font-size: 0.9rem;">題數</span>
+                    <input type="number" id="count" value="5" min="1" max="20" />
+                </div>
+                <div>
+                    <span style="font-size: 0.9rem;">每題建議秒數 (僅供參考)</span>
+                    <select id="timeLimit">
+                        <option value="10">10 秒</option>
+                        <option value="20" selected>20 秒</option>
+                        <option value="30">30 秒</option>
+                        <option value="60">1 分鐘</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button id="generateBtn" class="main-btn">開始 AI 生成題目</button>
+        <button id="reDownloadBtn" class="download-again-btn">再次下載最後產出的 Excel</button>
+        <div id="status">系統就緒</div>
+
+        <div class="footer">
+            Powered by Google Gemini (Vision) & Puter.js & Mammoth.js<br>
+            © 2026 chienmu.tai 保留所有權利
+        </div>
+    </div>
+</div>
+
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwHobXSaxivNtdaPynrxehum0cRalWhZrTBQYNO4s0pID4Gb21IE3n5o14S2MHL2L8Eyg/exec"; 
+    let userUUID = "";
+    let lastGeneratedQuestions = null;
+
+    // --- 權限驗證邏輯 (維持不變) ---
+    async function initAuth() {
+        if (!puter.auth.isSignedIn()) {
+            document.getElementById('authOverlay').classList.remove('hidden');
+            return;
+        }
+        const user = await puter.auth.getUser();
+        userUUID = user.uuid; 
+        checkPermission(userUUID);
+    }
+
+    async function checkPermission(uuid) {
+        document.getElementById('authMsg').innerText = "驗證授權中...";
+        try {
+            const resp = await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "checkStatus", uuid: uuid })
+            });
+            const result = await resp.json();
+            if (result.status === "Approved") {
+                document.getElementById('authOverlay').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+            } else if (result.status === "Pending") {
+                document.getElementById('authMsg').innerText = "申請審核中，請稍候。";
+                document.getElementById('authLoginBtn').classList.add('hidden');
+            } else {
+                document.getElementById('authMsg').innerText = "帳號尚未獲得授權";
+                document.getElementById('authLoginBtn').classList.add('hidden');
+                document.getElementById('applyForm').classList.remove('hidden');
+            }
+        } catch (e) { 
+            console.error(e); 
+            document.getElementById('authMsg').innerText = "連線失敗，請重試。";
+        }
+    }
+
+    document.getElementById('applyBtn').onclick = async () => {
+        const email = document.getElementById('applyEmail').value.trim();
+        const name = document.getElementById('applyName').value.trim();
+        if(!email || !name) return alert("請填寫完整資料");
+        document.getElementById('applyBtn').disabled = true;
+        try {
+            await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name })
+            });
+            document.getElementById('authMsg').innerText = "申請已送出！請等待管理員審核。";
+            document.getElementById('applyForm').classList.add('hidden');
+        } catch (e) { alert("提交失敗"); }
+    };
+
+    document.getElementById('authLoginBtn').onclick = async () => {
+        await puter.auth.signIn();
+        initAuth();
+    };
+
+    document.getElementById('logoutBtn').onclick = () => {
+        puter.auth.signOut();
+        location.reload();
+    };
+
+    // --- 檔案解析功能 (維持不變) ---
+    async function parseFile(file) {
+        const name = file.name.toLowerCase();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            if (name.endsWith('.txt') || name.endsWith('.csv')) {
+                reader.onload = (e) => resolve({ type: 'text', content: e.target.result });
+                reader.readAsText(file);
+            } 
+            else if (name.endsWith('.docx')) {
+                reader.onload = (e) => {
+                    mammoth.extractRawText({ arrayBuffer: e.target.result })
+                        .then(result => resolve({ type: 'text', content: result.value }))
+                        .catch(reject);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+                reader.onload = (e) => {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    let text = "";
+                    workbook.SheetNames.forEach(sheetName => {
+                        text += `[Sheet: ${sheetName}]\n` + XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]) + "\n";
+                    });
+                    resolve({ type: 'text', content: text });
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            else if (file.type.startsWith('image/')) {
+                reader.onload = (e) => resolve({ type: 'image', content: e.target.result });
+                reader.readAsDataURL(file);
+            } else {
+                resolve({ type: 'text', content: "" });
+            }
+        });
+    }
+
+    // --- AI 生成題目 (修改提示語與輸出格式) ---
+    document.getElementById('generateBtn').onclick = async () => {
+        const genBtn = document.getElementById('generateBtn');
+        const statusTxt = document.getElementById('status');
+        const fileInput = document.getElementById('refFile');
+        
+        const className = document.getElementById('className').value.trim() || "未設定班級";
+        const unitName = document.getElementById('unitName').value.trim() || "未設定單元";
+        const topic = document.getElementById('topic').value.trim();
+        const hint = document.getElementById('hint').value.trim();
+        const count = document.getElementById('count').value;
+
+        if (!topic) return alert("請輸入主題");
+
+        genBtn.disabled = true;
+        statusTxt.innerText = "正在分析資料...";
+        
+        try {
+            let contextData = null;
+            if (fileInput.files.length > 0) {
+                contextData = await parseFile(fileInput.files[0]);
+            }
+
+            let prompt = `請幫我出 ${count} 題關於「${topic}」的選擇題。`;
+            prompt += `每題必須嚴格提供 4 個選項。`;
+            if (hint) prompt += `額外指示：${hint}。`;
+            if (contextData && contextData.type === 'text') {
+                prompt += `請基於以下參考資料內容出題：\n${contextData.content}\n`;
+            }
+            // 要求格式包含 q, a1, a2, a3, a4, ans (1-4 數字)
+            prompt += `輸出格式：請僅回傳一個 JSON 陣列，內含物件欄位為 q, a1, a2, a3, a4, ans。其中 ans 欄位請填入正確答案的選項號碼（例如：若選項1正確，請填 1）。`;
+
+            statusTxt.innerText = "AI 正在生成題目中，請稍候...";
+            
+            let response;
+            if (contextData && contextData.type === 'image') {
+                response = await puter.ai.chat([
+                    { role: "user", content: [
+                        { type: "text", text: prompt + " (請根據附圖內容出題)" },
+                        { type: "image_url", image_url: { url: contextData.content } }
+                    ]}
+                ]);
+            } else {
+                response = await puter.ai.chat(prompt);
+            }
+
+            let rawData = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
+            const questions = JSON.parse(rawData);
+            
+            lastGeneratedQuestions = questions;
+            downloadExamExcel(questions, className, unitName);
+            
+            statusTxt.innerText = "✅ 生成成功！Excel 下載中。";
+            document.getElementById('reDownloadBtn').style.display = "block";
+        } catch (e) { 
+            statusTxt.innerText = "❌ 發生錯誤: " + e.message; 
+            console.error(e);
+        } finally {
+            genBtn.disabled = false;
+        }
+    };
+
+    // --- 下載 Excel (修改標題列與資料對應) ---
+    function downloadExamExcel(questions, className, unitName) {
+        // 1. 定義標題列 (A1:H1)
+        const header = [
+            ["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"]
+        ];
+
+        // 2. 對應資料列
+        const rows = questions.map(q => [
+            className, 
+            unitName, 
+            q.q, 
+            q.a1, 
+            q.a2, 
+            q.a3, 
+            q.a4, 
+            q.ans.toString() // 正確答案號碼 (1-4)
+        ]);
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
+        XLSX.utils.book_append_sheet(wb, ws, "考題清單");
+        
+        // 檔名使用班級與單元
+        const fileName = `考試題庫_${className}_${unitName}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
+
+    document.getElementById('reDownloadBtn').onclick = () => {
+        if(lastGeneratedQuestions) {
+            const className = document.getElementById('className').value.trim() || "未設定班級";
+            const unitName = document.getElementById('unitName').value.trim() || "未設定單元";
+            downloadExamExcel(lastGeneratedQuestions, className, unitName);
+        }
+    };
+
+    initAuth();
+</script>
+
+</body>
+</html>
