@@ -55,20 +55,13 @@
     <!-- 驗證遮罩層 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
-            <div id="loginPrompt">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800">歡迎使用線上考試工具箱</h2>
-                <p class="mb-6 text-gray-500">請先登入 Google 帳號以繼續</p>
-                <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
-            </div>
-            
-            <div id="applyForm" class="hidden w-full text-left">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 text-center">授權資料填寫</h2>
-                <p class="mb-6 text-sm text-red-600 bg-red-50 p-3 rounded">您的帳號尚未獲得管理授權，請填寫下方資料送出申請：</p>
-                <label class="block text-sm font-bold mb-1">Gmail 信箱</label>
-                <input type="email" id="applyEmail" class="exam-input mb-4" readonly>
-                <label class="block text-sm font-bold mb-1">姓名 (登入時驗證用)</label>
-                <input type="text" id="applyName" class="exam-input" placeholder="請輸入您的真實姓名">
-                <button id="applyBtn" class="main-btn mt-6">送出授權申請</button>
+            <h2 id="authMsg" class="text-2xl font-bold mb-6 text-gray-800">請先登入 Google 帳號</h2>
+            <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
+            <div id="applyForm" class="hidden w-full mt-6 pt-6 border-t border-gray-100">
+                <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權：</p>
+                <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
+                <input type="text" id="applyName" class="exam-input" placeholder="姓名">
+                <button id="applyBtn" class="main-btn mt-4">送出授權申請</button>
             </div>
         </div>
     </div>
@@ -82,80 +75,104 @@
 
         <!-- 考試系統分頁 -->
         <div id="view-exam-tab">
-            <div id="view-admin" class="hidden">
-                <h2 class="text-xl font-bold mb-4 text-center">後台管理</h2>
-                <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
-                    <div class="flex items-center mb-2">
-                        <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                        <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link" target="_blank" class="template-link">題庫範本</a>
-                        <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link" target="_blank" class="template-link">名單範本</a>
+            <div id="examView">
+                <div id="view-admin" class="hidden">
+                    <h2 class="text-xl font-bold mb-4 text-center">後台管理</h2>
+                    
+                    <!-- 資料上傳區塊 -->
+                    <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
+                        <div class="flex items-center mb-2">
+                            <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">名單範本</a>
+                        </div>
+                        
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
+                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
+                        </div>
+                        
+                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                        <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
                     </div>
-                    <div class="flex gap-4 mb-2 text-xs">
-                        <label class="cursor-pointer"><input type="radio" name="uploadType" value="questions" checked> 題目</label>
-                        <label class="cursor-pointer"><input type="radio" name="uploadType" value="users"> 學生名單</label>
+
+                    <div>
+                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                        <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
+                        <div class="grid grid-cols-1 gap-2 mt-2">
+                            <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
+                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
+                        </div>
                     </div>
-                    <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
-                    <button class="exam-button btn-upload" onclick="handleUpload()">執行上傳</button>
+                    <div id="qr-container" class="hidden text-center mt-4">
+                        <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
+                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+                    </div>
                 </div>
-                <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
-                <select id="select-unit" class="exam-select"><option>請選擇單元</option></select>
-                <div class="grid grid-cols-1 gap-2 mt-2">
-                    <button class="exam-button btn-primary" onclick="generateQRCode()">生成 QR-Code</button>
-                    <button class="exam-button btn-danger" onclick="confirmDelete()">刪除此單元</button>
-                </div>
-                <div id="qr-container" class="hidden text-center mt-4">
-                    <p class="text-xs font-bold mb-2" id="qr-id-display"></p>
-                    <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
-                </div>
-            </div>
 
-            <div id="view-student-login" class="hidden">
-                <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
-                <div class="bg-gray-50 p-6 rounded-xl">
-                    <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
-                    <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
+                <div id="view-student-login" class="hidden">
+                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
+                        <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
+                        <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
+                    </div>
                 </div>
-            </div>
 
-            <div id="view-quiz" class="hidden">
-                <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
-                <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
-                <div id="options-box"></div>
-                <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
-                <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
-            </div>
+                <div id="view-quiz" class="hidden">
+                    <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
+                    <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
+                    <div id="options-box"></div>
+                    <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
+                    <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+                </div>
 
-            <div id="view-result" class="hidden text-center">
-                <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
-                <div id="result-stat" class="text-4xl font-black my-6"></div>
-                <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
+                <div id="view-result" class="hidden text-center">
+                    <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
+                    <div id="result-stat" class="text-4xl font-black my-6"></div>
+                    <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
+                </div>
             </div>
         </div>
 
+        <!-- AI 出題分頁 -->
         <div id="view-gen-tab" class="hidden">
-            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題</h1>
+            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題系統</h1>
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <input type="text" id="gen-className" class="exam-input" placeholder="班級 (例如：503)">
-                <input type="text" id="gen-unitName" class="exam-input" placeholder="單元 (例如：單元一)">
+                <div><label class="font-bold block mb-1">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
+                <div><label class="font-bold block mb-1">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
             </div>
-            <input type="text" id="gen-topic" class="exam-input mb-4" placeholder="題目主題">
-            <textarea id="gen-hint" class="exam-input mb-4" rows="2" placeholder="提示語 (例如：國小六年級難度)"></textarea>
-            <div class="file-upload-area mb-4">
-                <p class="text-xs">參考檔案 (Word, PDF, 圖片...)</p>
-                <input type="file" id="gen-refFile" class="mt-2 text-xs">
+            <div class="mb-4">
+                <label class="font-bold block mb-1">1. 題目主題</label>
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
             </div>
-            <input type="number" id="gen-count" class="exam-input w-24 mb-4" value="5" min="1">
+            <div class="mb-4">
+                <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、南一版、難度適中..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="font-bold block mb-1">3. 參考檔案 (選填)</label>
+                <div class="file-upload-area">
+                    <p class="text-gray-600 font-bold mb-4">點擊此區域或拖放檔案進行選擇</p>
+                    <input type="file" id="gen-refFile" accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="font-bold block mb-1">4. 設定題數</label>
+                <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="20" />
+            </div>
             <button id="generateBtn" class="main-btn">開始 AI 生成題庫 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
+        <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
-        <div id="footerUI" class="mt-auto pt-6 text-center text-xs text-gray-400">
-            線上考試工具箱 © 2025 chienmu.tai<br>Powered by Puter.js
+        <div id="footerUI" class="mt-auto pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
+            線上考試工具箱 © 2025 chienmu.tai<br>Powered by Puter.js & Google Gemini
         </div>
     </div>
 </div>
@@ -164,18 +181,22 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
+    // --- 關鍵設定 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
-    const ADMIN_EMAIL = "chienmu@dhips.ttct.edu.tw";
     const BASE_URL = window.location.origin + window.location.pathname;
 
-    let userUUID = "", userSSID = "", configData = {}, currentExam = { class: "", unit: "", qrId: "" }, quizData = [], currentIdx = 0, userAnswers = [], studentInfo = {};
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    let userUUID = "", userSSID = "", configData = {}, currentExam = { class: "", unit: "", qrId: "" };
+    let quizData = [], currentIdx = 0, userAnswers = [], studentInfo = {};
 
     async function initSystem() {
         const params = new URLSearchParams(window.location.search);
-        const c = params.get('c'), u = params.get('u'), sid = params.get('sid'), qid = params.get('qid');
+        const c = params.get('c'), u = params.get('u'), qid = params.get('qid'), sid = params.get('sid');
         if (c && u && sid) {
             userSSID = sid;
             document.getElementById('topNav').classList.add('hidden');
+            document.getElementById('topHeaderUI').classList.add('hidden');
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
             currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u), qrId: qid || "MANUAL" };
@@ -185,58 +206,22 @@
     }
 
     async function checkAdminAuth() {
-        if (!puter.auth.isSignedIn()) {
-            document.getElementById('authOverlay').classList.remove('hidden');
-            document.getElementById('loginPrompt').classList.remove('hidden');
-            return;
-        }
-
-        // --- 已登入時的提速邏輯 ---
-        document.getElementById('loginPrompt').classList.add('hidden'); // 立即隱藏登入按鈕
-        const user = await puter.auth.getUser();
-        userUUID = user.uuid;
-        
+        if (!puter.auth.isSignedIn()) { document.getElementById('authOverlay').classList.remove('hidden'); return; }
+        const user = await puter.auth.getUser(); userUUID = user.uuid;
         showLoading("驗證權限中...");
         try {
-            const resp = await fetch(GAS_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "checkStatus", uuid: userUUID, email: user.email }) 
-            });
+            const resp = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
             const result = await resp.json();
             hideLoading();
-
             if (result.status === "Approved") {
                 userSSID = result.ssId;
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 document.getElementById('topNav').classList.remove('hidden');
                 fetchConfig();
-            } else if (result.status === "None") {
-                // 進入註冊表單，不顯示登入按鈕
-                document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('applyEmail').value = user.email;
-                document.getElementById('applyName').value = user.username || "";
-            } else {
-                alert("您的申請正在審核中，請稍後再試。");
-            }
+            } else { document.getElementById('applyForm').classList.remove('hidden'); }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
-
-    // 註冊申請送出
-    document.getElementById('applyBtn').onclick = async () => {
-        const email = document.getElementById('applyEmail').value;
-        const name = document.getElementById('applyName').value.trim();
-        if (!name) return alert("請填寫姓名");
-        
-        showLoading("送出申請...");
-        await fetch(GAS_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ action: "apply", uuid: userUUID, email: email, name: name }) 
-        });
-        hideLoading();
-        alert("申請已送出，請靜候管理員核可。");
-        location.reload();
-    };
 
     function switchTab(tab) {
         ['exam', 'gen', 'report'].forEach(t => {
@@ -268,13 +253,30 @@
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
         if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
+
         const reader = new FileReader();
-        showLoading("處理中...");
+        showLoading("資料處理中...");
         reader.onload = async (e) => {
-            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).filter(r => r.length > 0);
-            await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: rows.slice(1) }) });
-            hideLoading(); alert("成功"); fetchConfig();
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).filter(r => r.length > 0);
+            const dataRows = rows.slice(1);
+            if (dataRows.length === 0) { hideLoading(); return alert("檔案中沒有有效數據"); }
+
+            try {
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) 
+                });
+                const result = await res.json();
+                hideLoading();
+                alert(result.message || "處理成功");
+                if (uploadType === 'questions') fetchConfig();
+            } catch (err) {
+                hideLoading();
+                alert("上傳失敗");
+            }
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -286,12 +288,14 @@
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
+        document.getElementById('qr-image-large').src = qrUrl;
         document.getElementById('qr-id-display').innerText = "考試編號：" + qrId;
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
+        if (!pin) return alert("請輸入 PIN 碼");
         showLoading("驗證中...");
         const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", ssId: userSSID, pin: pin, targetClass: currentExam.class }) });
         const data = await res.json(); hideLoading();
@@ -304,65 +308,82 @@
         quizData = await res.json(); hideLoading(); renderQuestion();
     }
 
+    /**
+     * 修改處：確保題目與答案以「純文字」格式顯示
+     * 使用 .innerText 或 .textContent 確保不會渲染 HTML
+     */
     function renderQuestion() {
         const q = quizData[currentIdx];
         document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
+        
+        // 確保題目為純文字顯示
         document.getElementById('question-text').innerText = q.question;
+        
         const box = document.getElementById('options-box'); box.innerHTML = "";
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-submit').classList.add('hidden');
+        
         q.options.forEach((text, i) => {
             if(!text) return;
             const btn = document.createElement('button');
-            btn.className = 'option-btn font-medium'; btn.innerText = text;
+            btn.className = 'option-btn font-medium';
+            
+            // 確保選項為純文字顯示
+            btn.innerText = text;
+            
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 userAnswers[currentIdx] = { question: q.question, userAns: i+1, correctAns: q.correct };
-                document.getElementById(currentIdx < quizData.length - 1 ? 'btn-next' : 'btn-submit').classList.remove('hidden');
+                if (currentIdx < quizData.length - 1) document.getElementById('btn-next').classList.remove('hidden');
+                else document.getElementById('btn-submit').classList.remove('hidden');
             };
             box.appendChild(btn);
         });
     }
 
-    function nextQuestion() { 
-        document.getElementById('btn-next').classList.add('hidden');
-        currentIdx++; 
-        renderQuestion(); 
-    }
+    function nextQuestion() { currentIdx++; renderQuestion(); }
 
     async function submitExam() {
         showLoading("提交中...");
         const score = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
-        await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, className: studentInfo.className, unit: currentExam.unit, qrId: currentExam.qrId, answers: userAnswers }) });
+        await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, 
+                className: studentInfo.className, unit: currentExam.unit, 
+                qrId: currentExam.qrId, answers: userAnswers 
+            })
+        });
         hideLoading(); showExamSubView('view-result');
         document.getElementById('result-stat').innerText = `得分：${score}`;
     }
 
     async function loadReports() {
         const container = document.getElementById('report-container');
-        container.innerHTML = "<p class='text-center text-xs'>載入中...</p>";
+        container.innerHTML = "<p class='text-center'>載入報告中...</p>";
         try {
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getReportSummary", ssId: userSSID }) });
             const data = await res.json(); container.innerHTML = "";
+            if (!data || data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400'>尚無資料</p>"; return; }
             data.forEach(rep => {
                 const card = document.createElement('div');
                 card.className = "report-card";
-                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除</button></div>`;
+                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除場次</button></div>`;
                 container.appendChild(card);
             });
         } catch (e) { container.innerHTML = "載入失敗"; }
     }
 
     async function downloadReportById(qrId, type) {
-        showLoading("下載中...");
+        showLoading("準備檔案...");
         const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "downloadById", ssId: userSSID, qrId: qrId, type: type }) });
-        const data = await res.json();
-        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, `${qrId}_${type}.xlsx`);
+        saveExcel(await res.json(), `報告_${qrId}_${type}.xlsx`);
         hideLoading();
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm("確定刪除？")) return;
+        if (!confirm(`確定要永久刪除場次 ${qrId} 的所有紀錄嗎？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -370,12 +391,39 @@
 
     async function confirmDelete() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (confirm("確定刪除題庫？")) {
+        if (!c || !u) return alert("請選取單元");
+        if (confirm(`刪除 ${c} - ${u} 題庫？`)) {
             showLoading("刪除中...");
             await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", ssId: userSSID, className: c, unit: u }) });
             fetchConfig(); hideLoading();
         }
     }
+
+    function saveExcel(data, filename) {
+        if (!data || data.length === 0) return alert("尚無資料");
+        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
+    }
+
+    function downloadExamExcel(qs, cls, unt) {
+        const rows = qs.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
+        const ws = XLSX.utils.aoa_to_sheet([["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"], ...rows]);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
+        XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
+    }
+
+    document.getElementById('generateBtn').onclick = async () => {
+        const topic = document.getElementById('gen-topic').value.trim();
+        if (!topic) return alert("請輸入主題");
+        const status = document.getElementById('gen-status'); status.innerText = "AI 生成中...";
+        try {
+            const prompt = `出 ${document.getElementById('gen-count').value} 題「${topic}」選擇題，4個選項。格式：[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確1-4}]。僅回 JSON。`;
+            const response = await puter.ai.chat(prompt);
+            const raw = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
+            downloadExamExcel(JSON.parse(raw), document.getElementById('gen-className').value, document.getElementById('gen-unitName').value);
+            status.innerText = "✅ 生成成功";
+        } catch (e) { status.innerText = "❌ 失敗"; }
+    };
 
     function showExamSubView(id) {
         ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
@@ -383,9 +431,13 @@
     }
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
-    function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; document.getElementById('qr-image-large').src = document.getElementById('qr-image').src; }
+    function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
     document.getElementById('authLoginBtn').onclick = () => puter.auth.signIn();
     document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
+    document.getElementById('applyBtn').onclick = async () => {
+        await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "apply", uuid: userUUID, email: document.getElementById('applyEmail').value, name: document.getElementById('applyName').value }) });
+        alert("申請已送出");
+    };
 
     initSystem();
 </script>
