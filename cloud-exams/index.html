@@ -52,25 +52,26 @@
 </div>
 
 <div class="container">
-    <!-- 驗證遮罩層 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
-            <h2 id="authMsg" class="text-2xl font-bold mb-6 text-gray-800">管理員請先登入 Google 帳號</h2>
-            <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block" onclick="handleLoginClick()">登入 Google 帳號</button>
+            <div id="loginArea">
+                <h2 id="authMsg" class="text-2xl font-bold mb-6 text-gray-800">管理員請先登入 Google 帳號</h2>
+                <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
+            </div>
             <div id="applyForm" class="hidden w-full mt-6 pt-6 border-t border-gray-100">
-                <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權：</p>
-                <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">授權資料填寫</h2>
+                <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權，請填寫申請：</p>
+                <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱" readonly>
                 <input type="text" id="applyName" class="exam-input" placeholder="姓名">
-                <button id="applyBtn" class="main-btn mt-4" onclick="handleApplySubmit()">送出授權申請</button>
+                <button id="applyBtn" class="main-btn mt-4">送出授權申請</button>
             </div>
         </div>
     </div>
 
-    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
-            <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition" onclick="handleLogoutClick()">登出</button>
+            <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
         </div>
 
         <div id="view-exam-tab">
@@ -80,8 +81,8 @@
                     <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
                         <div class="flex items-center mb-2">
                             <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">題庫範本</a>
-                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">名單範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link" target="_blank" class="template-link">名單範本</a>
                         </div>
                         <div class="flex gap-4 mb-2">
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
@@ -154,7 +155,7 @@
                 <label class="font-bold block mb-1">4. 設定題數</label>
                 <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="20" />
             </div>
-            <button id="generateBtn" class="main-btn" onclick="handleGenerateAI()">開始 AI 生成題庫 Excel</button>
+            <button id="generateBtn" class="main-btn">開始 AI 生成題庫 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
@@ -181,46 +182,50 @@
     let userUUID = "", userSSID = "", configData = {}, currentExam = { class: "", unit: "", qrId: "" };
     let quizData = [], currentIdx = 0, userAnswers = [], studentInfo = {};
 
-    // 初始化系統
     async function initSystem() {
         const params = new URLSearchParams(window.location.search);
         const c = params.get('c'), u = params.get('u'), qid = params.get('qid'), sid = params.get('sid');
         
+        // 如果是學生掃碼進入，直接隱藏所有登入介面
         if (c && u && sid) {
             userSSID = sid;
             document.getElementById('topNav').classList.add('hidden');
-            document.getElementById('topHeaderUI').classList.add('hidden');
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
             currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u), qrId: qid || "MANUAL" };
             showExamSubView('view-student-login');
             document.getElementById('exam-title').innerText = `${currentExam.class}\n${currentExam.unit}`;
         } else { 
+            // 如果是管理員模式，檢查登入狀態
             checkAdminAuth(); 
         }
     }
 
-    // 驗證管理員/使用者權限
     async function checkAdminAuth() {
+        // 優化：如果尚未登入，顯示登入按鈕
         if (!puter.auth.isSignedIn()) { 
             document.getElementById('authOverlay').classList.remove('hidden'); 
+            document.getElementById('loginArea').classList.remove('hidden');
+            document.getElementById('applyForm').classList.add('hidden');
             return; 
         }
-
-        // 登入後立即顯示驗證中，優化速度體驗
-        document.getElementById('authMsg').innerText = "驗證權限中...";
-        document.getElementById('authLoginBtn').classList.add('hidden');
-
-        const user = await puter.auth.getUser(); 
-        userUUID = user.uuid;
-        const userEmail = user.email;
-
+        
+        // 如果已登入，立即顯示驗證畫面
+        showLoading("驗證權限中...");
+        
         try {
+            const user = await puter.auth.getUser(); 
+            userUUID = user.uuid;
+            
             const resp = await fetch(GAS_URL, { 
                 method: "POST", 
-                body: JSON.stringify({ action: "checkStatus", uuid: userUUID, email: userEmail }) 
+                body: JSON.stringify({ action: "checkStatus", uuid: userUUID, email: user.email }) 
             });
+            
+            if (!resp.ok) throw new Error("Network Response Error");
+            
             const result = await resp.json();
+            hideLoading();
             
             if (result.status === "Approved") {
                 userSSID = result.ssId;
@@ -229,50 +234,29 @@
                 document.getElementById('topNav').classList.remove('hidden');
                 fetchConfig();
             } else { 
-                // 進入註冊流程，不顯示登入按鈕
-                document.getElementById('authMsg').innerText = "尚未獲得管理授權";
-                document.getElementById('authLoginBtn').classList.add('hidden');
+                // 未註冊或待審核，切換到申請頁面
+                document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('applyEmail').value = userEmail || "";
+                document.getElementById('applyEmail').value = user.email;
             }
         } catch (e) { 
-            document.getElementById('authMsg').innerText = "連線失敗，請刷新頁面";
-            document.getElementById('authLoginBtn').classList.remove('hidden');
+            hideLoading(); 
+            console.error(e);
+            alert("系統連線繁忙，請重新整理頁面。"); 
         }
     }
 
-    // 處理登入按鈕點擊
-    function handleLoginClick() {
-        puter.auth.signIn();
-    }
-
-    // 處理登出按鈕點擊
-    function handleLogoutClick() {
-        puter.auth.signOut();
-        location.reload();
-    }
-
-    // 處理授權申請送出
-    async function handleApplySubmit() {
-        const email = document.getElementById('applyEmail').value.trim();
-        const name = document.getElementById('applyName').value.trim();
-        if(!email || !name) return alert("請填寫完整資料");
-        
-        showLoading("送出申請中...");
+    // 登入按鈕處理
+    document.getElementById('authLoginBtn').onclick = async () => {
         try {
-            await fetch(GAS_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "apply", uuid: userUUID, email, name }) 
-            });
-            alert("申請已送出，請靜候管理員核可。");
-            location.reload();
-        } catch (e) {
-            alert("申請失敗");
+            await puter.auth.signIn();
+            // 登入成功後重新觸核
+            checkAdminAuth();
+        } catch (err) {
+            console.error("Login Error:", err);
         }
-        hideLoading();
-    }
+    };
 
-    // 切換分頁
     function switchTab(tab) {
         ['exam', 'gen', 'report'].forEach(t => {
             document.getElementById(`tab-btn-${t}`).classList.toggle('active', tab === t);
@@ -281,7 +265,6 @@
         if (tab === 'report') loadReports();
     }
 
-    // 抓取設定資料
     async function fetchConfig() {
         try {
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", ssId: userSSID }) });
@@ -293,7 +276,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // 更新單元選單
     function updateUnitDropdown() {
         const cls = document.getElementById('select-class').value;
         const untSelect = document.getElementById('select-unit');
@@ -301,30 +283,38 @@
         if (configData.units && configData.units[cls]) configData.units[cls].forEach(u => untSelect.innerHTML += `<option value="${u}">${u}</option>`);
     }
 
-    // 處理上傳
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
         if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
+
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).filter(r => r.length > 0);
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).filter(r => r.length > 0);
             const dataRows = rows.slice(1);
-            if (dataRows.length === 0) { hideLoading(); return alert("沒有數據"); }
+            if (dataRows.length === 0) { hideLoading(); return alert("檔案中沒有有效數據"); }
+
             try {
-                const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
+                const res = await fetch(GAS_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) 
+                });
                 const result = await res.json();
-                hideLoading(); alert(result.message || "處理成功");
+                hideLoading();
+                alert(result.message || "處理成功");
                 if (uploadType === 'questions') fetchConfig();
-            } catch (err) { hideLoading(); alert("上傳失敗"); }
+            } catch (err) {
+                hideLoading();
+                alert("上傳失敗");
+            }
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
 
-    // 產生 QRCode
     function generateQRCode() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
@@ -337,7 +327,6 @@
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
-    // 學生登入
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
         if (!pin) return alert("請輸入 PIN 碼");
@@ -347,14 +336,12 @@
         if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
     }
 
-    // 開始測驗
     async function startQuiz() {
         showExamSubView('view-quiz'); showLoading("載入中...");
         const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getQuestions", ssId: userSSID, className: currentExam.class, unit: currentExam.unit }) });
         quizData = await res.json(); hideLoading(); renderQuestion();
     }
 
-    // 渲染題目
     function renderQuestion() {
         const q = quizData[currentIdx];
         document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
@@ -365,7 +352,8 @@
         q.options.forEach((text, i) => {
             if(!text) return;
             const btn = document.createElement('button');
-            btn.className = 'option-btn font-medium'; btn.innerText = text;
+            btn.className = 'option-btn font-medium';
+            btn.innerText = text;
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -379,19 +367,21 @@
 
     function nextQuestion() { currentIdx++; renderQuestion(); }
 
-    // 提交測驗
     async function submitExam() {
         showLoading("提交中...");
         const score = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
         await fetch(GAS_URL, {
             method: "POST",
-            body: JSON.stringify({ action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, className: studentInfo.className, unit: currentExam.unit, qrId: currentExam.qrId, answers: userAnswers })
+            body: JSON.stringify({ 
+                action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, 
+                className: studentInfo.className, unit: currentExam.unit, 
+                qrId: currentExam.qrId, answers: userAnswers 
+            })
         });
         hideLoading(); showExamSubView('view-result');
         document.getElementById('result-stat').innerText = `得分：${score}`;
     }
 
-    // 讀取報告
     async function loadReports() {
         const container = document.getElementById('report-container');
         container.innerHTML = "<p class='text-center'>載入報告中...</p>";
@@ -416,7 +406,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`確定要永久刪除紀錄嗎？`)) return;
+        if (!confirm(`確定要永久刪除場次 ${qrId} 的所有紀錄嗎？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -425,7 +415,7 @@
     async function confirmDelete() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
-        if (confirm(`刪除題庫？`)) {
+        if (confirm(`刪除 ${c} - ${u} 題庫？`)) {
             showLoading("刪除中...");
             await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", ssId: userSSID, className: c, unit: u }) });
             fetchConfig(); hideLoading();
@@ -433,7 +423,7 @@
     }
 
     function saveExcel(data, filename) {
-        if (!data || data.length === 0) return alert("無資料");
+        if (!data || data.length === 0) return alert("尚無資料");
         const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
@@ -445,8 +435,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // AI 生成處理
-    async function handleGenerateAI() {
+    document.getElementById('generateBtn').onclick = async () => {
         const topic = document.getElementById('gen-topic').value.trim();
         if (!topic) return alert("請輸入主題");
         const status = document.getElementById('gen-status'); status.innerText = "AI 生成中...";
@@ -457,9 +446,8 @@
             downloadExamExcel(JSON.parse(raw), document.getElementById('gen-className').value, document.getElementById('gen-unitName').value);
             status.innerText = "✅ 生成成功";
         } catch (e) { status.innerText = "❌ 失敗"; }
-    }
+    };
 
-    // 視圖切換
     function showExamSubView(id) {
         ['view-admin', 'view-student-login', 'view-quiz', 'view-result'].forEach(v => document.getElementById(v).classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
@@ -467,6 +455,25 @@
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
+    
+    document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
+    
+    document.getElementById('applyBtn').onclick = async () => {
+        const name = document.getElementById('applyName').value.trim();
+        if(!name) return alert("請輸入姓名");
+        showLoading("送出申請中...");
+        await fetch(GAS_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ 
+                action: "apply", 
+                uuid: userUUID, 
+                email: document.getElementById('applyEmail').value, 
+                name: name 
+            }) 
+        });
+        hideLoading();
+        alert("申請已送出，請待管理員核可後重新登入。");
+    };
 
     initSystem();
 </script>
