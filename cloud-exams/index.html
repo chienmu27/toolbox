@@ -41,6 +41,8 @@
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
         .template-link { font-size: 0.8rem; color: #46178f; text-decoration: underline; margin-left: 8px; }
+        .secondary-btn { width: 100%; padding: 10px; background-color: #6b7280; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 0.9rem; transition: 0.2s; }
+        .secondary-btn:hover { background-color: #4b5563; }
     </style>
 </head>
 <body>
@@ -58,10 +60,12 @@
             <h2 id="authMsg" class="text-2xl font-bold mb-6 text-gray-800">管理員請先登入 Google 帳號</h2>
             <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
             <div id="applyForm" class="hidden w-full mt-6 pt-6 border-t border-gray-100">
-                <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權：</p>
+                <p class="mb-4 text-red-600 font-medium text-lg">您的帳號尚未獲得管理授權：</p>
                 <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
                 <input type="text" id="applyName" class="exam-input" placeholder="姓名">
                 <button id="applyBtn" class="main-btn mt-4">送出授權申請</button>
+                <!-- 修改處：新增切換帳號按鈕 -->
+                <button id="reAuthBtn" class="secondary-btn">Log Into Another Account</button>
             </div>
         </div>
     </div>
@@ -73,29 +77,23 @@
             <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
         </div>
 
-        <!-- 考試系統分頁 -->
         <div id="view-exam-tab">
             <div id="examView">
                 <div id="view-admin" class="hidden">
                     <h2 class="text-xl font-bold mb-4 text-center">後台管理</h2>
-                    
-                    <!-- 資料上傳區塊 -->
                     <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
                         <div class="flex items-center mb-2">
                             <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
                             <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">題庫範本</a>
                             <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">名單範本</a>
                         </div>
-                        
                         <div class="flex gap-4 mb-2">
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
                         </div>
-                        
                         <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
                         <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
                     </div>
-
                     <div>
                         <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
                         <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
@@ -135,7 +133,6 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題系統</h1>
             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -148,7 +145,7 @@
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、南一版、難度適中..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、難度適中..."></textarea>
             </div>
             <div class="mb-4">
                 <label class="font-bold block mb-1">3. 參考檔案 (選填)</label>
@@ -165,7 +162,6 @@
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
-        <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
@@ -181,7 +177,6 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 關鍵設定 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -205,23 +200,54 @@
         } else { checkAdminAuth(); }
     }
 
+    /**
+     * 修改處：優化登入驗證流程
+     */
     async function checkAdminAuth() {
-        if (!puter.auth.isSignedIn()) { document.getElementById('authOverlay').classList.remove('hidden'); return; }
-        const user = await puter.auth.getUser(); userUUID = user.uuid;
+        // 如果沒登入，顯示登入按鈕
+        if (!puter.auth.isSignedIn()) { 
+            document.getElementById('authOverlay').classList.remove('hidden'); 
+            document.getElementById('authLoginBtn').classList.remove('hidden');
+            document.getElementById('applyForm').classList.add('hidden');
+            document.getElementById('authMsg').innerText = "管理員請先登入 Google 帳號";
+            return; 
+        }
+
+        // 已登入，立即顯示驗證畫面
+        const user = await puter.auth.getUser(); 
+        userUUID = user.uuid;
         showLoading("驗證權限中...");
+
         try {
             const resp = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
             const result = await resp.json();
             hideLoading();
+
             if (result.status === "Approved") {
+                // 已授權，進入系統
                 userSSID = result.ssId;
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 document.getElementById('topNav').classList.remove('hidden');
                 fetchConfig();
-            } else { document.getElementById('applyForm').classList.remove('hidden'); }
-        } catch (e) { hideLoading(); alert("連線錯誤"); }
+            } else { 
+                // 未授權或未註冊
+                document.getElementById('authOverlay').classList.remove('hidden');
+                document.getElementById('authLoginBtn').classList.add('hidden'); // 隱藏原本的登入按鈕
+                document.getElementById('applyForm').classList.remove('hidden'); // 顯示申請單與切換帳號按鈕
+                document.getElementById('authMsg').innerText = "您的帳號尚未獲得管理授權";
+            }
+        } catch (e) { 
+            hideLoading(); 
+            alert("連線錯誤"); 
+        }
     }
+
+    // 切換帳號邏輯
+    document.getElementById('reAuthBtn').onclick = () => {
+        puter.auth.signOut();
+        window.location.reload();
+    };
 
     function switchTab(tab) {
         ['exam', 'gen', 'report'].forEach(t => {
@@ -253,7 +279,6 @@
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
         if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
-
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
@@ -263,20 +288,13 @@
             const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).filter(r => r.length > 0);
             const dataRows = rows.slice(1);
             if (dataRows.length === 0) { hideLoading(); return alert("檔案中沒有有效數據"); }
-
             try {
-                const res = await fetch(GAS_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) 
-                });
+                const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
                 const result = await res.json();
                 hideLoading();
                 alert(result.message || "處理成功");
                 if (uploadType === 'questions') fetchConfig();
-            } catch (err) {
-                hideLoading();
-                alert("上傳失敗");
-            }
+            } catch (err) { hideLoading(); alert("上傳失敗"); }
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -308,29 +326,18 @@
         quizData = await res.json(); hideLoading(); renderQuestion();
     }
 
-    /**
-     * 修改處：確保題目與答案以「純文字」格式顯示
-     * 使用 .innerText 或 .textContent 確保不會渲染 HTML
-     */
     function renderQuestion() {
         const q = quizData[currentIdx];
         document.getElementById('quiz-progress').innerText = `題號: ${currentIdx + 1} / ${quizData.length}`;
-        
-        // 確保題目為純文字顯示
         document.getElementById('question-text').innerText = q.question;
-        
         const box = document.getElementById('options-box'); box.innerHTML = "";
         document.getElementById('btn-next').classList.add('hidden');
         document.getElementById('btn-submit').classList.add('hidden');
-        
         q.options.forEach((text, i) => {
             if(!text) return;
             const btn = document.createElement('button');
             btn.className = 'option-btn font-medium';
-            
-            // 確保選項為純文字顯示
             btn.innerText = text;
-            
             btn.onclick = () => {
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -349,11 +356,7 @@
         const score = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
         await fetch(GAS_URL, {
             method: "POST",
-            body: JSON.stringify({ 
-                action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, 
-                className: studentInfo.className, unit: currentExam.unit, 
-                qrId: currentExam.qrId, answers: userAnswers 
-            })
+            body: JSON.stringify({ action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, className: studentInfo.className, unit: currentExam.unit, qrId: currentExam.qrId, answers: userAnswers })
         });
         hideLoading(); showExamSubView('view-result');
         document.getElementById('result-stat').innerText = `得分：${score}`;
