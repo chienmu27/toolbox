@@ -61,7 +61,7 @@
                 <button id="authLoginBtn" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
             </div>
             
-            <!-- 申請區塊 (修正：刪除登入按鈕，增加返回按鈕) -->
+            <!-- 申請區塊 -->
             <div id="applyForm" class="hidden w-full mt-6 pt-6 border-t border-gray-100">
                 <p class="mb-4 text-red-600 font-medium">您的帳號尚未獲得管理授權：</p>
                 <input type="email" id="applyEmail" class="exam-input" placeholder="Google 信箱">
@@ -76,7 +76,11 @@
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
-            <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
+            <!-- 修改點：登出按鈕前的姓名顯示 -->
+            <div class="flex items-center gap-3">
+                <span id="userNameDisplay" class="text-sm font-bold text-gray-600"></span>
+                <button id="logoutBtn" class="text-red-500 text-sm border border-red-500 px-3 py-1 rounded hover:bg-red-50 transition">登出</button>
+            </div>
         </div>
 
         <div id="view-exam-tab">
@@ -202,12 +206,8 @@
         } else { checkAdminAuth(); }
     }
 
-    /**
-     * 修改處：核心驗證邏輯
-     */
     async function checkAdminAuth() {
         if (!puter.auth.isSignedIn()) { 
-            // 未登入時：顯示登入按鈕，隱藏申請表單
             document.getElementById('authOverlay').classList.remove('hidden');
             document.getElementById('loginArea').classList.remove('hidden');
             document.getElementById('applyForm').classList.add('hidden');
@@ -224,14 +224,14 @@
             hideLoading();
             
             if (result.status === "Approved") {
-                // 已核可：進入主系統
                 userSSID = result.ssId;
+                // 修改點：顯示姓名
+                document.getElementById('userNameDisplay').innerText = result.userName || "管理員";
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 document.getElementById('topNav').classList.remove('hidden');
                 fetchConfig();
             } else { 
-                // 未註冊或待核可：隱藏登入區塊，顯示申請區塊
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
                 document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請正在審核中" : "您的帳號尚未獲得管理授權";
@@ -433,12 +433,8 @@
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
     
-    /**
-     * 修改處：登入按鈕與返回按鈕邏輯
-     */
     document.getElementById('authLoginBtn').onclick = async () => {
         try {
-            // 修正點：點擊後等待簽署完成並立即執行驗證邏輯，不需整理網頁
             await puter.auth.signIn();
             checkAdminAuth();
         } catch (e) {
@@ -451,7 +447,6 @@
         location.reload(); 
     };
 
-    // 返回登入頁面：將表單隱藏，重新顯示登入按鈕
     document.getElementById('backToLoginBtn').onclick = () => {
         document.getElementById('applyForm').classList.add('hidden');
         document.getElementById('loginArea').classList.remove('hidden');
