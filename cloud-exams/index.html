@@ -21,15 +21,12 @@
         }
         body { font-family: "Segoe UI", "PingFang TC", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
         .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 800px; position: relative; min-height: 550px; display: flex; flex-direction: column; }
-        
         .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; width: 95%; max-width: 800px; }
         .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary-color); }
-        
         .hidden { display: none !important; }
         .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
         .main-btn:hover { opacity: 0.9; }
-
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
         .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         .exam-button { color: white; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; transition: 0.2s; }
@@ -37,19 +34,11 @@
         .btn-upload { background: var(--exam-upload); }
         .btn-download { background: var(--exam-download); }
         .btn-danger { background: var(--exam-danger); }
-        
         .option-btn { background: white; border: 2px solid #eee; text-align: left; margin: 8px 0; width: 100%; padding: 15px; border-radius: 8px; }
         .option-btn.selected { background: var(--exam-primary); color: white; }
-
-        #authOverlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: white; border-radius: 12px; z-index: 1000; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box;
-        }
-
+        #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box; }
         .file-upload-area { border: 3px dashed #bbb; padding: 40px 20px; background: #fafafa; border-radius: 12px; text-align: center; cursor: pointer; }
         .file-upload-area:hover { border-color: var(--primary-color); background: #f0f0f5; }
-
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
     </style>
@@ -83,50 +72,61 @@
         </div>
 
         <div id="view-exam-tab">
-            <div id="examView">
-                <div id="view-admin" class="hidden">
-                    <h2 class="text-xl font-bold mb-4 text-center">後台管理</h2>
-                    <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
-                        <label class="text-sm text-gray-500">上傳新題目 (Excel):</label>
-                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
-                        <button class="exam-button btn-upload" onclick="handleUpload()">上傳題目資料</button>
-                    </div>
-                    <div>
-                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
-                        <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
-                        <div class="grid grid-cols-1 gap-2 mt-2">
-                            <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
-                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
+            <div id="view-admin" class="hidden">
+                <h2 class="text-xl font-bold mb-4 text-center">後台管理</h2>
+                
+                <!-- 修改：上傳區域新增類別選擇與範本連結 -->
+                <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm text-gray-500 font-bold">上傳資料庫 (Excel):</label>
+                        <div class="text-xs">
+                            範本：<a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="text-blue-600 underline">題目範本</a> | 
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="text-blue-600 underline">Users範本</a>
                         </div>
                     </div>
-                    <div id="qr-container" class="hidden text-center mt-4">
-                        <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
-                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+                    <select id="upload-type" class="exam-select mb-2">
+                        <option value="questions">上傳新題目 (寫入 Questions 工作表)</option>
+                        <option value="users">上傳 Users 資料 (寫入 Users 工作表)</option>
+                    </select>
+                    <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                    <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
+                </div>
+
+                <div>
+                    <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                    <select id="select-unit" class="exam-select"><option>請選擇班級</option></select>
+                    <div class="grid grid-cols-1 gap-2 mt-2">
+                        <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
+                        <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
                     </div>
                 </div>
-
-                <div id="view-student-login" class="hidden">
-                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
-                        <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
-                        <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
-                    </div>
+                <div id="qr-container" class="hidden text-center mt-4">
+                    <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
+                    <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
                 </div>
+            </div>
 
-                <div id="view-quiz" class="hidden">
-                    <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
-                    <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
-                    <div id="options-box"></div>
-                    <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
-                    <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+            <div id="view-student-login" class="hidden">
+                <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
+                    <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
+                    <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
                 </div>
+            </div>
 
-                <div id="view-result" class="hidden text-center">
-                    <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
-                    <div id="result-stat" class="text-4xl font-black my-6"></div>
-                    <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
-                </div>
+            <div id="view-quiz" class="hidden">
+                <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
+                <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
+                <div id="options-box"></div>
+                <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
+                <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+            </div>
+
+            <div id="view-result" class="hidden text-center">
+                <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
+                <div id="result-stat" class="text-4xl font-black my-6"></div>
+                <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
             </div>
         </div>
 
@@ -174,7 +174,6 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 關鍵設定 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; // <--- 替換成您的 Web App 網址
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -186,9 +185,7 @@
     async function initSystem() {
         const params = new URLSearchParams(window.location.search);
         const c = params.get('c'), u = params.get('u'), qid = params.get('qid'), sid = params.get('sid');
-        
         if (c && u && sid) {
-            // 學生端進入：已具備 ssid
             userSSID = sid;
             document.getElementById('topNav').classList.add('hidden');
             document.getElementById('topHeaderUI').classList.add('hidden');
@@ -197,36 +194,24 @@
             currentExam = { class: decodeURIComponent(c), unit: decodeURIComponent(u), qrId: qid || "MANUAL" };
             showExamSubView('view-student-login');
             document.getElementById('exam-title').innerText = `${currentExam.class}\n${currentExam.unit}`;
-        } else { 
-            // 管理端進入：需要驗證 UUID 並取得 ssid
-            checkAdminAuth(); 
-        }
+        } else { checkAdminAuth(); }
     }
 
     async function checkAdminAuth() {
-        if (!puter.auth.isSignedIn()) { 
-            document.getElementById('authOverlay').classList.remove('hidden'); 
-            return; 
-        }
+        if (!puter.auth.isSignedIn()) { document.getElementById('authOverlay').classList.remove('hidden'); return; }
         const user = await puter.auth.getUser(); userUUID = user.uuid;
         showLoading("驗證權限中...");
         try {
-            const resp = await fetch(GAS_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) 
-            });
+            const resp = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
             const result = await resp.json();
             hideLoading();
             if (result.status === "Approved") {
-                userSSID = result.ssId; // 重要：取得專屬試算表 ID
+                userSSID = result.ssId;
                 document.getElementById('authOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
                 document.getElementById('topNav').classList.remove('hidden');
                 fetchConfig();
-            } else { 
-                document.getElementById('applyForm').classList.remove('hidden'); 
-                document.getElementById('authMsg').innerText = "您的帳號尚未獲得管理授權";
-            }
+            } else { document.getElementById('applyForm').classList.remove('hidden'); document.getElementById('authMsg').innerText = "您的帳號尚未獲得管理授權"; }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
 
@@ -240,10 +225,7 @@
 
     async function fetchConfig() {
         try {
-            const res = await fetch(GAS_URL, { 
-                method: "POST", 
-                body: JSON.stringify({ action: "getConfig", ssId: userSSID }) 
-            });
+            const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getConfig", ssId: userSSID }) });
             configData = await res.json();
             const clsSelect = document.getElementById('select-class');
             clsSelect.innerHTML = '<option value="">選擇班級</option>';
@@ -263,8 +245,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        // 關鍵：網址必須帶上 sid，學生端才能知道存入哪個表
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}`;
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
@@ -352,15 +333,32 @@
         document.getElementById('result-stat').innerText = `得分：${score}`;
     }
 
+    // 修改：handleUpload 支援類別選擇
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
-        if (fileInput.files.length === 0) return alert("請選擇 Excel");
-        const reader = new FileReader(); showLoading("上傳中...");
+        const uploadType = document.getElementById('upload-type').value;
+        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
+        
+        const reader = new FileReader(); 
+        showLoading("上傳中...");
         reader.onload = async (e) => {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
             const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadQuestions", ssId: userSSID, rows: rows.slice(1).filter(r => r.length > 0) }) });
-            alert("成功"); fetchConfig(); hideLoading();
+            
+            // 決定 Action (questions -> uploadQuestions, users -> uploadUsers)
+            const action = (uploadType === "questions") ? "uploadQuestions" : "uploadUsers";
+            
+            await fetch(GAS_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ 
+                    action: action, 
+                    ssId: userSSID, 
+                    rows: rows.slice(1).filter(r => r.length > 0) // 去除標題列
+                }) 
+            });
+            alert("資料上傳成功"); 
+            fetchConfig(); 
+            hideLoading();
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -402,14 +400,11 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // AI 出題邏輯
     document.getElementById('generateBtn').onclick = async () => {
         const topic = document.getElementById('gen-topic').value.trim();
         if (!topic) return alert("請輸入主題");
         const status = document.getElementById('gen-status'); status.innerText = "AI 生成中...";
         try {
-            const fileInput = document.getElementById('gen-refFile');
-            let context = fileInput.files.length > 0 ? await parseFile(fileInput.files[0]) : null;
             let prompt = `出 ${document.getElementById('gen-count').value} 題「${topic}」選擇題，4個選項。格式：[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確1-4}]。僅回 JSON。`;
             const response = await puter.ai.chat(prompt);
             const raw = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
