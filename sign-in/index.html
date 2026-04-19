@@ -7,92 +7,139 @@
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { 
-            --primary-color: #46178f; --bg-color: #f2f2f5;
-        }
+        :root { --primary-color: #46178f; --bg-color: #f2f2f5; }
         body { font-family: "Segoe UI", "PingFang TC", sans-serif; background-color: var(--bg-color); min-height: 100vh; margin: 0; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
-        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 500px; position: relative; min-height: 450px; display: flex; flex-direction: column; }
-        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.2s; border: none; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 95%; max-width: 600px; position: relative; min-height: 450px; display: flex; flex-direction: column; }
+        .main-btn { width: 100%; padding: 12px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: none; }
         .main-btn:hover { opacity: 0.9; }
-        .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; display: block; }
+        .exam-input, .exam-select { width: 100%; padding: 10px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; display: block; }
         #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box; }
         .hidden { display: none !important; }
-        .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; margin-bottom: 20px; }
+        .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
+        
+        /* 分頁按鈕樣式 */
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; color: #666; }
+        .tab-btn.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
+
+        /* QR 放大燈箱 */
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; cursor: zoom-out; }
+        
+        /* 表格樣式 */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+        .data-table th, .data-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        .data-table th { background: #f8f8f8; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 認證遮罩 -->
     <div id="authOverlay">
         <div id="loginArea" class="w-full">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">請先登入 Google 帳號</h2>
             <button onclick="login()" class="main-btn max-w-[280px] mx-auto block">登入 Google 帳號</button>
         </div>
-        
         <div id="applyForm" class="hidden w-full text-left">
             <h2 class="text-xl font-bold mb-2 text-red-600">帳號尚未註冊</h2>
-            <p class="mb-4 text-gray-500 text-sm">請填寫以下資訊申請授權：</p>
-            <label class="text-sm font-bold text-gray-600">電子信箱</label>
             <input type="email" id="apply-email" class="exam-input" placeholder="Google 信箱">
-            <label class="text-sm font-bold text-gray-600">姓名 (必要)</label>
             <input type="text" id="apply-name" class="exam-input" placeholder="請輸入真實姓名">
             <button onclick="submitApplication()" class="main-btn mt-4">送出授權申請</button>
         </div>
-
         <div id="pendingArea" class="hidden w-full">
             <div class="text-4xl mb-4">⏳</div>
             <h2 class="text-xl font-bold mb-2 text-indigo-600">申請審核中</h2>
-            <p class="text-gray-500 text-sm mb-6">管理者核可後即可使用系統</p>
-            <button onclick="location.reload()" class="main-btn">檢查審核狀態</button>
+            <button onclick="location.reload()" class="main-btn mt-6">檢查審核狀態</button>
         </div>
     </div>
 
+    <!-- 主要內容區 -->
     <div id="mainContent" class="hidden">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div class="flex justify-between items-center mb-4 border-b pb-4">
             <div class="sys-title">打卡管理系統</div>
             <button onclick="logout()" class="text-red-500 text-sm font-bold">登出</button>
         </div>
 
+        <!-- 分頁導覽 -->
+        <div class="flex mb-4 border-b">
+            <div id="tab-gen" class="tab-btn active" onclick="switchTab('gen')">產生 QR-Code</div>
+            <div id="tab-query" class="tab-btn" onclick="switchTab('query')">查詢紀錄</div>
+        </div>
+
+        <!-- 產生頁面 -->
         <div id="view-generator">
-            <p class="text-sm text-gray-600 mb-2">Hi, <span id="user-name-label" class="font-bold"></span></p>
-            <label class="block font-bold text-gray-700">選擇打卡項目</label>
+            <p class="text-xs text-gray-500 mb-2">Hi, <span id="user-name-label" class="font-bold"></span></p>
+            <label class="block text-sm font-bold text-gray-700">選擇打卡項目</label>
             <select id="project-list" class="exam-select"></select>
             <button onclick="generateQR()" class="main-btn mt-2">生成 QR-code</button>
             
             <div id="qr-display" class="mt-8 text-center hidden">
                 <p class="text-xs text-indigo-500 font-bold mb-2" id="scan-id-text"></p>
-                <img id="qr-img" class="mx-auto border-8 border-white shadow-lg w-48">
-                <p class="mt-4 text-xs text-gray-400">請掃描上方 QR-Code 進行報到</p>
+                <!-- 點擊圖片放大 -->
+                <img id="qr-img" class="mx-auto border-4 border-white shadow-lg w-44 cursor-zoom-in" onclick="toggleQRModal(true)">
+                <p class="mt-4 text-xs text-gray-400">點擊 QR-Code 放大圖片</p>
             </div>
         </div>
 
+        <!-- 查詢頁面 -->
+        <div id="view-query" class="hidden">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-xs font-bold text-gray-600">項目</label>
+                    <select id="query-project-list" class="exam-select"></select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">日期 (可選)</label>
+                    <input type="date" id="query-date" class="exam-input">
+                </div>
+            </div>
+            <button onclick="fetchQueryData()" class="main-btn mt-2">開始查詢</button>
+            
+            <div id="query-result-area" class="mt-4 overflow-x-auto">
+                <!-- 查詢結果表格 -->
+                <table class="data-table hidden" id="result-table">
+                    <thead>
+                        <tr>
+                            <th>時間</th>
+                            <th>姓名</th>
+                            <th>掃碼ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="query-tbody"></tbody>
+                </table>
+                <p id="query-empty" class="text-center text-gray-400 mt-10">請選擇項目並點擊查詢</p>
+            </div>
+        </div>
+
+        <!-- 報到頁面 (URL參數模式) -->
         <div id="view-checkin" class="hidden">
             <h2 class="text-2xl font-bold text-center text-indigo-800 mb-2" id="checkin-title"></h2>
-            <p id="checkin-sid" class="text-center text-gray-400 text-xs mb-6"></p>
-            <label class="block font-bold text-gray-700">報到姓名</label>
             <input type="text" id="checkin-name" class="exam-input" placeholder="請填寫姓名">
             <button onclick="submitCheckIn()" class="main-btn mt-4">送出報到資料</button>
         </div>
 
+        <!-- 成功訊息 -->
         <div id="view-success" class="hidden text-center py-10">
             <div class="text-6xl mb-4">✅</div>
             <h2 class="text-2xl font-bold text-green-600">報到完成</h2>
-            <p class="text-gray-500 mt-2">資料已成功寫入系統</p>
             <button onclick="location.href=window.location.origin+window.location.pathname" class="main-btn mt-8">返回主畫面</button>
         </div>
     </div>
 </div>
 
+<!-- QR 放大燈箱 -->
+<div id="qr-modal" onclick="toggleQRModal(false)">
+    <img id="qr-img-large" src="" class="w-4/5 max-w-sm bg-white p-4 rounded-lg">
+</div>
+
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbweVh3vEeiQIIGPnizEFhNzTwxG_fxiSbR6YqydBgbhU-1LGKFtB7R0h9v_Yt_jUX_p/exec";
     
-    let currentUser = { uuid: "", name: "", email: "" };
+    let currentUser = { uuid: "", name: "" };
     let checkinInfo = { project: "", sid: "" };
 
     async function init() {
         const params = new URLSearchParams(window.location.search);
-        const p = params.get('p'); 
-        const sid = params.get('sid');
+        const p = params.get('p'), sid = params.get('sid');
 
         if (p && sid) {
             checkinInfo.project = decodeURIComponent(p);
@@ -100,37 +147,24 @@
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
             document.getElementById('view-generator').classList.add('hidden');
+            document.getElementById('view-query').classList.add('hidden');
+            document.getElementById('tab-gen').classList.add('hidden');
+            document.getElementById('tab-query').classList.add('hidden');
             document.getElementById('view-checkin').classList.remove('hidden');
             document.getElementById('checkin-title').innerText = checkinInfo.project + " 報到";
-            document.getElementById('checkin-sid').innerText = "ID: " + sid;
         } else {
-            if (puter.auth.isSignedIn()) {
-                checkStatus();
-            } else {
-                showAuthView('loginArea');
-            }
+            if (puter.auth.isSignedIn()) { checkStatus(); } 
+            else { showAuthView('loginArea'); }
         }
     }
 
-    async function login() {
-        await puter.auth.signIn();
-        checkStatus();
-    }
-
-    async function logout() {
-        puter.auth.signOut();
-        location.reload();
-    }
+    async function login() { await puter.auth.signIn(); checkStatus(); }
+    async function logout() { puter.auth.signOut(); location.reload(); }
 
     async function checkStatus() {
         const user = await puter.auth.getUser();
         currentUser.uuid = user.uuid;
-        currentUser.email = user.email || "";
-
-        const resp = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'checkStatus', uuid: currentUser.uuid })
-        });
+        const resp = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'checkStatus', uuid: user.uuid }) });
         const result = await resp.json();
 
         if (result.status === "Approved") {
@@ -139,65 +173,92 @@
             document.getElementById('mainContent').classList.remove('hidden');
             document.getElementById('user-name-label').innerText = result.name;
             loadProjects();
-        } else if (result.status === "Pending") {
-            showAuthView('pendingArea');
-        } else {
+        } else if (result.status === "Pending") { showAuthView('pendingArea'); } 
+        else { 
             showAuthView('applyForm');
-            document.getElementById('apply-email').value = currentUser.email;
+            document.getElementById('apply-email').value = user.email || "";
         }
     }
 
     async function submitApplication() {
         const name = document.getElementById('apply-name').value.trim();
         const email = document.getElementById('apply-email').value.trim();
-        if (!name || !email) return alert("請填寫姓名與電子信箱");
-
-        const resp = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ 
-                action: 'apply', 
-                uuid: currentUser.uuid, 
-                email: email, 
-                name: name 
-            })
-        });
-        const result = await resp.json();
-        if (result.status === "Success" || result.status === "AlreadyApplied") {
-            showAuthView('pendingArea');
-        }
+        if (!name || !email) return alert("請填寫姓名與信箱");
+        const resp = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'apply', uuid: currentUser.uuid, email, name }) });
+        showAuthView('pendingArea');
     }
 
     async function loadProjects() {
         const resp = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getProjectList' }) });
         const result = await resp.json();
-        const select = document.getElementById('project-list');
-        select.innerHTML = result.projects.map(p => `<option value="${p}">${p}</option>`).join('');
+        const genSelect = document.getElementById('project-list');
+        const querySelect = document.getElementById('query-project-list');
+        const options = result.projects.map(p => `<option value="${p}">${p}</option>`).join('');
+        genSelect.innerHTML = options;
+        querySelect.innerHTML = options;
     }
 
     function generateQR() {
         const project = document.getElementById('project-list').value;
         const sid = "SID" + Date.now();
-        const baseUrl = window.location.origin + window.location.pathname;
-        const url = `${baseUrl}?p=${encodeURIComponent(project)}&sid=${sid}`;
-        
-        document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+        const url = `${window.location.origin + window.location.pathname}?p=${encodeURIComponent(project)}&sid=${sid}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+        document.getElementById('qr-img').src = qrUrl;
+        document.getElementById('qr-img-large').src = qrUrl;
         document.getElementById('scan-id-text').innerText = "掃描 ID: " + sid;
         document.getElementById('qr-display').classList.remove('hidden');
+    }
+
+    function toggleQRModal(show) {
+        document.getElementById('qr-modal').style.display = show ? 'flex' : 'none';
+    }
+
+    function switchTab(tab) {
+        document.getElementById('view-generator').classList.toggle('hidden', tab !== 'gen');
+        document.getElementById('view-query').classList.toggle('hidden', tab !== 'query');
+        document.getElementById('tab-gen').classList.toggle('active', tab === 'gen');
+        document.getElementById('tab-query').classList.toggle('active', tab === 'query');
+    }
+
+    async function fetchQueryData() {
+        const project = document.getElementById('query-project-list').value;
+        const date = document.getElementById('query-date').value;
+        const tbody = document.getElementById('query-tbody');
+        const table = document.getElementById('result-table');
+        const empty = document.getElementById('query-empty');
+
+        empty.innerText = "查詢中...";
+        table.classList.add('hidden');
+
+        const resp = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'queryData', project, date })
+        });
+        const result = await resp.json();
+
+        if (result.success && result.data.length > 0) {
+            tbody.innerHTML = result.data.map(row => `
+                <tr>
+                    <td>${row.time}</td>
+                    <td>${row.name}</td>
+                    <td class="text-gray-400 text-xs">${row.scanId}</td>
+                </tr>
+            `).join('');
+            table.classList.remove('hidden');
+            empty.classList.add('hidden');
+        } else {
+            tbody.innerHTML = "";
+            empty.innerText = "查無資料";
+            empty.classList.remove('hidden');
+        }
     }
 
     async function submitCheckIn() {
         const name = document.getElementById('checkin-name').value.trim();
         if (!name) return alert("請輸入姓名");
-
         const resp = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ 
-                action: 'clockIn', 
-                project: checkinInfo.project,
-                scanId: checkinInfo.sid,
-                name: name,
-                uuid: "SCANNER"
-            })
+            body: JSON.stringify({ action: 'clockIn', project: checkinInfo.project, scanId: checkinInfo.sid, name, uuid: "SCANNER" })
         });
         const result = await resp.json();
         if (result.success) {
@@ -213,6 +274,5 @@
 
     init();
 </script>
-
 </body>
 </html>
