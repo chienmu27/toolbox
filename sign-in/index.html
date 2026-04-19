@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打卡管理系統</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 300px; text-align: center; display: none; }
+        .active { display: block; }
+        input, select, button { width: 100%; margin: 10px 0; padding: 10px; }
+        #qrcode { margin-top: 20px; display: flex; justify-content: center; }
+    </style>
+</head>
+<body>
+
+    <h2>打卡管理系統</h2>
+
+    <!-- 1. 登入頁面 -->
+    <div id="login-page" class="card active">
+        <p>請先登入 Google 帳號</p>
+        <div id="g_id_onload"
+             data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin" data-type="standard"></div>
+    </div>
+
+    <!-- 2. 註冊頁面 -->
+    <div id="register-page" class="card">
+        <h3>註冊使用者資料</h3>
+        <p id="reg-email"></p>
+        <input type="text" id="reg-name" placeholder="請輸入姓名">
+        <button onclick="submitRegister()">提交申請</button>
+    </div>
+
+    <!-- 3. 主頁面 (產生 QR Code) -->
+    <div id="main-page" class="card">
+        <h3>歡迎, <span id="user-display-name"></span></h3>
+        <label>選擇打卡項目：</label>
+        <select id="event-select"></select>
+        <button onclick="generateQRCode()">生成 QR-code</button>
+        <div id="qrcode"></div>
+        <p id="scan-id-text" style="font-size: 12px; color: #666;"></p>
+    </div>
+
+    <!-- 4. 報到頁面 (掃碼後進入) -->
+    <div id="checkin-page" class="card">
+        <h3>活動報到</h3>
+        <p>項目：<span id="target-event"></span></p>
+        <input type="text" id="checkin-name" placeholder="請輸入您的姓名">
+        <button onclick="submitCheckIn()">送出報到</button>
+    </div>
+
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbweVh3vEeiQIIGPnizEFhNzTwxG_fxiSbR6YqydBgbhU-1LGKFtB7R0h9v_Yt_jUX_p/exec';
+        let currentUser = { email: '', name: '', uuid: '' };
+        let currentScanId = '';
+
+        // 初始化檢查 URL 參數 (判斷是否為掃碼進入)
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('scanId')) {
+                showPage('checkin-page');
+                document.getElementById('target-event').innerText = urlParams.get('event');
+                currentScanId = urlParams.get('scanId');
+            }
+        };
+
+        function showPage(id) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Google 登入回傳
+        function handleCredentialResponse(response) {
+            const payload = parseJwt(response.credential);
+            currentUser.email = payload.email;
+            checkUserRegistration(payload.email);
+        }
+
+        function parseJwt(token) {
+            return JSON.parse(atob(token.split('.')[1]));
+        }
+
+        async function checkUserRegistration(email) {
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'checkUser', email: email })
+            });
+            const result = await res.json();
+
+            if (result.registered) {
+                currentUser.name = result.name;
+                document.getElementById('user-display-name').innerText = result.name;
+                loadEvents();
+                showPage('main-page');
+            } else {
+                document.getElementById('reg-email').innerText = email;
+                showPage('register-page');
+            }
+        }
+
+        async function submitRegister() {
+            const name = document.getElementById('reg-name').value;
+            if (!name) return alert('請輸入姓名');
+            
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'register', email: currentUser.email, name: name })
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('註冊成功');
+                checkUserRegistration(currentUser.email);
+            }
+        }
+
+        async function loadEvents() {
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getEvents' })
+            });
+            const events = await res.json();
+            const select = document.getElementById('event-select');
+            select.innerHTML = events.map(e => `<option value="${e}">${e}</option>`).join('');
+        }
+
+        function generateQRCode() {
+            const event = document.getElementById('event-select').value;
+            const scanId = 'ID-' + Date.now();
+            const checkInUrl = `${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(event)}&scanId=${scanId}`;
+            
+            document.getElementById('qrcode').innerHTML = '';
+            new QRCode(document.getElementById("qrcode"), checkInUrl);
+            document.getElementById('scan-id-text').innerText = "掃描 ID: " + scanId;
+        }
+
+        async function submitCheckIn() {
+            const name = document.getElementById('checkin-name').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!name) return alert('請輸入姓名');
+
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'submitAttendance',
+                    event: urlParams.get('event'),
+                    scanId: urlParams.get('scanId'),
+                    name: name,
+                    uuid: 'Web-Guest'
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert('報到成功！');
+                window.location.href = window.location.origin + window.location.pathname;
+            }
+        }
+    </script>
+</body>
+</html>
