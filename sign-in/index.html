@@ -7,209 +7,211 @@
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .main-btn { width: 100%; padding: 12px; background: #4f46e5; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .main-btn:disabled { background: #ccc; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 400px; }
-        body { background: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .hidden { display: none !important; }
-        .input-field { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-top: 8px; }
+        body { font-family: "PingFang TC", sans-serif; background-color: #f3f4f6; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .btn-primary { background-color: #4f46e5; color: white; padding: 0.75rem; border-radius: 0.5rem; width: 100%; font-weight: bold; transition: 0.2s; }
+        .btn-primary:hover { background-color: #4338ca; }
+        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 1rem; }
     </style>
 </head>
-<body>
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <!-- 1. 登入介面 -->
-    <div id="view-login" class="card hidden">
-        <h2 class="text-2xl font-bold mb-4 text-center">系統登入</h2>
-        <p class="text-gray-500 text-sm mb-6 text-center">請使用 Google 帳號驗證身分</p>
-        <button id="btnLogin" class="main-btn">Google 帳號登入</button>
-    </div>
-
-    <!-- 2. 註冊申請介面 -->
-    <div id="view-apply" class="card hidden">
-        <h2 class="text-xl font-bold mb-4">申請註冊</h2>
-        <p class="text-red-500 text-sm mb-4">您的帳號尚未授權，請填寫資料申請。</p>
-        <input type="text" id="applyName" class="input-field" placeholder="真實姓名">
-        <input type="email" id="applyEmail" class="input-field" placeholder="Google Email" readonly>
-        <button id="btnSubmitApply" class="main-btn">送出申請</button>
-    </div>
-
-    <!-- 3. 管理主頁 (生成 QR Code) -->
-    <div id="view-admin" class="card hidden">
-        <div class="flex justify-between items-center mb-4">
-            <span id="adminName" class="font-bold"></span>
-            <button id="btnLogout" class="text-xs text-red-500">登出</button>
+    <div id="app" class="card">
+        <!-- 載入中 -->
+        <div id="view-loading" class="text-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">系統載入中...</p>
         </div>
-        <h2 class="text-xl font-bold mb-2">生成打卡 QR-Code</h2>
-        <select id="projectSelect" class="input-field mb-4">
-            <option value="">載入中...</option>
-        </select>
-        <button id="btnGenQR" class="main-btn">生成 QR-code</button>
-        
-        <div id="qrContainer" class="mt-6 text-center hidden">
-            <p class="text-xs text-blue-600 mb-2 font-mono" id="scanIdDisplay"></p>
-            <img id="qrImage" class="mx-auto border p-2" src="">
-            <p class="text-xs text-gray-400 mt-2">請掃描此碼進入報到頁面</p>
+
+        <!-- 1. 登入頁面 -->
+        <div id="view-login" class="hidden text-center">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">打卡管理系統</h2>
+            <p class="mb-6 text-gray-500">請先登入 Google 帳號以進行管理</p>
+            <button id="btnLogin" class="btn-primary">登入 Google 帳號</button>
         </div>
-    </div>
 
-    <!-- 4. 報到頁面 (使用者掃碼後進入) -->
-    <div id="view-checkin" class="card hidden">
-        <h2 class="text-2xl font-bold text-center text-indigo-600 mb-2">活動報到</h2>
-        <p id="checkinProjectName" class="text-center font-bold text-lg mb-4"></p>
-        <div class="border-t pt-4">
-            <label class="text-sm text-gray-600">請輸入您的姓名：</label>
-            <input type="text" id="checkinUserName" class="input-field" placeholder="您的姓名">
-            <button id="btnSubmitCheckin" class="main-btn" style="background: #059669;">送出報到資料</button>
+        <!-- 2. 註冊申請頁面 -->
+        <div id="view-register" class="hidden">
+            <h2 class="text-xl font-bold mb-4">帳號申請</h2>
+            <p class="text-sm text-red-500 mb-4">您的帳號尚未註冊，請填寫基本資料：</p>
+            <input type="email" id="regEmail" class="input-field" placeholder="Google 信箱" readonly>
+            <input type="text" id="regName" class="input-field" placeholder="姓名 (必填)">
+            <button id="btnApply" class="btn-primary">送出申請</button>
+            <p id="pendingMsg" class="hidden text-center text-orange-600 font-bold mt-4">申請審核中，請稍候再試。</p>
         </div>
-    </div>
 
-    <!-- 5. 成功訊息 -->
-    <div id="view-success" class="card hidden text-center">
-        <div class="text-5xl mb-4">✅</div>
-        <h2 class="text-2xl font-bold text-green-600">報到成功</h2>
-        <p class="text-gray-500 mt-2">資料已寫入系統，謝謝您。</p>
-    </div>
+        <!-- 3. 管理員功能：生成 QR Code -->
+        <div id="view-admin" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="adminName" class="font-bold"></span>
+                <button id="btnLogout" class="text-xs text-red-500 underline">登出</button>
+            </div>
+            <h2 class="text-lg font-bold mb-4">產生打卡 QR-Code</h2>
+            <label class="block text-sm text-gray-600 mb-1">選擇打卡項目：</label>
+            <select id="projectSelect" class="input-field"></select>
+            <button id="btnGenQR" class="btn-primary">生成 QR-Code</button>
+            
+            <div id="qrResult" class="hidden mt-6 text-center">
+                <p class="text-xs text-gray-400 mb-2" id="scanIdDisplay"></p>
+                <img id="qrImage" class="mx-auto border p-2 bg-white mb-4">
+                <button onclick="window.print()" class="text-sm text-indigo-600 border border-indigo-600 px-4 py-1 rounded">列印 QR Code</button>
+            </div>
+        </div>
 
-    <!-- Loading 遮罩 -->
-    <div id="loading" class="fixed inset-0 bg-white/80 flex items-center justify-center z-50 hidden">
-        <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent"></div>
+        <!-- 4. 使用者報到頁面 (掃碼後進入) -->
+        <div id="view-checkin" class="hidden text-center">
+            <h2 class="text-2xl font-bold mb-2">打卡報到</h2>
+            <p id="checkinProjectName" class="text-indigo-600 font-bold mb-6"></p>
+            <input type="text" id="checkinUserName" class="input-field" placeholder="請輸入您的姓名">
+            <button id="btnSubmitCheckIn" class="btn-primary">送出報到</button>
+        </div>
+
+        <!-- 5. 完成報到 -->
+        <div id="view-success" class="hidden text-center">
+            <div class="text-5xl mb-4">✅</div>
+            <h2 class="text-2xl font-bold text-green-600">報到成功</h2>
+            <p class="mt-2 text-gray-500">您可以關閉此視窗</p>
+        </div>
     </div>
 
 <script>
-    // --- 配置區 ---
+    // --- 務必修改此處 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbweVh3vEeiQIIGPnizEFhNzTwxG_fxiSbR6YqydBgbhU-1LGKFtB7R0h9v_Yt_jUX_p/exec"; 
-    const WEB_URL = window.location.origin + window.location.pathname; // Github Pages 網址
+    const GITHUB_URL = window.location.origin + window.location.pathname;
 
-    let currentUser = { uuid: "", email: "", name: "" };
+    let currentUser = null;
+    let currentScanId = "";
+    let currentProject = "";
 
-    // 初始化
     async function init() {
         const params = new URLSearchParams(window.location.search);
-        const scanId = params.get('sid');
-        const project = params.get('p');
+        const pid = params.get('pid'); // Project Name
+        const sid = params.get('sid'); // Scan ID
 
-        // 如果 URL 有參數，進入報到頁面
-        if (scanId && project) {
+        // 如果 URL 帶有參數，顯示報到頁面
+        if (pid && sid) {
+            currentProject = decodeURIComponent(pid);
+            currentScanId = sid;
             showView('view-checkin');
-            document.getElementById('checkinProjectName').innerText = "打卡項目：" + decodeURIComponent(project);
+            document.getElementById('checkinProjectName').innerText = "項目：" + currentProject;
             return;
         }
 
-        // 否則進入管理端驗證
-        if (puter.auth.isSignedIn()) {
-            checkUserStatus();
-        } else {
-            showView('view-login');
-        }
+        // 否則進入管理端流程
+        checkAuth();
     }
 
-    // 檢查使用者權限
-    async function checkUserStatus() {
-        showLoading(true);
-        const user = await puter.auth.getUser();
-        currentUser.uuid = user.uuid;
-        currentUser.email = user.email;
+    async function checkAuth() {
+        if (!puter.auth.isSignedIn()) {
+            showView('view-login');
+            return;
+        }
 
+        const user = await puter.auth.getUser();
+        currentUser = user;
+        
+        // 檢查後端狀態
         const resp = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'checkStatus', uuid: user.uuid })
         });
         const result = await resp.json();
-        showLoading(false);
 
         if (result.status === "Approved") {
-            currentUser.name = result.name;
-            document.getElementById('adminName').innerText = "Hi, " + result.name;
+            document.getElementById('adminName').innerText = "管理者：" + result.userName;
             loadProjects();
             showView('view-admin');
         } else if (result.status === "Pending") {
-            alert("您的申請正在審核中，請稍候。");
-            showView('view-login');
+            document.getElementById('regEmail').value = user.email;
+            document.getElementById('regName').classList.add('hidden');
+            document.getElementById('btnApply').classList.add('hidden');
+            document.getElementById('pendingMsg').classList.remove('hidden');
+            showView('view-register');
         } else {
-            document.getElementById('applyEmail').value = user.email;
-            showView('view-apply');
+            document.getElementById('regEmail').value = user.email;
+            showView('view-register');
         }
     }
 
-    // 載入打卡工作表清單
+    // 載入打卡項目下拉選單
     async function loadProjects() {
         const resp = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'getProjectList' }) });
-        const result = await resp.json();
+        const data = await resp.json();
         const select = document.getElementById('projectSelect');
-        select.innerHTML = '<option value="">請選擇打卡項目</option>';
-        result.list.forEach(name => {
-            select.innerHTML += `<option value="${name}">${name}</option>`;
+        select.innerHTML = "";
+        data.projects.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = name;
+            select.appendChild(opt);
         });
     }
 
-    // 事件監聽
-    document.getElementById('btnLogin').onclick = () => puter.auth.signIn();
-    document.getElementById('btnLogout').onclick = () => { puter.auth.signOut(); location.reload(); };
-
-    // 提交申請
-    document.getElementById('btnSubmitApply').onclick = async () => {
-        const name = document.getElementById('applyName').value;
-        if(!name) return alert("請輸入姓名");
-        showLoading(true);
+    // 申請帳號
+    document.getElementById('btnApply').onclick = async () => {
+        const name = document.getElementById('regName').value;
+        if (!name) return alert("請輸入姓名");
+        
+        showView('view-loading');
         await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'apply', uuid: currentUser.uuid, email: currentUser.email, name: name })
+            body: JSON.stringify({
+                action: 'apply',
+                uuid: currentUser.uuid,
+                email: currentUser.email,
+                name: name
+            })
         });
-        showLoading(false);
-        alert("申請已送出，請靜待管理者審核。");
+        alert("申請已送出，請待管理員核可。");
         location.reload();
     };
 
     // 生成 QR Code
     document.getElementById('btnGenQR').onclick = () => {
-        const p = document.getElementById('projectSelect').value;
-        if(!p) return alert("請選擇項目");
-        const scanId = "ID" + Math.floor(Math.random() * 1000000);
-        const checkinUrl = `${WEB_URL}?p=${encodeURIComponent(p)}&sid=${scanId}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(checkinUrl)}`;
+        const projectName = document.getElementById('projectSelect').value;
+        const scanId = "ID-" + Date.now();
+        const checkinUrl = `${GITHUB_URL}?pid=${encodeURIComponent(projectName)}&sid=${scanId}`;
+        const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(checkinUrl)}`;
         
-        document.getElementById('qrImage').src = qrUrl;
+        document.getElementById('qrImage').src = qrApi;
         document.getElementById('scanIdDisplay').innerText = "掃碼 ID: " + scanId;
-        document.getElementById('qrContainer').classList.remove('hidden');
+        document.getElementById('qrResult').classList.remove('hidden');
     };
 
-    // 提交報到資料
-    document.getElementById('btnSubmitCheckin').onclick = async () => {
-        const name = document.getElementById('checkinUserName').value;
-        const params = new URLSearchParams(window.location.search);
-        if(!name) return alert("請輸入姓名");
-
-        showLoading(true);
+    // 報到送出
+    document.getElementById('btnSubmitCheckIn').onclick = async () => {
+        const userName = document.getElementById('checkinUserName').value;
+        if (!userName) return alert("請輸入姓名");
+        
+        showView('view-loading');
         const resp = await fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: 'submitCheckIn',
-                projectName: params.get('p'),
-                scanId: params.get('sid'),
-                userName: name
+                projectName: currentProject,
+                userName: userName,
+                scanId: currentScanId
             })
         });
         const result = await resp.json();
-        showLoading(false);
-
-        if(result.success) {
+        if (result.success) {
             showView('view-success');
         } else {
-            alert("錯誤：" + result.message);
+            alert("報到失敗：" + result.message);
+            showView('view-checkin');
         }
     };
 
     // 工具函式
     function showView(id) {
-        ['view-login', 'view-apply', 'view-admin', 'view-checkin', 'view-success'].forEach(v => {
+        ['view-loading', 'view-login', 'view-register', 'view-admin', 'view-checkin', 'view-success'].forEach(v => {
             document.getElementById(v).classList.add('hidden');
         });
         document.getElementById(id).classList.remove('hidden');
     }
 
-    function showLoading(show) {
-        document.getElementById('loading').classList.toggle('hidden', !show);
-    }
+    document.getElementById('btnLogin').onclick = () => puter.auth.signIn().then(() => location.reload());
+    document.getElementById('btnLogout').onclick = () => { puter.auth.signOut(); location.reload(); };
 
     init();
 </script>
