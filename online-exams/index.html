@@ -56,7 +56,6 @@
 </div>
 
 <div class="container">
-    <!-- 登入與驗證 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -73,7 +72,6 @@
         </div>
     </div>
 
-    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
@@ -114,7 +112,6 @@
                     </div>
                 </div>
 
-                <!-- 學生登入視圖 -->
                 <div id="view-student-login" class="hidden">
                     <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
                     <div class="bg-gray-50 p-6 rounded-xl">
@@ -124,7 +121,6 @@
                     </div>
                 </div>
 
-                <!-- 測驗中視圖 -->
                 <div id="view-quiz" class="hidden">
                     <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
                     <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
@@ -133,7 +129,6 @@
                     <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
                 </div>
 
-                <!-- 結果視圖 -->
                 <div id="view-result" class="hidden text-center">
                     <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
                     <div id="result-stat" class="text-4xl font-black my-6"></div>
@@ -142,11 +137,10 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 (已更新雙模式) -->
+        <!-- AI 出題分頁 (含雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
-            <!-- 模式切換 -->
             <div class="flex gap-4 mb-4 bg-gray-50 p-3 rounded-lg border">
                 <label class="font-bold flex items-center cursor-pointer text-indigo-800">
                     <input type="radio" name="ai-mode" value="generate" checked onchange="toggleAiMode()" class="mr-2 w-4 h-4"> AI 主動生成題目
@@ -168,7 +162,7 @@
 
             <div id="area-hint" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版次)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、難易度中等..."></textarea>
             </div>
 
             <div class="mb-4">
@@ -190,7 +184,6 @@
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
-        <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
@@ -206,6 +199,7 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
+    // --- 替換您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -373,7 +367,7 @@
                 showExamSubView('view-result');
                 document.getElementById('result-stat').innerText = `得分：${result.score !== undefined ? result.score : localScore}`;
             } else alert("提交失敗：" + result.message);
-        } catch (e) { hideLoading(); alert("伺服器連線異常，請手動確認"); }
+        } catch (e) { hideLoading(); alert("寫入失敗"); }
     }
 
     async function loadReports() {
@@ -426,7 +420,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯：拖曳功能與解析 ---
+    // --- AI 分頁邏輯 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -508,7 +502,6 @@
         renderGenFileList();
     };
 
-    // 切換 AI 模式 UI
     function toggleAiMode() {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const areaTopic = document.getElementById('area-topic');
@@ -529,7 +522,6 @@
         }
     }
 
-    // AI 處理主程式
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -554,20 +546,28 @@
 
             let prompt = "";
             if (mode === 'generate') {
-                // 模式 1：命題模式
-                prompt = `你是一位專業出題老師。請根據參考內容出 ${count} 題「單選選擇題」。
-【核心要求】正確答案編號(ans)務必隨機分佈在 1,2,3,4。主題：${topic}。提示語：${hint}。
-格式：僅回傳 JSON 陣列。
+                prompt = `你是一位專業老師。請主要根據提供的參考內容出題。
+任務：生成 ${count} 題「單選選擇題」。
+【核心要求】正確答案編號(ans)務必隨機分佈在 1, 2, 3, 4 之中，嚴禁集中。
+主題：${topic}
+補充要求：${hint}
+回傳格式：僅回傳 JSON 陣列，不含 markdown。
 [{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
 內容：${textContext || "通用知識"}`;
             } else {
-                // 模式 2：解析轉換模式
-                prompt = `你是一位文件解析專家。請從下方的參考內容中尋找既有的題目。
-【任務】將文件中的所有題目、四個選項及正確答案提取出來。
-【警告】如果文件中完全找不到題目，請回傳字串 "ERROR_NO_DATA"。不要自行編造新題目。
-格式：僅回傳 JSON 陣列。
-[{"q":"提取的題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確答案編號}]
-參考內容：${textContext}`;
+                // 修正後的轉換模式指令
+                prompt = `你是一位文件內容提取專家。
+任務：請讀取下方的「參考內容」，從中【提取】出原本就存在的「選擇題」。
+規則：
+1. 嚴禁自行編造內容，請找出文中的題目、選項及答案。
+2. 即使格式混亂，也請盡力識別題幹與選項邊界。
+3. 選項必須整理成 a1, a2, a3, a4 四個欄位。
+4. 如果文件中完全找不到任何像題目的內容，請務必回傳字串 "ERROR_NO_DATA"。
+回傳格式：僅回傳 JSON 陣列。
+[{"q":"題目名稱","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
+
+參考內容如下：
+${textContext}`;
             }
 
             let response;
@@ -581,7 +581,7 @@
             let raw = response.toString().trim();
             if (raw.includes("ERROR_NO_DATA")) {
                 status.innerText = "❌ 未能解析到有效題目，請檢查檔案內容。";
-                return alert("AI 無法從您的檔案中找到題目，請確認檔案是否有清楚的題目與選項格式。");
+                return;
             }
 
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
