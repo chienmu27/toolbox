@@ -339,19 +339,45 @@
 
     function nextQuestion() { currentIdx++; renderQuestion(); }
 
+    /**
+     * 修正後的學生提交功能
+     */
     async function submitExam() {
-        showLoading("提交中...");
-        const score = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
-        await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({ 
-                action: "submitExam", ssId: userSSID, name: studentInfo.name, seatNumber: studentInfo.seatNumber, 
-                className: studentInfo.className, unit: currentExam.unit, 
-                qrId: currentExam.qrId, answers: userAnswers 
-            })
-        });
-        hideLoading(); showExamSubView('view-result');
-        document.getElementById('result-stat').innerText = `得分：${score}`;
+        showLoading("試卷提交中...");
+        
+        // 本地預計算分數（用於即時顯示）
+        const localScore = Math.round((userAnswers.filter(a => String(a.userAns)===String(a.correctAns)).length/quizData.length)*100);
+        
+        try {
+            const response = await fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "submitExam", 
+                    ssId: userSSID, 
+                    name: studentInfo.name, 
+                    seatNumber: studentInfo.seatNumber, 
+                    className: studentInfo.className, 
+                    unit: currentExam.unit, 
+                    qrId: currentExam.qrId, 
+                    answers: userAnswers 
+                })
+            });
+            
+            const result = await response.json();
+            hideLoading(); 
+            
+            if (result.success) {
+                showExamSubView('view-result');
+                // 優先使用伺服器回傳的分數，若無則用本地計算
+                document.getElementById('result-stat').innerText = `得分：${result.score !== undefined ? result.score : localScore}`;
+            } else {
+                alert("提交失敗：" + result.message);
+            }
+        } catch (e) {
+            hideLoading();
+            alert("連線錯誤或寫入超時，請檢查試算表是否已存入資料。");
+            console.error(e);
+        }
     }
 
     async function loadReports() {
@@ -407,15 +433,11 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 自動出題與拖曳上傳功能 ---
-
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
-    // 點擊區域觸發選擇檔案
     dropZone.onclick = () => fileInput.click();
 
-    // 拖曳相關事件
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
     });
@@ -508,7 +530,6 @@
                 else if (f.type === 'image') images.push(f.content);
             });
 
-            // 更新 Prompt 強化答案隨機化
             let prompt = `你是一個專業的出題老師。
 請根據以下提供的參考內容出題。
 主題：${topic}
