@@ -23,7 +23,6 @@
 <body>
 
 <div class="container">
-    <!-- 登入與權限檢查遮罩 (參考範例格式) -->
     <div id="authOverlay">
         <div id="loginArea" class="w-full">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">請先登入 Google 帳號</h2>
@@ -48,14 +47,12 @@
         </div>
     </div>
 
-    <!-- 主要功能介面 -->
     <div id="mainContent" class="hidden">
         <div class="flex justify-between items-center mb-6 border-b pb-4">
             <div class="sys-title">打卡管理系統</div>
             <button onclick="logout()" class="text-red-500 text-sm font-bold">登出</button>
         </div>
 
-        <!-- 打卡 QR 生成頁 -->
         <div id="view-generator">
             <p class="text-sm text-gray-600 mb-2">Hi, <span id="user-name-label" class="font-bold"></span></p>
             <label class="block font-bold text-gray-700">選擇打卡項目</label>
@@ -69,7 +66,6 @@
             </div>
         </div>
 
-        <!-- 掃碼後報到頁 (當 URL 帶有參數時顯示) -->
         <div id="view-checkin" class="hidden">
             <h2 class="text-2xl font-bold text-center text-indigo-800 mb-2" id="checkin-title"></h2>
             <p id="checkin-sid" class="text-center text-gray-400 text-xs mb-6"></p>
@@ -78,7 +74,6 @@
             <button onclick="submitCheckIn()" class="main-btn mt-4">送出報到資料</button>
         </div>
 
-        <!-- 報到完成 -->
         <div id="view-success" class="hidden text-center py-10">
             <div class="text-6xl mb-4">✅</div>
             <h2 class="text-2xl font-bold text-green-600">報到完成</h2>
@@ -89,7 +84,6 @@
 </div>
 
 <script>
-    // --- 請確保此網址為您的 GAS 部署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbweVh3vEeiQIIGPnizEFhNzTwxG_fxiSbR6YqydBgbhU-1LGKFtB7R0h9v_Yt_jUX_p/exec";
     
     let currentUser = { uuid: "", name: "", email: "" };
@@ -101,7 +95,6 @@
         const sid = params.get('sid');
 
         if (p && sid) {
-            // 進入報到模式
             checkinInfo.project = decodeURIComponent(p);
             checkinInfo.sid = sid;
             document.getElementById('authOverlay').classList.add('hidden');
@@ -111,7 +104,6 @@
             document.getElementById('checkin-title').innerText = checkinInfo.project + " 報到";
             document.getElementById('checkin-sid').innerText = "ID: " + sid;
         } else {
-            // 進入管理模式
             if (puter.auth.isSignedIn()) {
                 checkStatus();
             } else {
@@ -151,7 +143,6 @@
             showAuthView('pendingArea');
         } else {
             showAuthView('applyForm');
-            // 修正：確保欄位可寫入並自動填入
             document.getElementById('apply-email').value = currentUser.email;
         }
     }
