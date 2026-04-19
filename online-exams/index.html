@@ -137,7 +137,7 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 (含雙模式) -->
+        <!-- AI 出題分頁 (雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -157,20 +157,19 @@
 
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國小六年級數學-圓周率" />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：圓周率" />
             </div>
 
             <div id="area-hint" class="mb-4">
-                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版次)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、難易度中等..."></textarea>
+                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、難度中等..."></textarea>
             </div>
 
             <div class="mb-4">
-                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援拖曳)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
-                    <p class="text-xs text-gray-400">目前支援多個檔案合併解析</p>
-                    <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
+                    <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
@@ -199,7 +198,6 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 替換您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -248,7 +246,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請正在審核中" : "您的帳號尚未獲得管理授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -282,7 +280,7 @@
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
-        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
+        if (fileInput.files.length === 0) return alert("請選擇檔案");
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
@@ -294,9 +292,9 @@
                 const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
                 const result = await res.json();
                 hideLoading();
-                alert(result.message || "處理成功");
+                alert(result.message || "成功");
                 if (uploadType === 'questions') fetchConfig();
-            } catch (err) { hideLoading(); alert("上傳失敗"); }
+            } catch (err) { hideLoading(); alert("失敗"); }
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -309,13 +307,13 @@
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
-        document.getElementById('qr-id-display').innerText = "考試編號：" + qrId;
+        document.getElementById('qr-id-display').innerText = "編號：" + qrId;
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
-        if (!pin) return alert("請輸入 PIN 碼");
+        if (!pin) return alert("請輸入 PIN");
         showLoading("驗證中...");
         const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", ssId: userSSID, pin: pin, targetClass: currentExam.class }) });
         const data = await res.json(); hideLoading();
@@ -394,7 +392,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`永久刪除 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -402,7 +400,7 @@
 
     async function confirmDelete() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (!c || !u || !confirm(`刪除 ${c} - ${u} 題庫？`)) return;
+        if (!c || !u || !confirm(`刪除 ${c} - ${u}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", ssId: userSSID, className: c, unit: u }) });
         fetchConfig(); hideLoading();
@@ -420,7 +418,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯 ---
+    // --- AI 解析邏輯強化區 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -439,8 +437,7 @@
     });
 
     dropZone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        handleAIReferenceFiles(files);
+        handleAIReferenceFiles(e.dataTransfer.files);
     }, false);
 
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
@@ -513,12 +510,12 @@
             areaTopic.classList.add('hidden');
             areaHint.classList.add('hidden');
             areaCount.classList.add('hidden');
-            labelFile.innerText = "3. 請上傳包含題目答案的參考檔案 (AI 將自動提取內容)";
+            labelFile.innerText = "3. 請上傳欲轉換之考卷檔案 (AI 將掃描全文提取題目)";
         } else {
             areaTopic.classList.remove('hidden');
             areaHint.classList.remove('hidden');
             areaCount.classList.remove('hidden');
-            labelFile.innerText = "3. 參考檔案 (可多選，AI 將參考內容出題)";
+            labelFile.innerText = "3. 參考資料檔案 (可選)";
         }
     }
 
@@ -530,8 +527,8 @@
         const cls = document.getElementById('gen-className').value || "未命名";
         const unt = document.getElementById('gen-unitName').value || "未命名";
 
-        if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供檔案");
-        if (mode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式必須上傳參考檔案");
+        if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供參考檔案");
+        if (mode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式必須上傳檔案");
 
         const status = document.getElementById('gen-status');
         status.innerText = "Gemini AI 處理中...";
@@ -540,31 +537,29 @@
             let textContext = "";
             let images = [];
             genAttachedFiles.forEach(f => {
-                if (f.type === 'text') textContext += `\n--- 內容來自 (${f.name}) ---\n${f.content}`;
+                if (f.type === 'text') textContext += `\n--- 文件 (${f.name}) ---\n${f.content}\n`;
                 else if (f.type === 'image') images.push(f.content);
             });
 
             let prompt = "";
             if (mode === 'generate') {
-                prompt = `你是一位專業老師。請主要根據提供的參考內容出題。
-任務：生成 ${count} 題「單選選擇題」。
-【核心要求】正確答案編號(ans)務必隨機分佈在 1, 2, 3, 4 之中，嚴禁集中。
-主題：${topic}
-補充要求：${hint}
-回傳格式：僅回傳 JSON 陣列，不含 markdown。
-[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
+                prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
+[重要] 正確答案編號(ans)必須隨機分佈在 1-4。
+[格式] 僅回傳 JSON 陣列。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
+主題：${topic} | 提示：${hint}
 內容：${textContext || "通用知識"}`;
             } else {
-                // 修正後的轉換模式指令
-                prompt = `你是一位文件內容提取專家。
-任務：請讀取下方的「參考內容」，從中【提取】出原本就存在的「選擇題」。
-規則：
-1. 嚴禁自行編造內容，請找出文中的題目、選項及答案。
-2. 即使格式混亂，也請盡力識別題幹與選項邊界。
-3. 選項必須整理成 a1, a2, a3, a4 四個欄位。
-4. 如果文件中完全找不到任何像題目的內容，請務必回傳字串 "ERROR_NO_DATA"。
-回傳格式：僅回傳 JSON 陣列。
-[{"q":"題目名稱","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
+                prompt = `你是一位極為精準的文件數據提取專家。
+【任務】請徹底掃描下方的「參考內容」，找出所有「選擇題」。
+【核心規則】
+1. 嚴禁編造！必須是文中確實存在的題目。
+2. 即使格式混亂（如 1.(A)...(B)...），也請用邏輯推導分離出題幹與四個選項。
+3. 尋找對應的正確答案標記（如括號內的答案、末尾的答案卷）。
+4. 如果完全沒有發現選擇題，請回傳字串 "ERROR_NO_DATA"。
+5. 確保每個 JSON 對象的所有欄位都有值，不要產生空字串。
+【格式】僅回傳標準 JSON 陣列。
+[{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
 
 參考內容如下：
 ${textContext}`;
@@ -579,19 +574,17 @@ ${textContext}`;
             }
 
             let raw = response.toString().trim();
-            if (raw.includes("ERROR_NO_DATA")) {
-                status.innerText = "❌ 未能解析到有效題目，請檢查檔案內容。";
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (!jsonMatch || raw.includes("ERROR_NO_DATA")) {
+                status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
                 return;
             }
 
-            const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) throw new Error("AI 回傳格式異常");
-            
             const parsedData = JSON.parse(jsonMatch[0]);
-            if (parsedData.length === 0) throw new Error("無效題目");
+            if (!parsedData || parsedData.length === 0) throw new Error("無效內容");
 
             downloadExamExcel(parsedData, cls, unt);
-            status.innerText = "✅ 處理成功！";
+            status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
             console.error(e);
             status.innerText = "❌ 處理失敗：" + e.message;
