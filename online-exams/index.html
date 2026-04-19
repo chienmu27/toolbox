@@ -38,7 +38,6 @@
         .option-btn.selected { background: var(--exam-primary); color: white; }
         #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box; }
         .file-upload-area { border: 3px dashed #bbb; padding: 20px; background: #fafafa; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; }
-        /* 拖曳中的視覺效果 */
         .file-upload-area.dragover { border-color: var(--primary-color); background: #f0f0f5; transform: scale(1.02); }
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
@@ -138,23 +137,37 @@
             </div>
         </div>
 
+        <!-- AI 出題分頁 (雙模式版) -->
         <div id="view-gen-tab" class="hidden">
-            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 自動出題系統 (Gemini)</h1>
+            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題工具 (Gemini)</h1>
+            
+            <!-- 模式切換區 -->
+            <div class="mb-4 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                <label class="font-bold block mb-2 text-indigo-800">1. 選擇模式</label>
+                <div class="flex gap-6">
+                    <label class="flex items-center text-sm cursor-pointer font-medium">
+                        <input type="radio" name="aiWorkMode" value="active" checked class="mr-2"> AI 主動生成題目
+                    </label>
+                    <label class="flex items-center text-sm cursor-pointer font-medium">
+                        <input type="radio" name="aiWorkMode" value="convert" class="mr-2"> 轉換上傳題目
+                    </label>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div><label class="font-bold block mb-1">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
                 <div><label class="font-bold block mb-1">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
             </div>
             <div class="mb-4">
-                <label class="font-bold block mb-1">1. 題目主題</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
+                <label class="font-bold block mb-1">2. 題目主題 / 提示語</label>
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語第六課、自然第二單元..." />
             </div>
             <div class="mb-4">
-                <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、難度適中..."></textarea>
+                <label class="font-bold block mb-1">3. 補充需求 (選填)</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="難度加強、多出關於某個概念的題目..."></textarea>
             </div>
             <div class="mb-4">
-                <label class="font-bold block mb-1">3. 參考檔案 (可多選，支援拖曳)</label>
-                <!-- 修正：加入 ID 以利 JS 選取 -->
+                <label class="font-bold block mb-1">4. 參考檔案 / 待轉換檔案 (可拖曳)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
                     <p class="text-xs text-gray-400">支援：TXT, PDF, Word, Excel, 圖片</p>
@@ -163,10 +176,10 @@
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
             <div class="mb-6">
-                <label class="font-bold block mb-1">4. 設定題數</label>
-                <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="20" />
+                <label class="font-bold block mb-1">5. 生成/轉換題數</label>
+                <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="30" />
             </div>
-            <button id="generateBtn" class="main-btn">開始 AI 生成題庫 Excel</button>
+            <button id="generateBtn" class="main-btn">開始 AI 處理並下載 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
@@ -406,38 +419,30 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 出題：拖曳功能修正區 ---
+    // --- AI 出題模式管理 ---
+
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
-    // 點擊區域觸發選擇
     dropZone.onclick = () => fileInput.click();
 
-    // 拖曳事件處理
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
-        dropZone.addEventListener(name, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, false);
+        dropZone.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
     });
 
-    // 進入與停留時的視覺效果
     ['dragenter', 'dragover'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.add('dragover'), false);
     });
 
-    // 離開與放下後的視覺效果恢復
     ['dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.remove('dragover'), false);
     });
 
-    // 放下檔案處理
     dropZone.addEventListener('drop', (e) => {
         const files = e.dataTransfer.files;
         handleAIReferenceFiles(files);
     }, false);
 
-    // 傳統點擊選擇處理
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
 
     async function handleAIReferenceFiles(files) {
@@ -497,78 +502,71 @@
         renderGenFileList();
     };
 
-document.getElementById('generateBtn').onclick = async () => {
+    document.getElementById('generateBtn').onclick = async () => {
+        const mode = document.querySelector('input[name="aiWorkMode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
-        const hint = document.getElementById('gen-hint').value.trim(); // 確保讀取提示語
+        const hint = document.getElementById('gen-hint').value.trim();
         const count = document.getElementById('gen-count').value;
-        const cls = document.getElementById('gen-className').value || "未命名班級";
-        const unt = document.getElementById('gen-unitName').value || "未命名單元";
+        const cls = document.getElementById('gen-className').value || "未命名";
+        const unt = document.getElementById('gen-unitName').value || "未命名";
 
-        if (!topic && genAttachedFiles.length === 0) return alert("請輸入主題或上傳參考檔案");
+        if (!topic && genAttachedFiles.length === 0) return alert("請輸入主題或上傳參考檔");
         
         const status = document.getElementById('gen-status');
-        status.innerText = "Gemini AI 生成中，請稍候...";
+        status.innerText = "Gemini AI 處理中...";
         
         try {
-            // 合併參考內容
             let textContext = "";
             let images = [];
             genAttachedFiles.forEach(f => {
-                if (f.type === 'text') textContext += `\n--- 檔案內容 (${f.name}) ---\n${f.content}`;
+                if (f.type === 'text') textContext += `\n--- 內容來自 (${f.name}) ---\n${f.content}`;
                 else if (f.type === 'image') images.push(f.content);
             });
 
-            // 使用您要求的專業提示語
-            let prompt = `你是一位精通「${topic}」領域的專業出題老師。
-
-任務指令：
-1. 請針對主題「${topic}」，【嚴格主要根據】下方提供的「參考內容」來進行命題。若內容中已有既有題目，請優先參考、改編或選用。
-2. 命題時請務必結合使用者的特定出題提示語：『${hint || "無特定提示"}』。
-3. 所有題目必須緊扣單元核心知識，嚴禁偏離主題或延伸到參考內容之外的無關領域。
-4. 總共需要生成 ${count} 題「單選選擇題」，每題需包含題目與 4 個選項。
-
-【核心要求：正確答案分佈隨機化】
-- 請務必將正確答案 (ans) 均勻且隨機地分配在 1、2、3、4 選項中。
-- 嚴禁出現大量連續相同的答案，或正確答案過度集中於特定編號。
-
-輸出格式：請直接輸出 JSON 陣列，不要包含任何解釋文字或 markdown 語法標籤。
-格式範例：[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":3}]
-
-當前參考內容如下：
-${textContext || "請根據該學科之通用專業標準出題。"}`;
+            // 根據模式建立不同 Prompt
+            let prompt = "";
+            if (mode === 'active') {
+                // AI 主動生成模式
+                prompt = `你是一位專業出題老師。請針對主題「${topic}」，參考提供的內容出 ${count} 題全新的單選選擇題。
+提示語需求：${hint || "無特定要求"}。
+【規則】
+1. 必須是全新的題目，且選項正確。
+2. 正確答案(ans)須隨機分佈。
+格式：直接回傳 JSON 陣列，不含 markdown。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確答案編號1-4}]
+參考內容：${textContext || "通用知識"}`;
+            } else {
+                // 轉換上傳題目模式
+                prompt = `你是一位文件解析專家。請從提供的參考內容中，【提取現有的題目】。
+你的目標是將文件中的題目精確轉換為 JSON 格式。請處理前 ${count} 題。
+提示語需求：${hint || "無特定要求"}。
+【規則】
+1. 只抓取文件中已經存在的題目，不要自創。
+2. 如果文件只有題目沒選項，請幫忙生成選項；如果有選項請保留。
+3. 判斷正確答案編號並填入 ans 欄位。
+格式：直接回傳 JSON 陣列，不含 markdown。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確答案編號1-4}]
+內容：${textContext || "請分析上傳的圖片內容"}`;
+            }
 
             let response;
             if (images.length > 0) {
-                const messages = [{
-                    role: "user",
-                    content: [
-                        { type: "text", text: prompt },
-                        ...images.map(img => ({ type: "image_url", image_url: { url: img } }))
-                    ]
-                }];
+                const messages = [{ role: "user", content: [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] }];
                 response = await puter.ai.chat(messages);
             } else {
                 response = await puter.ai.chat(prompt);
             }
 
-            // --- 強大解析邏輯修正點 ---
             let raw = response.toString().trim();
-            
-            // 使用正則表達式找尋第一個 [ 到最後一個 ] 之間的內容，防止 AI 講廢話
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                throw new Error("AI 回傳格式不正確，找不到 JSON 陣列");
-            }
+            if (!jsonMatch) throw new Error("AI 回傳格式不正確");
             
-            const cleanJson = jsonMatch[0];
-            const parsedData = JSON.parse(cleanJson);
-            
+            const parsedData = JSON.parse(jsonMatch[0]);
             downloadExamExcel(parsedData, cls, unt);
-            status.innerText = "✅ 生成成功！";
+            status.innerText = `✅ ${mode === 'active' ? '生成' : '轉換'}成功！`;
         } catch (e) {
-            console.error("AI 生成錯誤:", e);
-            status.innerText = "❌ 生成失敗：" + e.message;
-            alert("生成失敗，原因：" + e.message);
+            console.error(e);
+            status.innerText = "❌ 失敗：" + e.message;
         }
     };
 
