@@ -51,11 +51,12 @@
 
 <div id="topNav" class="tab-nav hidden">
     <button id="tab-btn-exam" class="tab-btn active" onclick="switchTab('exam')">線上考試系統</button>
-    <button id="tab-btn-gen" class="tab-btn" onclick="switchTab('gen')">AI 自動出題</button>
+    <button id="tab-btn-gen" class="tab-btn" onclick="switchTab('gen')">AI 出題工具</button>
     <button id="tab-btn-report" class="tab-btn" onclick="switchTab('report')">報告</button>
 </div>
 
 <div class="container">
+    <!-- 登入與驗證 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -72,6 +73,7 @@
         </div>
     </div>
 
+    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
@@ -112,6 +114,7 @@
                     </div>
                 </div>
 
+                <!-- 學生登入視圖 -->
                 <div id="view-student-login" class="hidden">
                     <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
                     <div class="bg-gray-50 p-6 rounded-xl">
@@ -121,6 +124,7 @@
                     </div>
                 </div>
 
+                <!-- 測驗中視圖 -->
                 <div id="view-quiz" class="hidden">
                     <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
                     <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
@@ -129,6 +133,7 @@
                     <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
                 </div>
 
+                <!-- 結果視圖 -->
                 <div id="view-result" class="hidden text-center">
                     <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
                     <div id="result-stat" class="text-4xl font-black my-6"></div>
@@ -137,64 +142,55 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 (雙模式修正) -->
+        <!-- AI 出題分頁 (已更新雙模式) -->
         <div id="view-gen-tab" class="hidden">
-            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題工具 (Gemini 引擎)</h1>
+            <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
             <!-- 模式切換 -->
-            <div class="mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                <label class="font-bold block mb-2 text-indigo-800">出題模式：</label>
-                <div class="flex gap-6">
-                    <label class="flex items-center cursor-pointer text-sm font-medium">
-                        <input type="radio" name="aiOpMode" value="generate" checked class="mr-2" onchange="toggleAiUI()"> AI 主動生成題目
-                    </label>
-                    <label class="flex items-center cursor-pointer text-sm font-medium">
-                        <input type="radio" name="aiOpMode" value="convert" class="mr-2" onchange="toggleAiUI()"> 轉換上傳題目
-                    </label>
-                </div>
+            <div class="flex gap-4 mb-4 bg-gray-50 p-3 rounded-lg border">
+                <label class="font-bold flex items-center cursor-pointer text-indigo-800">
+                    <input type="radio" name="ai-mode" value="generate" checked onchange="toggleAiMode()" class="mr-2 w-4 h-4"> AI 主動生成題目
+                </label>
+                <label class="font-bold flex items-center cursor-pointer text-indigo-800">
+                    <input type="radio" name="ai-mode" value="convert" onchange="toggleAiMode()" class="mr-2 w-4 h-4"> 轉換上傳檔案題目
+                </label>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="font-bold block mb-1">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
-                <div><label class="font-bold block mb-1">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
+                <div><label class="font-bold block mb-1 text-sm text-gray-600">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
+                <div><label class="font-bold block mb-1 text-sm text-gray-600">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
             </div>
 
-            <!-- 動態顯示區域 -->
-            <div id="area-generate">
-                <div class="mb-4">
-                    <label class="font-bold block mb-1">1. 題目主題</label>
-                    <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
-                </div>
-                <div class="mb-4">
-                    <label class="font-bold block mb-1">2. 出題提示語 (選填)</label>
-                    <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、難度適中..."></textarea>
-                </div>
-                <div class="mb-6">
-                    <label class="font-bold block mb-1">3. 設定題數</label>
-                    <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="20" />
-                </div>
+            <div id="area-topic" class="mb-4">
+                <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國小六年級數學-圓周率" />
             </div>
 
-            <div id="area-convert" class="hidden">
-                <div class="mb-4 p-4 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200">
-                    💡 提示：此模式會從您上傳的檔案中【提取】已存在的題目與解答，不需輸入主題。
-                </div>
+            <div id="area-hint" class="mb-4">
+                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版次)</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
             </div>
 
             <div class="mb-4">
-                <label class="font-bold block mb-1">上傳參考/原始檔案 (支援拖曳)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
-                    <p class="text-xs text-gray-400">支援：TXT, PDF, Word, Excel, 圖片</p>
+                    <p class="text-xs text-gray-400">目前支援多個檔案合併解析</p>
                     <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
 
-            <button id="generateBtn" class="main-btn">開始 AI 處理並下載 Excel</button>
+            <div id="area-count" class="mb-6">
+                <label class="font-bold block mb-1 text-sm text-gray-600">4. 設定題數</label>
+                <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="50" />
+            </div>
+
+            <button id="generateBtn" class="main-btn">開始處理並生成 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
+        <!-- 報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
@@ -241,7 +237,8 @@
             document.getElementById('applyForm').classList.add('hidden');
             return; 
         }
-        const user = await puter.auth.getUser(); userUUID = user.uuid;
+        const user = await puter.auth.getUser(); 
+        userUUID = user.uuid;
         showLoading("驗證權限中...");
         try {
             const resp = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "checkStatus", uuid: userUUID }) });
@@ -297,8 +294,7 @@
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).filter(r => r.length > 0);
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).filter(r => r.length > 0);
             const dataRows = rows.slice(1);
             try {
                 const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
@@ -315,7 +311,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}?openExternalBrowser=1`;
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
@@ -377,7 +373,7 @@
                 showExamSubView('view-result');
                 document.getElementById('result-stat').innerText = `得分：${result.score !== undefined ? result.score : localScore}`;
             } else alert("提交失敗：" + result.message);
-        } catch (e) { hideLoading(); alert("寫入失敗"); }
+        } catch (e) { hideLoading(); alert("伺服器連線異常，請手動確認"); }
     }
 
     async function loadReports() {
@@ -404,7 +400,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`確定要刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -424,24 +420,13 @@
     }
 
     function downloadExamExcel(qs, cls, unt) {
-        if (!qs || qs.length === 0) {
-            alert("AI 未能解析到有效題目，請檢查參考檔案內容。");
-            return;
-        }
         const rows = qs.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
         const ws = XLSX.utils.aoa_to_sheet([["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"], ...rows]);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 出題模式切換與拖曳處理 ---
-
-    function toggleAiUI() {
-        const mode = document.querySelector('input[name="aiOpMode"]:checked').value;
-        document.getElementById('area-generate').classList.toggle('hidden', mode !== 'generate');
-        document.getElementById('area-convert').classList.toggle('hidden', mode !== 'convert');
-    }
-
+    // --- AI 分頁邏輯：拖曳功能與解析 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -523,19 +508,41 @@
         renderGenFileList();
     };
 
+    // 切換 AI 模式 UI
+    function toggleAiMode() {
+        const mode = document.querySelector('input[name="ai-mode"]:checked').value;
+        const areaTopic = document.getElementById('area-topic');
+        const areaHint = document.getElementById('area-hint');
+        const areaCount = document.getElementById('area-count');
+        const labelFile = document.getElementById('label-file');
+        
+        if (mode === 'convert') {
+            areaTopic.classList.add('hidden');
+            areaHint.classList.add('hidden');
+            areaCount.classList.add('hidden');
+            labelFile.innerText = "3. 請上傳包含題目答案的參考檔案 (AI 將自動提取內容)";
+        } else {
+            areaTopic.classList.remove('hidden');
+            areaHint.classList.remove('hidden');
+            areaCount.classList.remove('hidden');
+            labelFile.innerText = "3. 參考檔案 (可多選，AI 將參考內容出題)";
+        }
+    }
+
+    // AI 處理主程式
     document.getElementById('generateBtn').onclick = async () => {
-        const opMode = document.querySelector('input[name="aiOpMode"]:checked').value;
+        const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
         const hint = document.getElementById('gen-hint').value.trim();
         const count = document.getElementById('gen-count').value;
-        const cls = document.getElementById('gen-className').value || "未命名班級";
-        const unt = document.getElementById('gen-unitName').value || "未命名單元";
+        const cls = document.getElementById('gen-className').value || "未命名";
+        const unt = document.getElementById('gen-unitName').value || "未命名";
 
-        if (opMode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("主動生成模式請輸入主題或上傳參考檔");
-        if (opMode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式請至少上傳一個包含題目的檔案");
+        if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供檔案");
+        if (mode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式必須上傳參考檔案");
 
         const status = document.getElementById('gen-status');
-        status.innerText = "Gemini AI 處理中，請稍候...";
+        status.innerText = "Gemini AI 處理中...";
         
         try {
             let textContext = "";
@@ -546,23 +553,21 @@
             });
 
             let prompt = "";
-            if (opMode === 'generate') {
-                prompt = `你是一位專業老師。請根據參考內容或主題出 ${count} 題「全新」選擇題。
-【要求】隨機分配正確答案編號(ans)在1-4之間。
-格式：直接輸出 JSON 陣列。
-[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
-主題：${topic}
-提示：${hint}
+            if (mode === 'generate') {
+                // 模式 1：命題模式
+                prompt = `你是一位專業出題老師。請根據參考內容出 ${count} 題「單選選擇題」。
+【核心要求】正確答案編號(ans)務必隨機分佈在 1,2,3,4。主題：${topic}。提示語：${hint}。
+格式：僅回傳 JSON 陣列。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
 內容：${textContext || "通用知識"}`;
             } else {
-                prompt = `你是一個文件提取專家。請從提供的參考內容中【提取所有既有的選擇題】。
-【嚴格要求】
-1. 完整提取原始題目、四個選項及正確答案。
-2. 若題目未標註正確答案，請根據內容判斷正確的一項。
-3. 不要產生新題目，僅做整理。
-格式：直接輸出 JSON 陣列。
-[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
-內容：${textContext}`;
+                // 模式 2：解析轉換模式
+                prompt = `你是一位文件解析專家。請從下方的參考內容中尋找既有的題目。
+【任務】將文件中的所有題目、四個選項及正確答案提取出來。
+【警告】如果文件中完全找不到題目，請回傳字串 "ERROR_NO_DATA"。不要自行編造新題目。
+格式：僅回傳 JSON 陣列。
+[{"q":"提取的題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確答案編號}]
+參考內容：${textContext}`;
             }
 
             let response;
@@ -574,15 +579,22 @@
             }
 
             let raw = response.toString().trim();
+            if (raw.includes("ERROR_NO_DATA")) {
+                status.innerText = "❌ 未能解析到有效題目，請檢查檔案內容。";
+                return alert("AI 無法從您的檔案中找到題目，請確認檔案是否有清楚的題目與選項格式。");
+            }
+
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) throw new Error("AI 回傳格式不正確");
+            if (!jsonMatch) throw new Error("AI 回傳格式異常");
             
             const parsedData = JSON.parse(jsonMatch[0]);
+            if (parsedData.length === 0) throw new Error("無效題目");
+
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理成功！";
         } catch (e) {
             console.error(e);
-            status.innerText = "❌ 失敗：" + e.message;
+            status.innerText = "❌ 處理失敗：" + e.message;
         }
     };
 
