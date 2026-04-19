@@ -201,7 +201,7 @@
     function generateQR() {
         const project = document.getElementById('project-list').value;
         const sid = "SID" + Date.now();
-        const url = `${window.location.origin + window.location.pathname}?p=${encodeURIComponent(project)}&sid=${sid}`;
+        const url = `${window.location.origin + window.location.pathname}?p=${encodeURIComponent(project)}&sid=${sid}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
         document.getElementById('qr-img').src = qrUrl;
         document.getElementById('qr-img-large').src = qrUrl;
