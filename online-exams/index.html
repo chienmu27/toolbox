@@ -497,25 +497,29 @@
         renderGenFileList();
     };
 
-    document.getElementById('generateBtn').onclick = async () => {
+document.getElementById('generateBtn').onclick = async () => {
         const topic = document.getElementById('gen-topic').value.trim();
+        const hint = document.getElementById('gen-hint').value.trim(); // 確保讀取提示語
         const count = document.getElementById('gen-count').value;
-        const cls = document.getElementById('gen-className').value || "未命名";
-        const unt = document.getElementById('gen-unitName').value || "未命名";
+        const cls = document.getElementById('gen-className').value || "未命名班級";
+        const unt = document.getElementById('gen-unitName').value || "未命名單元";
 
-        if (!topic && genAttachedFiles.length === 0) return alert("請輸入主題或上傳檔案");
+        if (!topic && genAttachedFiles.length === 0) return alert("請輸入主題或上傳參考檔案");
+        
         const status = document.getElementById('gen-status');
-        status.innerText = "Gemini AI 生成中...";
+        status.innerText = "Gemini AI 生成中，請稍候...";
         
         try {
+            // 合併參考內容
             let textContext = "";
             let images = [];
             genAttachedFiles.forEach(f => {
-                if (f.type === 'text') textContext += `\n--- 內容來自 (${f.name}) ---\n${f.content}`;
+                if (f.type === 'text') textContext += `\n--- 檔案內容 (${f.name}) ---\n${f.content}`;
                 else if (f.type === 'image') images.push(f.content);
             });
 
-           let prompt = `你是一位精通「${topic}」領域的專業出題老師。
+            // 使用您要求的專業提示語
+            let prompt = `你是一位精通「${topic}」領域的專業出題老師。
 
 任務指令：
 1. 請針對主題「${topic}」，【嚴格主要根據】下方提供的「參考內容」來進行命題。若內容中已有既有題目，請優先參考、改編或選用。
@@ -525,27 +529,47 @@
 
 【核心要求：正確答案分佈隨機化】
 - 請務必將正確答案 (ans) 均勻且隨機地分配在 1、2、3、4 選項中。
-- 嚴禁出現大量連續相同的答案，或正確答案過度集中於特定編號（例如不要讓答案大多都是 1 或 2）。
+- 嚴禁出現大量連續相同的答案，或正確答案過度集中於特定編號。
 
-輸出格式：僅回傳純 JSON 陣列，嚴禁包含 markdown 語法標籤（如 \`\`\`json）或任何解釋性文字。
+輸出格式：請直接輸出 JSON 陣列，不要包含任何解釋文字或 markdown 語法標籤。
 格式範例：[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":3}]
 
 當前參考內容如下：
 ${textContext || "請根據該學科之通用專業標準出題。"}`;
 
-
             let response;
             if (images.length > 0) {
-                const messages = [{ role: "user", content: [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] }];
+                const messages = [{
+                    role: "user",
+                    content: [
+                        { type: "text", text: prompt },
+                        ...images.map(img => ({ type: "image_url", image_url: { url: img } }))
+                    ]
+                }];
                 response = await puter.ai.chat(messages);
             } else {
                 response = await puter.ai.chat(prompt);
             }
 
-            const raw = response.toString().replace(/```json/g, '').replace(/```/g, '').trim();
-            downloadExamExcel(JSON.parse(raw), cls, unt);
+            // --- 強大解析邏輯修正點 ---
+            let raw = response.toString().trim();
+            
+            // 使用正則表達式找尋第一個 [ 到最後一個 ] 之間的內容，防止 AI 講廢話
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) {
+                throw new Error("AI 回傳格式不正確，找不到 JSON 陣列");
+            }
+            
+            const cleanJson = jsonMatch[0];
+            const parsedData = JSON.parse(cleanJson);
+            
+            downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 生成成功！";
-        } catch (e) { status.innerText = "❌ 失敗"; }
+        } catch (e) {
+            console.error("AI 生成錯誤:", e);
+            status.innerText = "❌ 生成失敗：" + e.message;
+            alert("生成失敗，原因：" + e.message);
+        }
     };
 
     function showExamSubView(id) {
