@@ -16,15 +16,9 @@
         #authOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; border-radius: 12px; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; box-sizing: border-box; }
         .hidden { display: none !important; }
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
-        
-        /* 分頁按鈕樣式 */
         .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; color: #666; }
         .tab-btn.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
-
-        /* QR 放大燈箱 */
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; cursor: zoom-out; }
-        
-        /* 表格樣式 */
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
         .data-table th, .data-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
         .data-table th { background: #f8f8f8; }
@@ -68,53 +62,72 @@
         <!-- 產生頁面 -->
         <div id="view-generator">
             <p class="text-xs text-gray-500 mb-2">Hi, <span id="user-name-label" class="font-bold"></span></p>
-            <label class="block text-sm font-bold text-gray-700">選擇打卡項目</label>
-            <select id="project-list" class="exam-select"></select>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700">選擇打卡項目</label>
+                    <select id="project-list" class="exam-select"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700">簽到/退</label>
+                    <select id="type-list" class="exam-select">
+                        <option value="簽到">簽到</option>
+                        <option value="簽退">簽退</option>
+                    </select>
+                </div>
+            </div>
             <button onclick="generateQR()" class="main-btn mt-2">生成 QR-code</button>
             
             <div id="qr-display" class="mt-8 text-center hidden">
                 <p class="text-xs text-indigo-500 font-bold mb-2" id="scan-id-text"></p>
-                <!-- 點擊圖片放大 -->
                 <img id="qr-img" class="mx-auto border-4 border-white shadow-lg w-44 cursor-zoom-in" onclick="toggleQRModal(true)">
-                <p class="mt-4 text-xs text-gray-400">點擊 QR-Code 放大圖片</p>
+                <p class="mt-4 text-xs text-gray-400">點擊圖片放大</p>
             </div>
         </div>
 
         <!-- 查詢頁面 -->
         <div id="view-query" class="hidden">
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-2">
                 <div>
                     <label class="text-xs font-bold text-gray-600">項目</label>
                     <select id="query-project-list" class="exam-select"></select>
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-gray-600">日期 (可選)</label>
+                    <label class="text-xs font-bold text-gray-600">日期</label>
                     <input type="date" id="query-date" class="exam-input">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-600">類別</label>
+                    <select id="query-type-list" class="exam-select">
+                        <option value="全部">全部</option>
+                        <option value="簽到">簽到</option>
+                        <option value="簽退">簽退</option>
+                    </select>
                 </div>
             </div>
             <button onclick="fetchQueryData()" class="main-btn mt-2">開始查詢</button>
             
             <div id="query-result-area" class="mt-4 overflow-x-auto">
-                <!-- 查詢結果表格 -->
                 <table class="data-table hidden" id="result-table">
                     <thead>
                         <tr>
                             <th>時間</th>
                             <th>姓名</th>
+                            <th>類別</th>
                             <th>掃碼ID</th>
                         </tr>
                     </thead>
                     <tbody id="query-tbody"></tbody>
                 </table>
-                <p id="query-empty" class="text-center text-gray-400 mt-10">請選擇項目並點擊查詢</p>
+                <p id="query-empty" class="text-center text-gray-400 mt-10">請點擊查詢</p>
             </div>
         </div>
 
         <!-- 報到頁面 (URL參數模式) -->
         <div id="view-checkin" class="hidden">
             <h2 class="text-2xl font-bold text-center text-indigo-800 mb-2" id="checkin-title"></h2>
-            <input type="text" id="checkin-name" class="exam-input" placeholder="請填寫姓名">
-            <button onclick="submitCheckIn()" class="main-btn mt-4">送出報到資料</button>
+            <div id="checkin-info" class="text-center mb-4 p-3 bg-indigo-50 rounded text-indigo-700 font-bold"></div>
+            <input type="text" id="checkin-name" class="exam-input" placeholder="請填寫您的姓名">
+            <button onclick="submitCheckIn()" class="main-btn mt-4">確認報到</button>
         </div>
 
         <!-- 成功訊息 -->
@@ -135,15 +148,17 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbweVh3vEeiQIIGPnizEFhNzTwxG_fxiSbR6YqydBgbhU-1LGKFtB7R0h9v_Yt_jUX_p/exec";
     
     let currentUser = { uuid: "", name: "" };
-    let checkinInfo = { project: "", sid: "" };
+    let checkinInfo = { project: "", sid: "", type: "" };
 
     async function init() {
         const params = new URLSearchParams(window.location.search);
-        const p = params.get('p'), sid = params.get('sid');
+        const p = params.get('p'), sid = params.get('sid'), t = params.get('t');
 
-        if (p && sid) {
+        if (p && sid && t) {
             checkinInfo.project = decodeURIComponent(p);
             checkinInfo.sid = sid;
+            checkinInfo.type = decodeURIComponent(t);
+            
             document.getElementById('authOverlay').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
             document.getElementById('view-generator').classList.add('hidden');
@@ -151,7 +166,8 @@
             document.getElementById('tab-gen').classList.add('hidden');
             document.getElementById('tab-query').classList.add('hidden');
             document.getElementById('view-checkin').classList.remove('hidden');
-            document.getElementById('checkin-title').innerText = checkinInfo.project + " 報到";
+            document.getElementById('checkin-title').innerText = checkinInfo.project;
+            document.getElementById('checkin-info').innerText = "報到類別：" + checkinInfo.type;
         } else {
             if (puter.auth.isSignedIn()) { checkStatus(); } 
             else { showAuthView('loginArea'); }
@@ -184,7 +200,7 @@
         const name = document.getElementById('apply-name').value.trim();
         const email = document.getElementById('apply-email').value.trim();
         if (!name || !email) return alert("請填寫姓名與信箱");
-        const resp = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'apply', uuid: currentUser.uuid, email, name }) });
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'apply', uuid: currentUser.uuid, email, name }) });
         showAuthView('pendingArea');
     }
 
@@ -200,12 +216,15 @@
 
     function generateQR() {
         const project = document.getElementById('project-list').value;
+        const type = document.getElementById('type-list').value;
         const sid = "SID" + Date.now();
-        const url = `${window.location.origin + window.location.pathname}?p=${encodeURIComponent(project)}&sid=${sid}&openExternalBrowser=1`;
+        const baseUrl = window.location.origin + window.location.pathname;
+        const url = `${baseUrl}?p=${encodeURIComponent(project)}&sid=${sid}&t=${encodeURIComponent(type)}&openExternalBrowser=1`;
+        
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
         document.getElementById('qr-img').src = qrUrl;
         document.getElementById('qr-img-large').src = qrUrl;
-        document.getElementById('scan-id-text').innerText = "掃描 ID: " + sid;
+        document.getElementById('scan-id-text').innerText = project + " [" + type + "] ID: " + sid;
         document.getElementById('qr-display').classList.remove('hidden');
     }
 
@@ -223,6 +242,7 @@
     async function fetchQueryData() {
         const project = document.getElementById('query-project-list').value;
         const date = document.getElementById('query-date').value;
+        const type = document.getElementById('query-type-list').value;
         const tbody = document.getElementById('query-tbody');
         const table = document.getElementById('result-table');
         const empty = document.getElementById('query-empty');
@@ -232,7 +252,7 @@
 
         const resp = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'queryData', project, date })
+            body: JSON.stringify({ action: 'queryData', project, date, type })
         });
         const result = await resp.json();
 
@@ -241,6 +261,7 @@
                 <tr>
                     <td>${row.time}</td>
                     <td>${row.name}</td>
+                    <td><span class="px-2 py-0.5 rounded text-xs ${row.type === '簽到' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${row.type}</span></td>
                     <td class="text-gray-400 text-xs">${row.scanId}</td>
                 </tr>
             `).join('');
@@ -258,7 +279,14 @@
         if (!name) return alert("請輸入姓名");
         const resp = await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'clockIn', project: checkinInfo.project, scanId: checkinInfo.sid, name, uuid: "SCANNER" })
+            body: JSON.stringify({ 
+                action: 'clockIn', 
+                project: checkinInfo.project, 
+                scanId: checkinInfo.sid, 
+                type: checkinInfo.type,
+                name: name, 
+                uuid: "SCANNER" 
+            })
         });
         const result = await resp.json();
         if (result.success) {
