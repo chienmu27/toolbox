@@ -137,7 +137,6 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 (雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -157,19 +156,19 @@
 
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國小六年級數學-圓周率" />
             </div>
 
             <div id="area-hint" class="mb-4">
-                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="國小六年級、南一版、難度中等..."></textarea>
+                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版次)</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
             </div>
 
             <div class="mb-4">
-                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援拖曳)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
-                    <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .docx, .doc, .pdf, image/*" />
+                    <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
@@ -198,6 +197,7 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
+    // --- 替換您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -246,7 +246,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請正在審核中" : "您的帳號尚未獲得管理授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -280,7 +280,7 @@
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
-        if (fileInput.files.length === 0) return alert("請選擇檔案");
+        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
@@ -292,9 +292,9 @@
                 const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
                 const result = await res.json();
                 hideLoading();
-                alert(result.message || "成功");
+                alert(result.message || "處理成功");
                 if (uploadType === 'questions') fetchConfig();
-            } catch (err) { hideLoading(); alert("失敗"); }
+            } catch (err) { hideLoading(); alert("上傳失敗"); }
         };
         reader.readAsArrayBuffer(fileInput.files[0]);
     }
@@ -307,15 +307,25 @@
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
-        document.getElementById('qr-id-display').innerText = "編號：" + qrId;
+        document.getElementById('qr-id-display').innerText = "考試編號：" + qrId;
         document.getElementById('qr-container').classList.remove('hidden');
     }
 
     async function studentLogin() {
         const pin = document.getElementById('pin-input').value.trim();
-        if (!pin) return alert("請輸入 PIN");
+        if (!pin) return alert("請輸入 PIN 碼");
         showLoading("驗證中...");
-        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", ssId: userSSID, pin: pin, targetClass: currentExam.class }) });
+        // 修正：帶上目前的 qrId 供伺服器檢核
+        const res = await fetch(GAS_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ 
+                action: "login", 
+                ssId: userSSID, 
+                pin: pin, 
+                targetClass: currentExam.class,
+                qrId: currentExam.qrId 
+            }) 
+        });
         const data = await res.json(); hideLoading();
         if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
     }
@@ -374,11 +384,11 @@
         try {
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getReportSummary", ssId: userSSID }) });
             const data = await res.json(); container.innerHTML = "";
-            if (!data || data.length === 0) { container.innerHTML = "<p class='text-center'>尚無資料</p>"; return; }
+            if (!data || data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400'>尚無資料</p>"; return; }
             data.forEach(rep => {
                 const card = document.createElement('div');
                 card.className = "report-card";
-                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除紀錄</button></div>`;
+                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除場次</button></div>`;
                 container.appendChild(card);
             });
         } catch (e) { container.innerHTML = "載入失敗"; }
@@ -392,7 +402,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`永久刪除 ${qrId}？`)) return;
+        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -400,7 +410,7 @@
 
     async function confirmDelete() {
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
-        if (!c || !u || !confirm(`刪除 ${c} - ${u}？`)) return;
+        if (!c || !u || !confirm(`刪除 ${c} - ${u} 題庫？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteQuestions", ssId: userSSID, className: c, unit: u }) });
         fetchConfig(); hideLoading();
@@ -418,7 +428,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 解析邏輯強化區 ---
+    // --- AI 分頁邏輯 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -437,7 +447,8 @@
     });
 
     dropZone.addEventListener('drop', (e) => {
-        handleAIReferenceFiles(e.dataTransfer.files);
+        const files = e.dataTransfer.files;
+        handleAIReferenceFiles(files);
     }, false);
 
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
