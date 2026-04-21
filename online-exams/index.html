@@ -388,7 +388,7 @@
             data.forEach(rep => {
                 const card = document.createElement('div');
                 card.className = "report-card";
-                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除場次</button></div>`;
+                card.innerHTML = `<div class="mb-4"><div class="text-xs font-bold text-indigo-500">${rep.qrId}</div><div class="text-lg font-bold text-gray-800">${rep.className} - ${rep.unit}</div><div class="text-sm text-gray-500">時間：${rep.time} | 作答人數：${rep.count}</div></div><div class="grid grid-cols-3 gap-2"><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'results')">成績表</button><button class="exam-button btn-download text-xs" onclick="downloadReportById('${rep.qrId}', 'logs')">答題紀錄</button><button class="exam-button btn-danger text-xs" onclick="deleteReportRecord('${rep.qrId}')">刪除紀錄</button></div>`;
                 container.appendChild(card);
             });
         } catch (e) { container.innerHTML = "載入失敗"; }
