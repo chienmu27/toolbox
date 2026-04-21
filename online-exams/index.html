@@ -137,6 +137,7 @@
             </div>
         </div>
 
+        <!-- AI 出題分頁 (雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -156,18 +157,19 @@
 
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國小六年級數學-圓周率" />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
             </div>
 
             <div id="area-hint" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版本)</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中、題目和答案中有代號請取代..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等、題目和答案中有代號請取代......"></textarea>
             </div>
 
             <div class="mb-4">
-                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF【建議】, Word, TXT, 圖片)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
+                    <p class="text-xs text-gray-400">目前支援多個檔案合併解析</p>
                     <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
@@ -197,7 +199,7 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 替換您的 GAS 佈署網址 ---
+    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -246,7 +248,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請正在審核中" : "您的帳號尚未獲得管理授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得管理授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -286,7 +288,8 @@
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).filter(r => r.length > 0);
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).filter(r => r.length > 0);
             const dataRows = rows.slice(1);
             try {
                 const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "uploadData", ssId: userSSID, type: uploadType, rows: dataRows }) });
@@ -303,6 +306,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
+        // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
@@ -315,17 +319,7 @@
         const pin = document.getElementById('pin-input').value.trim();
         if (!pin) return alert("請輸入 PIN 碼");
         showLoading("驗證中...");
-        // 修正：帶上目前的 qrId 供伺服器檢核
-        const res = await fetch(GAS_URL, { 
-            method: "POST", 
-            body: JSON.stringify({ 
-                action: "login", 
-                ssId: userSSID, 
-                pin: pin, 
-                targetClass: currentExam.class,
-                qrId: currentExam.qrId 
-            }) 
-        });
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", ssId: userSSID, pin: pin, targetClass: currentExam.class, qrId: currentExam.qrId }) });
         const data = await res.json(); hideLoading();
         if (data.success) { studentInfo = data; startQuiz(); } else alert(data.message);
     }
@@ -384,7 +378,7 @@
         try {
             const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getReportSummary", ssId: userSSID }) });
             const data = await res.json(); container.innerHTML = "";
-            if (!data || data.length === 0) { container.innerHTML = "<p class='text-center text-gray-400'>尚無資料</p>"; return; }
+            if (!data || data.length === 0) { container.innerHTML = "<p class='text-center'>尚無資料</p>"; return; }
             data.forEach(rep => {
                 const card = document.createElement('div');
                 card.className = "report-card";
@@ -428,7 +422,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯 ---
+    // --- AI 分頁邏輯：拖曳功能與解析 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
