@@ -108,7 +108,7 @@
                     </div>
                     <div id="qr-container" class="hidden text-center mt-4">
                         <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
-                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-80" onclick="toggleQRModal(true)">
                     </div>
                 </div>
 
@@ -308,7 +308,7 @@
         const qrId = "QR" + Date.now();
         // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
         document.getElementById('qr-id-display').innerText = "考試編號：" + qrId;
