@@ -41,6 +41,17 @@
         .file-upload-area.dragover { border-color: var(--primary-color); background: #f0f0f5; transform: scale(1.02); }
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
+        #qr-modal img { 
+            max-width: 90vw; 
+            max-height: 85vh; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            /* 防止放大模糊 */
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
         .template-link { font-size: 0.8rem; color: #46178f; text-decoration: underline; margin-left: 8px; }
         .file-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; margin-top: 6px; border: 1px solid #e9ecef; }
         .file-item span { font-size: 0.85rem; color: #495057; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
@@ -308,7 +319,7 @@
         const qrId = "QR" + Date.now();
         // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(examUrl)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
         document.getElementById('qr-id-display').innerText = "考試編號：" + qrId;
