@@ -25,7 +25,7 @@
         .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary-color); }
         .hidden { display: none !important; }
-        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
+        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; pointer: cursor; font-size: 1.1rem; transition: 0.2s; }
         .main-btn:hover { opacity: 0.9; }
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
         .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
@@ -193,7 +193,7 @@
         </div>
 
         <div id="view-report-tab" class="hidden">
-            <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
+            <h2 class="text-xl font-bold mb-6 text-center">成績報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
@@ -256,7 +256,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得管理授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請正在審核中" : "您的帳號尚未獲得管理授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -290,7 +290,7 @@
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
-        if (fileInput.files.length === 0) return alert("請選擇檔案");
+        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
@@ -314,7 +314,6 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
@@ -404,7 +403,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`永久刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -423,11 +422,6 @@
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
 
-    /**
-     * 關鍵修正：標準化 AI 欄位數據
-     * 確保即使用戶或 AI 回傳的 Key 名稱不完全符合 (例如 question 而不是 q)，
-     * 也能正確映射到 Excel 列中，解決題目與解答空白的問題。
-     */
     function normalizeParsedData(qs) {
         return qs.map(q => {
             return {
@@ -442,9 +436,7 @@
     }
 
     function downloadExamExcel(qs, cls, unt) {
-        // 先進行資料標準化
         const cleanData = normalizeParsedData(qs);
-        
         const rows = cleanData.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
         const ws = XLSX.utils.aoa_to_sheet([["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"], ...rows]);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
@@ -551,6 +543,29 @@
         }
     }
 
+    /**
+     * 修正後的 JSON 提取與格式化邏輯
+     */
+    function extractJsonFromAiResponse(raw) {
+        if (!raw) return null;
+        try {
+            // 嘗試直接解析
+            return JSON.parse(raw);
+        } catch (e) {
+            // 嘗試正則尋找陣列結構
+            const match = raw.match(/\[[\s\S]*\]/);
+            if (match) {
+                try {
+                    return JSON.parse(match[0]);
+                } catch (e2) {
+                    console.error("Regex JSON Parse Error:", e2);
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -605,27 +620,29 @@ ${textContext}`;
                 ] : prompt
             });
 
+            // 修正：更安全的字串轉換邏輯
             let rawText = "";
             if (response) {
-                if (typeof response === 'string') { rawText = response; } 
-                else if (typeof response.text === 'function') { rawText = response.text(); } 
-                else if (response.message && typeof response.message.content === 'string') { rawText = response.message.content; } 
-                else { try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); } }
+                if (typeof response === 'string') {
+                    rawText = response;
+                } else if (typeof response.text === 'function') {
+                    rawText = response.text();
+                } else if (response.message && response.message.content) {
+                    rawText = response.message.content;
+                } else {
+                    rawText = response.toString ? response.toString() : String(response);
+                }
             }
 
-            const raw = (rawText || "").toString().trim();
-            if (!raw || raw === "" || raw.includes("ERROR_NO_DATA")) {
+            const parsedData = extractJsonFromAiResponse(rawText);
+
+            if (!parsedData || rawText.includes("ERROR_NO_DATA")) {
                 status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
                 return;
             }
 
-            const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) throw new Error("AI 回傳內容不包含有效的 JSON 數據");
-            
-            const parsedData = JSON.parse(jsonMatch[0]);
-            if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
+            if (parsedData.length === 0) throw new Error("解析出的資料為空");
 
-            // 執行下載 Excel
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
@@ -661,7 +678,4 @@ ${textContext}`;
         hideLoading(); alert("申請已送出"); location.reload();
     };
 
-    initSystem();
-</script>
-</body>
-</html>
+    initSyste
