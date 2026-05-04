@@ -57,7 +57,6 @@
 </div>
 
 <div class="container">
-    <!-- 登入遮罩 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -83,67 +82,65 @@
             </div>
         </div>
 
-        <!-- 考試管理分頁 -->
         <div id="view-exam-tab">
-            <div id="view-admin" class="hidden">
-                <h2 class="text-xl font-bold mb-4 text-center">考試管理</h2>
-                <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
-                    <div class="flex items-center mb-2">
-                        <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                        <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=sharing" target="_blank" class="template-link">題庫範本</a>
-                        <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=sharing" target="_blank" class="template-link">名單範本</a>
+            <div id="examView">
+                <div id="view-admin" class="hidden">
+                    <h2 class="text-xl font-bold mb-4 text-center">考試管理</h2>
+                    <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
+                        <div class="flex items-center mb-2">
+                            <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=sharing" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=sharing" target="_blank" class="template-link">名單範本</a>
+                        </div>
+                        <div class="flex gap-4 mb-2">
+                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
+                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
+                        </div>
+                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                        <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
                     </div>
-                    <div class="flex gap-4 mb-2">
-                        <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
-                        <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
+                    <div>
+                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                        <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
+                        <div class="grid grid-cols-1 gap-2 mt-2">
+                            <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
+                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
+                        </div>
                     </div>
-                    <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
-                    <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
-                </div>
-                <div>
-                    <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
-                    <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
-                    <div class="grid grid-cols-1 gap-2 mt-2">
-                        <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
-                        <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
+                    <div id="qr-container" class="hidden text-center mt-4">
+                        <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
+                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
                     </div>
                 </div>
-                <div id="qr-container" class="hidden text-center mt-4">
-                    <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
-                    <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+
+                <div id="view-student-login" class="hidden">
+                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
+                    <div class="bg-gray-50 p-6 rounded-xl">
+                        <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
+                        <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
+                        <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- 學生登入介面 -->
-            <div id="view-student-login" class="hidden">
-                <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
-                <div class="bg-gray-50 p-6 rounded-xl">
-                    <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
-                    <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
-                    <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
+                <div id="view-quiz" class="hidden">
+                    <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
+                    <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
+                    <div id="options-box"></div>
+                    <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
+                    <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
                 </div>
-            </div>
 
-            <!-- 測驗進行介面 -->
-            <div id="view-quiz" class="hidden">
-                <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
-                <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
-                <div id="options-box"></div>
-                <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
-                <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
-            </div>
-
-            <!-- 結果介面 -->
-            <div id="view-result" class="hidden text-center">
-                <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
-                <div id="result-stat" class="text-4xl font-black my-6"></div>
-                <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
+                <div id="view-result" class="hidden text-center">
+                    <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
+                    <div id="result-stat" class="text-4xl font-black my-6"></div>
+                    <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
+                </div>
             </div>
         </div>
 
-        <!-- AI 出題工具分頁 -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
+            
             <div class="flex gap-4 mb-4 bg-gray-50 p-3 rounded-lg border">
                 <label class="font-bold flex items-center cursor-pointer text-indigo-800">
                     <input type="radio" name="ai-mode" value="generate" checked onchange="toggleAiMode()" class="mr-2 w-4 h-4"> AI 主動生成題目
@@ -152,18 +149,31 @@
                     <input type="radio" name="ai-mode" value="convert" onchange="toggleAiMode()" class="mr-2 w-4 h-4"> 轉換上傳檔案題目
                 </label>
             </div>
+
+            <!-- 新增：AI 模型選擇區 -->
+            <div class="mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                <label class="font-bold block mb-1 text-sm text-indigo-900">模型選擇 (推薦使用 GPT 處理 JSON 更穩定)</label>
+                <div class="flex gap-6">
+                    <label class="flex items-center cursor-pointer text-sm font-medium"><input type="radio" name="ai-provider" value="gpt-4o-mini" checked class="mr-2"> GPT-4o Mini</label>
+                    <label class="flex items-center cursor-pointer text-sm font-medium"><input type="radio" name="ai-provider" value="gemini-1.5-flash" class="mr-2"> Gemini 1.5 Flash</label>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div><label class="font-bold block mb-1 text-sm text-gray-600">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
                 <div><label class="font-bold block mb-1 text-sm text-gray-600">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
             </div>
+
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
                 <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
             </div>
+
             <div id="area-hint" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
                 <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
             </div>
+
             <div class="mb-4">
                 <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
@@ -172,21 +182,21 @@
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
+
             <div id="area-count" class="mb-6">
                 <label class="font-bold block mb-1 text-sm text-gray-600">4. 設定題數</label>
                 <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="50" />
             </div>
+
             <button id="generateBtn" class="main-btn">開始處理並生成 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
 
-        <!-- 成績報告分頁 -->
         <div id="view-report-tab" class="hidden">
             <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
-        <!-- 頁尾 -->
         <div id="footerUI" class="mt-auto pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
             線上考試工具箱 © 2025 chienmu.tai<br>Powered by Puter.js
         </div>
@@ -518,12 +528,15 @@
         const count = document.getElementById('gen-count').value;
         const cls = document.getElementById('gen-className').value || "未命名";
         const unt = document.getElementById('gen-unitName').value || "未命名";
+        
+        // 獲取選擇的模型
+        const selectedModel = document.querySelector('input[name="ai-provider"]:checked').value;
 
         if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供參考檔案");
         if (mode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式必須上傳檔案");
 
         const status = document.getElementById('gen-status');
-        status.innerText = "Gemini AI 處理中...";
+        status.innerText = `${selectedModel} 處理中...`;
         
         try {
             let textContext = "";
@@ -542,31 +555,31 @@
 主題：${topic} | 提示：${hint}
 內容：${textContext || "通用知識"}`;
             } else {
-                prompt = `你是一位文件數據提取專家。請掃描內容並提取所有選擇題。
+                prompt = `你是一位文件數據提取專家。請徹底掃描下方的「參考內容」，找出所有「選擇題」。
+【核心規則】
+1. 嚴禁編造！必須是文中確實存在的題目。
+2. 即使格式混亂，也請分離出題幹與四個選項。
+3. 如果完全沒有發現選擇題，請回傳字串 "ERROR_NO_DATA"。
 【格式】僅回傳標準 JSON 陣列。
 [{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
 參考內容：
 ${textContext}`;
             }
 
-            // --- 修正處：指定 gpt-4o-mini 以節省額度並增加成功率 ---
             let response;
             try {
-                response = await puter.ai.chat(prompt, { 
-                    model: 'gpt-4o-mini' 
-                });
+                // 使用選擇的模型調用 Puter AI
+                response = await puter.ai.chat(prompt, { model: selectedModel });
             } catch (aiErr) {
                 if (aiErr.message.includes("Low Balance") || aiErr.message.includes("funding")) {
-                    throw new Error("Puter AI 免費額度已耗盡，請嘗試更換 Google 帳號登入系統，或稍後再試。");
+                    throw new Error("AI 免費額度已耗盡，請更換帳號或稍後再試。");
                 }
                 throw aiErr;
             }
 
             let rawText = response.toString().trim();
-            
-            // 再次檢查是否回傳了額度不足的文字訊息
             if (rawText.includes("Low Balance") || rawText.includes("funding")) {
-                throw new Error("Puter AI 免費額度已耗盡，請嘗試更換 Google 帳號登入系統。");
+                throw new Error("AI 免費額度已耗盡，請嘗試更換 Google 帳號登入系統。");
             }
 
             const jsonMatch = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
