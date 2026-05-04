@@ -203,9 +203,6 @@
     </div>
 </div>
 
-<div id="qr-modal" onclick="toggleQRModal(false)"><img id="qr-image-large" src=""></div>
-<div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
-
 <script>
     // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
@@ -423,13 +420,29 @@
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
 
+    /**
+     * 修改處：欄位標準化映射邏輯
+     * 確保 AI 回傳的題目對象中無論鍵值為何，都能抓取到正確的題目與答案內容
+     */
     function downloadExamExcel(qs, cls, unt) {
-        const rows = qs.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
+        const rows = qs.map(q => {
+            // 自動偵測 AI 可能回傳的不同鍵名 (例如 q, question, ans, answer, correct)
+            const questionText = q.q || q.question || "";
+            const a1 = q.a1 || (q.options ? q.options[0] : "");
+            const a2 = q.a2 || (q.options ? q.options[1] : "");
+            const a3 = q.a3 || (q.options ? q.options[2] : "");
+            const a4 = q.a4 || (q.options ? q.options[3] : "");
+            const ansIndex = q.ans || q.answer || q.correct || 1;
+
+            return [cls, unt, questionText, a1, a2, a3, a4, ansIndex];
+        });
+
         const ws = XLSX.utils.aoa_to_sheet([["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"], ...rows]);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
+    // --- AI 分頁邏輯 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -552,6 +565,7 @@
                 else if (f.type === 'image') images.push(f.content);
             });
 
+            // --- 提示語保留不修改 ---
             let prompt = "";
             if (mode === 'generate') {
                 prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
@@ -576,7 +590,6 @@
 ${textContext}`;
             }
 
-            // 修改處：增加安全性檢查與更強大的 response 物件字串化處理
             let response = await puter.ai.chat(prompt, {
                 role: "user",
                 content: images.length > 0 ? [
@@ -586,8 +599,6 @@ ${textContext}`;
             });
 
             let rawText = "";
-            
-            // 嘗試多種方式獲取純文字
             if (response) {
                 if (typeof response === 'string') {
                     rawText = response;
@@ -596,18 +607,11 @@ ${textContext}`;
                 } else if (response.message && typeof response.message.content === 'string') {
                     rawText = response.message.content;
                 } else {
-                    // 如果還是物件，嘗試序列化，如果報錯則強制轉 String
-                    try {
-                        rawText = JSON.stringify(response);
-                    } catch(e) {
-                        rawText = String(response);
-                    }
+                    try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); }
                 }
             }
 
-            // 確保 rawText 是字串且可以使用 trim()
             const raw = (rawText || "").toString().trim();
-
             if (!raw || raw === "" || raw.includes("ERROR_NO_DATA")) {
                 status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
                 return;
@@ -619,6 +623,7 @@ ${textContext}`;
             const parsedData = JSON.parse(jsonMatch[0]);
             if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
 
+            // 使用標準化映射邏輯進行匯出
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
