@@ -25,7 +25,7 @@
         .tab-btn { flex: 1; padding: 12px; background: #e0e0e0; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
         .tab-btn.active { background: white; color: var(--primary-color); }
         .hidden { display: none !important; }
-        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; pointer: cursor; font-size: 1.1rem; transition: 0.2s; }
+        .main-btn { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
         .main-btn:hover { opacity: 0.9; }
         .sys-title { font-size: 1.25rem; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 12px; }
         .exam-input, .exam-select { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
@@ -193,7 +193,7 @@
         </div>
 
         <div id="view-report-tab" class="hidden">
-            <h2 class="text-xl font-bold mb-6 text-center">成績報告</h2>
+            <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
@@ -422,16 +422,21 @@
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
 
+    /**
+     * 資料標準化與校正邏輯
+     */
     function normalizeParsedData(qs) {
         return qs.map(q => {
-            return {
-                q: q.q || q.question || q.題目 || "",
-                a1: q.a1 || q.選項1 || q.option1 || "",
-                a2: q.a2 || q.選項2 || q.option2 || "",
-                a3: q.a3 || q.選項3 || q.option3 || "",
-                a4: q.a4 || q.選項4 || q.option4 || "",
-                ans: q.ans || q.answer || q.正確答案 || ""
+            // 處理多種可能的屬性名稱，防止匯出空白
+            const item = {
+                q: q.q || q.question || q.題目 || q.題幹 || q.text || "",
+                a1: q.a1 || q.选项1 || q.option1 || q.A || (q.options ? q.options[0] : "") || "",
+                a2: q.a2 || q.选项2 || q.option2 || q.B || (q.options ? q.options[1] : "") || "",
+                a3: q.a3 || q.选项3 || q.option3 || q.C || (q.options ? q.options[2] : "") || "",
+                a4: q.a4 || q.选项4 || q.option4 || q.D || (q.options ? q.options[3] : "") || "",
+                ans: q.ans || q.answer || q.正確答案 || q.正確編號 || q.correct || ""
             };
+            return item;
         });
     }
 
@@ -543,29 +548,6 @@
         }
     }
 
-    /**
-     * 修正後的 JSON 提取與格式化邏輯
-     */
-    function extractJsonFromAiResponse(raw) {
-        if (!raw) return null;
-        try {
-            // 嘗試直接解析
-            return JSON.parse(raw);
-        } catch (e) {
-            // 嘗試正則尋找陣列結構
-            const match = raw.match(/\[[\s\S]*\]/);
-            if (match) {
-                try {
-                    return JSON.parse(match[0]);
-                } catch (e2) {
-                    console.error("Regex JSON Parse Error:", e2);
-                    return null;
-                }
-            }
-        }
-        return null;
-    }
-
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -620,33 +602,38 @@ ${textContext}`;
                 ] : prompt
             });
 
-            // 修正：更安全的字串轉換邏輯
+            // 健全字串處理邏輯
             let rawText = "";
-            if (response) {
+            try {
                 if (typeof response === 'string') {
                     rawText = response;
-                } else if (typeof response.text === 'function') {
+                } else if (response && typeof response.text === 'function') {
                     rawText = response.text();
-                } else if (response.message && response.message.content) {
+                } else if (response && response.message && typeof response.message.content === 'string') {
                     rawText = response.message.content;
                 } else {
-                    rawText = response.toString ? response.toString() : String(response);
+                    rawText = JSON.stringify(response);
                 }
+            } catch(e) {
+                rawText = String(response);
             }
 
-            const parsedData = extractJsonFromAiResponse(rawText);
-
-            if (!parsedData || rawText.includes("ERROR_NO_DATA")) {
-                status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
+            const raw = (rawText || "").toString().trim();
+            if (!raw || raw === "" || raw.includes("ERROR_NO_DATA")) {
+                status.innerText = "❌ 未能解析到有效題目，請確認檔案。";
                 return;
             }
 
-            if (parsedData.length === 0) throw new Error("解析出的資料為空");
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) throw new Error("AI 回傳內容不包含有效的 JSON 數據");
+            
+            const parsedData = JSON.parse(jsonMatch[0]);
+            if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
 
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            console.error("AI 處理錯誤:", e);
+            console.error("AI 錯誤細節:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
         }
     };
@@ -678,4 +665,7 @@ ${textContext}`;
         hideLoading(); alert("申請已送出"); location.reload();
     };
 
-    initSyste
+    initSystem();
+</script>
+</body>
+</html>
