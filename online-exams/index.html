@@ -298,7 +298,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}`;
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
@@ -544,19 +544,36 @@
                 content: images.length > 0 ? [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] : prompt
             });
 
-            // 強化解析：處理 Puter AI 可能回傳的不同格式
+            /**
+             * 修正處：強化解析 Puter AI 回傳結構
+             * 確保 rawText 必定為字串型別，避免 replace 報錯
+             */
             let rawText = "";
-            if (typeof response === 'string') rawText = response;
-            else if (response && response.message && typeof response.message.content === 'string') rawText = response.message.content;
-            else if (response && typeof response.toString === 'function') rawText = response.toString();
+            if (response) {
+                if (typeof response === 'string') {
+                    rawText = response;
+                } else if (response.message && typeof response.message.content === 'string') {
+                    rawText = response.message.content;
+                } else if (typeof response.text === 'function') {
+                    rawText = response.text();
+                } else {
+                    // 如果還是抓不到，轉成 JSON 字串
+                    rawText = JSON.stringify(response);
+                }
+            }
 
-            // 移除 Markdown 標記並提取 JSON 陣列
-            const cleanText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            // 如果 rawText 依然是空的，就拋出錯誤
+            if (!rawText) throw new Error("AI 未回傳任何內容");
+
+            // 移除可能存在的 Markdown 程式碼標記
+            const cleanText = rawText.toString().replace(/```json/g, '').replace(/```/g, '').trim();
+            
+            // 使用 Regex 精準抓取 JSON 陣列部分 [...]
             const jsonMatch = cleanText.match(/\[\s*\{[\s\S]*\}\s*\]/);
 
             if (!jsonMatch) {
                 console.warn("AI 回傳原文：", rawText);
-                throw new Error("AI 回傳內容不包含有效的 JSON 數據");
+                throw new Error("AI 回傳內容不包含有效的 JSON 數據格式");
             }
             
             const parsedData = JSON.parse(jsonMatch[0]);
