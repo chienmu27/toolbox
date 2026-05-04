@@ -48,7 +48,6 @@
             padding: 15px; 
             border-radius: 10px;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            /* 防止放大模糊 */
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -67,6 +66,7 @@
 </div>
 
 <div class="container">
+    <!-- 驗證遮罩層 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -83,6 +83,7 @@
         </div>
     </div>
 
+    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
@@ -148,7 +149,6 @@
             </div>
         </div>
 
-        <!-- AI 出題分頁 (雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -172,15 +172,14 @@
             </div>
 
             <div id="area-hint" class="mb-4">
-                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版本)</label>
+                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
                 <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等、題目和答案中有代號請取代......"></textarea>
             </div>
 
             <div class="mb-4">
-                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF【建議】, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
-                    <p class="text-xs text-gray-400">目前支援多個檔案合併解析</p>
                     <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
@@ -196,7 +195,7 @@
         </div>
 
         <div id="view-report-tab" class="hidden">
-            <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
+            <h2 class="text-xl font-bold mb-6 text-center">成績報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
@@ -210,7 +209,6 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -259,7 +257,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得管理授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -407,7 +405,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -452,8 +450,7 @@
     });
 
     dropZone.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        handleAIReferenceFiles(files);
+        handleAIReferenceFiles(e.dataTransfer.files);
     }, false);
 
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
@@ -589,7 +586,15 @@ ${textContext}`;
                 response = await puter.ai.chat(prompt);
             }
 
-            let raw = response.toString().trim();
+            // 修改處：增加更強壯的字串處理，防止 .toString().trim() 報錯
+            let raw = "";
+            if (response && typeof response.text === 'function') {
+                raw = response.text();
+            } else {
+                raw = String(response);
+            }
+            raw = raw.trim();
+
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
             if (!jsonMatch || raw.includes("ERROR_NO_DATA")) {
                 status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
