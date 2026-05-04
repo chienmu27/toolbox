@@ -41,7 +41,17 @@
         .file-upload-area.dragover { border-color: var(--primary-color); background: #f0f0f5; transform: scale(1.02); }
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
-        #qr-modal img { max-width: 90vw; max-height: 85vh; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5); image-rendering: pixelated; image-rendering: crisp-edges; }
+        #qr-modal img { 
+            max-width: 90vw; 
+            max-height: 85vh; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            /* 防止放大模糊 */
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
         .template-link { font-size: 0.8rem; color: #46178f; text-decoration: underline; margin-left: 8px; }
         .file-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; margin-top: 6px; border: 1px solid #e9ecef; }
         .file-item span { font-size: 0.85rem; color: #495057; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
@@ -89,8 +99,8 @@
                     <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
                         <div class="flex items-center mb-2">
                             <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link" target="_blank" class="template-link">題庫範本</a>
-                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link" target="_blank" class="template-link">名單範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">名單範本</a>
                         </div>
                         <div class="flex gap-4 mb-2">
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
@@ -138,6 +148,7 @@
             </div>
         </div>
 
+        <!-- AI 出題分頁 (雙模式) -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -161,14 +172,15 @@
             </div>
 
             <div id="area-hint" class="mb-4">
-                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
+                <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語 (例如：難易度、版本)</label>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等、題目和答案中有代號請取代......"></textarea>
             </div>
 
             <div class="mb-4">
                 <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
+                    <p class="text-xs text-gray-400">目前支援多個檔案合併解析</p>
                     <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
@@ -198,9 +210,8 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 請替換為您的相關設定 ---
+    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
-    const GEMINI_API_KEY = "AIzaSyA670zCH_cYus2SCWtwbB_5kscVYp53hoo"; // <-- 重要：請在此填入 API Key
     const BASE_URL = window.location.origin + window.location.pathname;
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -306,6 +317,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
+        // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
@@ -421,20 +433,29 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯 ---
+    // --- AI 分頁邏輯：拖曳功能與解析 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
+
     dropZone.onclick = () => fileInput.click();
+
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
     });
+
     ['dragenter', 'dragover'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.add('dragover'), false);
     });
+
     ['dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.remove('dragover'), false);
     });
-    dropZone.addEventListener('drop', (e) => handleAIReferenceFiles(e.dataTransfer.files), false);
+
+    dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        handleAIReferenceFiles(files);
+    }, false);
+
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
 
     async function handleAIReferenceFiles(files) {
@@ -489,7 +510,10 @@
         });
     }
 
-    window.removeGenFile = (index) => { genAttachedFiles.splice(index, 1); renderGenFileList(); };
+    window.removeGenFile = (index) => {
+        genAttachedFiles.splice(index, 1);
+        renderGenFileList();
+    };
 
     function toggleAiMode() {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
@@ -497,16 +521,20 @@
         const areaHint = document.getElementById('area-hint');
         const areaCount = document.getElementById('area-count');
         const labelFile = document.getElementById('label-file');
+        
         if (mode === 'convert') {
-            areaTopic.classList.add('hidden'); areaHint.classList.add('hidden'); areaCount.classList.add('hidden');
+            areaTopic.classList.add('hidden');
+            areaHint.classList.add('hidden');
+            areaCount.classList.add('hidden');
             labelFile.innerText = "3. 請上傳欲轉換之考卷檔案 (AI 將掃描全文提取題目)";
         } else {
-            areaTopic.classList.remove('hidden'); areaHint.classList.remove('hidden'); areaCount.classList.remove('hidden');
+            areaTopic.classList.remove('hidden');
+            areaHint.classList.remove('hidden');
+            areaCount.classList.remove('hidden');
             labelFile.innerText = "3. 參考資料檔案 (可選)";
         }
     }
 
-    // --- 修改處：直接調用 Gemini API ---
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -515,73 +543,65 @@
         const cls = document.getElementById('gen-className').value || "未命名";
         const unt = document.getElementById('gen-unitName').value || "未命名";
 
-        if (GEMINI_API_KEY.includes("填入")) return alert("請先在程式碼中填入 Gemini API Key");
         if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供參考檔案");
         if (mode === 'convert' && genAttachedFiles.length === 0) return alert("轉換模式必須上傳檔案");
 
         const status = document.getElementById('gen-status');
         status.innerText = "Gemini AI 處理中...";
-        showLoading("Gemini AI 運算中...");
         
         try {
             let textContext = "";
-            let geminiParts = [];
-
+            let images = [];
             genAttachedFiles.forEach(f => {
                 if (f.type === 'text') textContext += `\n--- 文件 (${f.name}) ---\n${f.content}\n`;
-                else if (f.type === 'image') {
-                    const base64Data = f.content.split(',')[1];
-                    const mimeType = f.content.split(',')[0].split(':')[1].split(';')[0];
-                    geminiParts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
-                }
+                else if (f.type === 'image') images.push(f.content);
             });
 
-            let promptText = "";
+            let prompt = "";
             if (mode === 'generate') {
-                promptText = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
+                prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
 [重要] 正確答案編號(ans)必須隨機分佈在 1-4。
-[格式] 僅回傳 JSON 陣列，不要有程式碼區塊標籤。
-[{"q":"題目內容","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
-主題：${topic} | 提示：${hint}
-參考內容：${textContext || "通用知識"}`;
-            } else {
-                promptText = `你是一位精準的文件數據提取專家。請掃描參考內容，找出所有「選擇題」。
-1. 嚴禁編造！2. 格式分離出題幹與四個選項。3. 尋找對應正確答案。4. 沒發現題目回傳 ERROR_NO_DATA。
 [格式] 僅回傳 JSON 陣列。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
+主題：${topic} | 提示：${hint}
+內容：${textContext || "通用知識"}`;
+            } else {
+                prompt = `你是一位極為精準的文件數據提取專家。
+【任務】請徹底掃描下方的「參考內容」，找出所有「選擇題」。
+【核心規則】
+1. 嚴禁編造！必須是文中確實存在的題目。
+2. 即使格式混亂（如 1.(A)...(B)...），也請用邏輯推導分離出題幹與四個選項。
+3. 尋找對應的正確答案標記（如括號內的答案、末尾的答案卷）。
+4. 如果完全沒有發現選擇題，請回傳字串 "ERROR_NO_DATA"。
+5. 確保每個 JSON 對象的所有欄位都有值，不要產生空字串。
+【格式】僅回傳標準 JSON 陣列。
 [{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
-參考內容如下：${textContext}`;
+
+參考內容如下：
+${textContext}`;
             }
 
-            geminiParts.unshift({ text: promptText });
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: geminiParts }] })
-            });
-
-            const result = await response.json();
-            hideLoading();
-
-            if (!result.candidates || !result.candidates[0].content.parts[0].text) {
-                throw new Error("Gemini API 回傳格式錯誤或額度已滿");
+            let response;
+            if (images.length > 0) {
+                const messages = [{ role: "user", content: [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] }];
+                response = await puter.ai.chat(messages);
+            } else {
+                response = await puter.ai.chat(prompt);
             }
 
-            let raw = result.candidates[0].content.parts[0].text.trim();
-            // 清理可能出現的 markdown 標籤
-            raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-            
+            let raw = response.toString().trim();
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
             if (!jsonMatch || raw.includes("ERROR_NO_DATA")) {
-                status.innerText = "❌ 未能解析到有效題目。";
+                status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
                 return;
             }
 
             const parsedData = JSON.parse(jsonMatch[0]);
+            if (!parsedData || parsedData.length === 0) throw new Error("無效內容");
+
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            hideLoading();
             console.error(e);
             status.innerText = "❌ 處理失敗：" + e.message;
         }
@@ -594,11 +614,16 @@
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
-    document.getElementById('authLoginBtn').onclick = async () => { try { await puter.auth.signIn(); checkAdminAuth(); } catch (e) {} };
+    
+    document.getElementById('authLoginBtn').onclick = async () => {
+        try { await puter.auth.signIn(); checkAdminAuth(); } catch (e) { console.error(e); }
+    };
+    
     document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
     document.getElementById('backToLoginBtn').onclick = () => {
         document.getElementById('applyForm').classList.add('hidden');
         document.getElementById('loginArea').classList.remove('hidden');
+        document.getElementById('authMsg').innerText = "請先登入 Google 帳號";
     };
     document.getElementById('applyBtn').onclick = async () => {
         const email = document.getElementById('applyEmail').value;
@@ -608,6 +633,7 @@
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "apply", uuid: userUUID, email, name }) });
         hideLoading(); alert("申請已送出"); location.reload();
     };
+
     initSystem();
 </script>
 </body>
