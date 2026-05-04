@@ -41,14 +41,7 @@
         .file-upload-area.dragover { border-color: var(--primary-color); background: #f0f0f5; transform: scale(1.02); }
         .report-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1rem; }
         #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; flex-direction: column; }
-        #qr-modal img { 
-            max-width: 90vw; 
-            max-height: 85vh; 
-            background: white; 
-            padding: 15px; 
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-        }
+        #qr-modal img { max-width: 90vw; max-height: 85vh; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5); image-rendering: pixelated; image-rendering: crisp-edges; }
         .template-link { font-size: 0.8rem; color: #46178f; text-decoration: underline; margin-left: 8px; }
         .file-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; margin-top: 6px; border: 1px solid #e9ecef; }
         .file-item span { font-size: 0.85rem; color: #495057; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
@@ -96,7 +89,8 @@
                     <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
                         <div class="flex items-center mb-2">
                             <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=sharing" target="_blank" class="template-link">題庫範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=sharing" target="_blank" class="template-link">名單範本</a>
                         </div>
                         <div class="flex gap-4 mb-2">
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
@@ -160,11 +154,11 @@
             </div>
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學..." />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
             </div>
             <div id="area-hint" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難度中等..."></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等..."></textarea>
             </div>
             <div class="mb-4">
                 <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
@@ -197,6 +191,7 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
+    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -303,7 +298,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
+        const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
         document.getElementById('qr-image-large').src = qrUrl;
@@ -412,16 +407,14 @@
     }
 
     function normalizeParsedData(qs) {
-        return qs.map(q => {
-            return {
-                q: q.q || q.question || q.題目 || "",
-                a1: q.a1 || q.選項1 || q.option1 || "",
-                a2: q.a2 || q.選項2 || q.option2 || "",
-                a3: q.a3 || q.選項3 || q.option3 || "",
-                a4: q.a4 || q.選項4 || q.option4 || "",
-                ans: q.ans || q.answer || q.正確答案 || ""
-            };
-        });
+        return qs.map(q => ({
+            q: q.q || q.question || q.題目 || "",
+            a1: q.a1 || q.選項1 || q.option1 || "",
+            a2: q.a2 || q.選項2 || q.option2 || "",
+            a3: q.a3 || q.選項3 || q.option3 || "",
+            a4: q.a4 || q.選項4 || q.option4 || "",
+            ans: q.ans || q.answer || q.正確答案 || ""
+        }));
     }
 
     function downloadExamExcel(qs, cls, unt) {
@@ -432,7 +425,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 解析與檔案上傳處理區 ---
+    // --- AI 解析區 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -501,10 +494,7 @@
         });
     }
 
-    window.removeGenFile = (index) => {
-        genAttachedFiles.splice(index, 1);
-        renderGenFileList();
-    };
+    window.removeGenFile = (index) => { genAttachedFiles.splice(index, 1); renderGenFileList(); };
 
     function toggleAiMode() {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
@@ -513,21 +503,14 @@
         const areaCount = document.getElementById('area-count');
         const labelFile = document.getElementById('label-file');
         if (mode === 'convert') {
-            areaTopic.classList.add('hidden');
-            areaHint.classList.add('hidden');
-            areaCount.classList.add('hidden');
-            labelFile.innerText = "3. 請上傳欲轉換之考卷檔案 (AI 將掃描全文提取題目)";
+            areaTopic.classList.add('hidden'); areaHint.classList.add('hidden');
+            areaCount.classList.add('hidden'); labelFile.innerText = "3. 請上傳欲轉換之考卷檔案";
         } else {
-            areaTopic.classList.remove('hidden');
-            areaHint.classList.remove('hidden');
-            areaCount.classList.remove('hidden');
-            labelFile.innerText = "3. 參考資料檔案 (可選)";
+            areaTopic.classList.remove('hidden'); areaHint.classList.remove('hidden');
+            areaCount.classList.remove('hidden'); labelFile.innerText = "3. 參考資料檔案 (可選)";
         }
     }
 
-    /**
-     * 核心修正：處理失敗：AI 回傳內容不包含有效的 JSON 數據
-     */
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -541,11 +524,9 @@
 
         const status = document.getElementById('gen-status');
         status.innerText = "Gemini AI 處理中...";
-        showLoading("AI 正在命題中，請稍候...");
         
         try {
-            let textContext = "";
-            let images = [];
+            let textContext = ""; let images = [];
             genAttachedFiles.forEach(f => {
                 if (f.type === 'text') textContext += `\n--- 文件 (${f.name}) ---\n${f.content}\n`;
                 else if (f.type === 'image') images.push(f.content);
@@ -553,75 +534,37 @@
 
             let prompt = "";
             if (mode === 'generate') {
-                prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
-[重要] 正確答案編號(ans)必須是 1, 2, 3 或 4。
-[格式] 僅回傳 JSON 陣列，不要有任何其他文字說明。
-[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1}]
-主題：${topic} | 提示：${hint}
-內容：${textContext || "通用知識"}`;
+                prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。\n[重要] 正確答案編號(ans)必須隨機分佈在 1-4。\n[格式] 僅回傳 JSON 陣列，不需任何解釋文字。\n[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]\n主題：${topic} | 提示：${hint}\n內容：${textContext || "通用知識"}`;
             } else {
-                prompt = `你是一位文件提取專家。請掃描下方內容提取所有選擇題。
-【核心規則】
-1. 嚴禁編造。
-2. 提取題幹與四個選項。
-3. 尋找對應的正確答案。
-4. 僅回傳 JSON 陣列。
-[{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1}]
-參考內容如下：
-${textContext}`;
+                prompt = `你是一位文件數據提取專家。請掃描內容並提取所有選擇題。\n【格式】僅回傳標準 JSON 陣列，不需解釋文字。\n[{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]\n參考內容：\n${textContext}`;
             }
 
-            // 調用 Puter AI
             let response = await puter.ai.chat(prompt, {
                 role: "user",
-                content: images.length > 0 ? [
-                    { type: "text", text: prompt },
-                    ...images.map(img => ({ type: "image_url", image_url: { url: img } }))
-                ] : prompt
+                content: images.length > 0 ? [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] : prompt
             });
 
-            // --- 修正處：強化 Response 提取與 JSON 解析 ---
+            // 強化解析：處理 Puter AI 可能回傳的不同格式
             let rawText = "";
-            if (typeof response === 'string') {
-                rawText = response;
-            } else if (response && response.message && typeof response.message.content === 'string') {
-                rawText = response.message.content;
-            } else if (response && typeof response.text === 'function') {
-                rawText = await response.text();
-            } else {
-                rawText = JSON.stringify(response);
+            if (typeof response === 'string') rawText = response;
+            else if (response && response.message && typeof response.message.content === 'string') rawText = response.message.content;
+            else if (response && typeof response.toString === 'function') rawText = response.toString();
+
+            // 移除 Markdown 標記並提取 JSON 陣列
+            const cleanText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const jsonMatch = cleanText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+
+            if (!jsonMatch) {
+                console.warn("AI 回傳原文：", rawText);
+                throw new Error("AI 回傳內容不包含有效的 JSON 數據");
             }
-
-            // 使用更健壯的邊界尋找法
-            const firstBracket = rawText.indexOf('[');
-            const lastBracket = rawText.lastIndexOf(']');
-
-            if (firstBracket === -1 || lastBracket === -1 || lastBracket < firstBracket) {
-                console.error("AI 回傳原文:", rawText);
-                throw new Error("AI 回傳內容不包含有效的 JSON 數據格式");
-            }
-
-            const jsonString = rawText.substring(firstBracket, lastBracket + 1);
-            let parsedData;
-            try {
-                parsedData = JSON.parse(jsonString);
-            } catch (jsonErr) {
-                console.error("JSON 解析失敗:", jsonString);
-                throw new Error("JSON 格式毀損，請重試");
-            }
-
-            if (!Array.isArray(parsedData) || parsedData.length === 0) {
-                throw new Error("未能成功生成題目陣列");
-            }
-
+            
+            const parsedData = JSON.parse(jsonMatch[0]);
             downloadExamExcel(parsedData, cls, unt);
-            status.innerText = "✅ 處理完成並已下載 Excel！";
-            hideLoading();
+            status.innerText = "✅ 處理完成！";
         } catch (e) {
             console.error("AI 處理錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
-            hideLoading();
-            alert("處理失敗：" + e.message);
         }
     };
 
@@ -632,20 +575,11 @@ ${textContext}`;
     function showLoading(t) { document.getElementById('loading-text').innerText = t; document.getElementById('loading-overlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
     function toggleQRModal(s) { document.getElementById('qr-modal').style.display = s ? 'flex' : 'none'; }
-    
-    document.getElementById('authLoginBtn').onclick = async () => {
-        try { await puter.auth.signIn(); checkAdminAuth(); } catch (e) { console.error(e); }
-    };
-    
+    document.getElementById('authLoginBtn').onclick = async () => { try { await puter.auth.signIn(); checkAdminAuth(); } catch (e) {} };
     document.getElementById('logoutBtn').onclick = () => { puter.auth.signOut(); location.reload(); };
-    document.getElementById('backToLoginBtn').onclick = () => {
-        document.getElementById('applyForm').classList.add('hidden');
-        document.getElementById('loginArea').classList.remove('hidden');
-        document.getElementById('authMsg').innerText = "請先登入 Google 帳號";
-    };
+    document.getElementById('backToLoginBtn').onclick = () => { document.getElementById('applyForm').classList.add('hidden'); document.getElementById('loginArea').classList.remove('hidden'); };
     document.getElementById('applyBtn').onclick = async () => {
-        const email = document.getElementById('applyEmail').value;
-        const name = document.getElementById('applyName').value;
+        const email = document.getElementById('applyEmail').value, name = document.getElementById('applyName').value;
         if(!email || !name) return alert("請填寫資訊");
         showLoading("送出中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "apply", uuid: userUUID, email, name }) });
