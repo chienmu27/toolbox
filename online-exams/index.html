@@ -48,8 +48,6 @@
             padding: 15px; 
             border-radius: 10px;
             box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
         .template-link { font-size: 0.8rem; color: #46178f; text-decoration: underline; margin-left: 8px; }
         .file-item { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; margin-top: 6px; border: 1px solid #e9ecef; }
@@ -98,8 +96,7 @@
                     <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
                         <div class="flex items-center mb-2">
                             <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">題庫範本</a>
-                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=drive_link&ouid=108254074880701854581&rtpof=true&sd=true" target="_blank" class="template-link">名單範本</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit" target="_blank" class="template-link">題庫範本</a>
                         </div>
                         <div class="flex gap-4 mb-2">
                             <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
@@ -149,7 +146,6 @@
 
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
-            
             <div class="flex gap-4 mb-4 bg-gray-50 p-3 rounded-lg border">
                 <label class="font-bold flex items-center cursor-pointer text-indigo-800">
                     <input type="radio" name="ai-mode" value="generate" checked onchange="toggleAiMode()" class="mr-2 w-4 h-4"> AI 主動生成題目
@@ -158,36 +154,30 @@
                     <input type="radio" name="ai-mode" value="convert" onchange="toggleAiMode()" class="mr-2 w-4 h-4"> 轉換上傳檔案題目
                 </label>
             </div>
-
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div><label class="font-bold block mb-1 text-sm text-gray-600">班級</label><input type="text" id="gen-className" class="exam-input" placeholder="例如：503" /></div>
                 <div><label class="font-bold block mb-1 text-sm text-gray-600">單元</label><input type="text" id="gen-unitName" class="exam-input" placeholder="例如：第一單元" /></div>
             </div>
-
             <div id="area-topic" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">1. 題目主題 (命題核心)</label>
-                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學、自然科學..." />
+                <input type="text" id="gen-topic" class="exam-input" placeholder="例如：國語、數學..." />
             </div>
-
             <div id="area-hint" class="mb-4">
                 <label class="font-bold block mb-1 text-sm text-gray-600">2. 出題提示語</label>
-                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難易度中等、題目和答案中有代號請取代......"></textarea>
+                <textarea id="gen-hint" class="exam-input" rows="2" placeholder="南一版、題目難度中等..."></textarea>
             </div>
-
             <div class="mb-4">
-                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF【建議】, Word, TXT, 圖片)</label>
+                <label id="label-file" class="font-bold block mb-1 text-sm text-gray-600">3. 參考檔案 (支援 PDF, Word, TXT, 圖片)</label>
                 <div id="gen-drop-zone" class="file-upload-area">
                     <p class="text-gray-600 font-bold mb-1">點擊或拖放檔案至此區域</p>
                     <input type="file" id="gen-refFile" class="hidden" multiple accept=".txt, .csv, .xlsx, .xls, .docx, .doc, .pdf, image/*" />
                 </div>
                 <div id="gen-file-list" class="mt-2 space-y-1"></div>
             </div>
-
             <div id="area-count" class="mb-6">
                 <label class="font-bold block mb-1 text-sm text-gray-600">4. 設定題數</label>
                 <input type="number" id="gen-count" class="exam-input w-24" value="5" min="1" max="50" />
             </div>
-
             <button id="generateBtn" class="main-btn">開始處理並生成 Excel</button>
             <div id="gen-status" class="mt-4 text-center text-sm font-bold text-gray-600">系統就緒</div>
         </div>
@@ -207,7 +197,6 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
-    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -314,7 +303,6 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
-        // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
@@ -444,7 +432,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 解析區 ---
+    // --- AI 解析與檔案上傳處理區 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -537,6 +525,9 @@
         }
     }
 
+    /**
+     * 核心修正：處理失敗：AI 回傳內容不包含有效的 JSON 數據
+     */
     document.getElementById('generateBtn').onclick = async () => {
         const mode = document.querySelector('input[name="ai-mode"]:checked').value;
         const topic = document.getElementById('gen-topic').value.trim();
@@ -550,6 +541,7 @@
 
         const status = document.getElementById('gen-status');
         status.innerText = "Gemini AI 處理中...";
+        showLoading("AI 正在命題中，請稍候...");
         
         try {
             let textContext = "";
@@ -562,27 +554,24 @@
             let prompt = "";
             if (mode === 'generate') {
                 prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
-[重要] 正確答案編號(ans)必須隨機分佈在 1-4。
-[格式] 僅回傳 JSON 陣列。
-[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1-4}]
+[重要] 正確答案編號(ans)必須是 1, 2, 3 或 4。
+[格式] 僅回傳 JSON 陣列，不要有任何其他文字說明。
+[{"q":"題目","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1}]
 主題：${topic} | 提示：${hint}
 內容：${textContext || "通用知識"}`;
             } else {
-                prompt = `你是一位極為精準的文件數據提取專家。
-【任務】請徹底掃描下方的「參考內容」，找出所有「選擇題」。
+                prompt = `你是一位文件提取專家。請掃描下方內容提取所有選擇題。
 【核心規則】
-1. 嚴禁編造！必須是文中確實存在的題目。
-2. 即使格式混亂（如 1.(A)...(B)...），也請用邏輯推導分離出題幹與四個選項。
-3. 尋找對應的正確答案標記（如括號內的答案、末尾的答案卷）。
-4. 如果完全沒有發現選擇題，請回傳字串 "ERROR_NO_DATA"。
-5. 確保每個 JSON 對象的所有欄位都有值，不要產生空字串。
-【格式】僅回傳標準 JSON 陣列。
-[{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":正確編號1-4}]
-
+1. 嚴禁編造。
+2. 提取題幹與四個選項。
+3. 尋找對應的正確答案。
+4. 僅回傳 JSON 陣列。
+[{"q":"題幹文字","a1":"選項1","a2":"選項2","a3":"選項3","a4":"選項4","ans":1}]
 參考內容如下：
 ${textContext}`;
             }
 
+            // 調用 Puter AI
             let response = await puter.ai.chat(prompt, {
                 role: "user",
                 content: images.length > 0 ? [
@@ -591,40 +580,48 @@ ${textContext}`;
                 ] : prompt
             });
 
-            /**
-             * 修正關鍵：解決字串化報錯並提取 JSON
-             */
+            // --- 修正處：強化 Response 提取與 JSON 解析 ---
             let rawText = "";
-            if (response) {
-                if (typeof response === 'string') { rawText = response; } 
-                else if (typeof response.text === 'function') { rawText = response.text(); } 
-                else if (response.message && typeof response.message.content === 'string') { rawText = response.message.content; } 
-                else { 
-                    try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); }
-                }
+            if (typeof response === 'string') {
+                rawText = response;
+            } else if (response && response.message && typeof response.message.content === 'string') {
+                rawText = response.message.content;
+            } else if (response && typeof response.text === 'function') {
+                rawText = await response.text();
+            } else {
+                rawText = JSON.stringify(response);
             }
 
-            const raw = (rawText || "").toString().trim();
-            if (!raw || raw === "" || raw.includes("ERROR_NO_DATA")) {
-                status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
-                return;
+            // 使用更健壯的邊界尋找法
+            const firstBracket = rawText.indexOf('[');
+            const lastBracket = rawText.lastIndexOf(']');
+
+            if (firstBracket === -1 || lastBracket === -1 || lastBracket < firstBracket) {
+                console.error("AI 回傳原文:", rawText);
+                throw new Error("AI 回傳內容不包含有效的 JSON 數據格式");
             }
 
-            // 修改處：使用 Regex 抓取 [ 到 ] 之間的內容，過濾 AI 的解釋字句
-            const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                console.warn("AI Raw Response:", raw);
-                throw new Error("AI 回傳內容不包含有效的 JSON 數據");
+            const jsonString = rawText.substring(firstBracket, lastBracket + 1);
+            let parsedData;
+            try {
+                parsedData = JSON.parse(jsonString);
+            } catch (jsonErr) {
+                console.error("JSON 解析失敗:", jsonString);
+                throw new Error("JSON 格式毀損，請重試");
             }
-            
-            const parsedData = JSON.parse(jsonMatch[0]);
-            if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
+
+            if (!Array.isArray(parsedData) || parsedData.length === 0) {
+                throw new Error("未能成功生成題目陣列");
+            }
 
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
+            hideLoading();
         } catch (e) {
             console.error("AI 處理錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
+            hideLoading();
+            alert("處理失敗：" + e.message);
         }
     };
 
