@@ -66,7 +66,6 @@
 </div>
 
 <div class="container">
-    <!-- 驗證遮罩層 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -83,7 +82,6 @@
         </div>
     </div>
 
-    <!-- 主內容區 -->
     <div id="mainContent" class="hidden">
         <div id="topHeaderUI" class="flex justify-between items-center mb-6 border-bottom pb-4 border-b-2 border-gray-100">
             <div id="sysIndicator" class="sys-title">線上考試工具箱</div>
@@ -149,6 +147,7 @@
             </div>
         </div>
 
+        <!-- AI 出題分頁 -->
         <div id="view-gen-tab" class="hidden">
             <h1 class="text-2xl font-bold text-indigo-900 text-center mb-6">AI 出題與轉換工具</h1>
             
@@ -209,6 +208,7 @@
 <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
+    // --- 請替換為您的 GAS 佈署網址 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwUMawcsle5jrve_w-LbAhG7-OZyVIArf6SZqbrL4yGq2nROfty6dnAFX2xsIy-ZW0f/exec"; 
     const BASE_URL = window.location.origin + window.location.pathname;
 
@@ -405,7 +405,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`永久刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -431,7 +431,7 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯：拖曳功能與解析 ---
+    // --- AI 分頁邏輯 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -578,23 +578,34 @@
 ${textContext}`;
             }
 
-            let response;
-            if (images.length > 0) {
-                const messages = [{ role: "user", content: [{ type: "text", text: prompt }, ...images.map(img => ({ type: "image_url", image_url: { url: img } }))] }];
-                response = await puter.ai.chat(messages);
+            let response = await puter.ai.chat(prompt, {
+                role: "user",
+                content: images.length > 0 ? [
+                    { type: "text", text: prompt },
+                    ...images.map(img => ({ type: "image_url", image_url: { url: img } }))
+                ] : prompt
+            });
+
+            /**
+             * 關鍵修正：解決 "Cannot convert object to primitive value"
+             * Puter API 回傳的 response 物件直接轉換字串在某些 JS 引擎會報錯。
+             */
+            let rawText = "";
+            if (response && typeof response === 'object') {
+                // 如果 response 是 Puter 的 ChatResponse 物件，內容在 .text() 或 .message.content
+                if (typeof response.text === 'function') {
+                    rawText = response.text();
+                } else if (response.message && response.message.content) {
+                    rawText = response.message.content;
+                } else {
+                    // 強制轉字串並確保不報錯
+                    rawText = JSON.parse(JSON.stringify(response)).toString() || String(response);
+                }
             } else {
-                response = await puter.ai.chat(prompt);
+                rawText = String(response);
             }
 
-            // 修改處：增加更強壯的字串處理，防止 .toString().trim() 報錯
-            let raw = "";
-            if (response && typeof response.text === 'function') {
-                raw = response.text();
-            } else {
-                raw = String(response);
-            }
-            raw = raw.trim();
-
+            const raw = rawText.trim();
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
             if (!jsonMatch || raw.includes("ERROR_NO_DATA")) {
                 status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
@@ -607,7 +618,7 @@ ${textContext}`;
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            console.error(e);
+            console.error("AI 處理錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
         }
     };
