@@ -314,6 +314,7 @@
         const c = document.getElementById('select-class').value, u = document.getElementById('select-unit').value;
         if (!c || !u) return alert("請選取單元");
         const qrId = "QR" + Date.now();
+        // 核心保留：&openExternalBrowser=1
         const examUrl = `${BASE_URL}?c=${encodeURIComponent(c)}&u=${encodeURIComponent(u)}&sid=${userSSID}&qid=${qrId}&openExternalBrowser=1`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(examUrl)}`;
         document.getElementById('qr-image').src = qrUrl;
@@ -422,21 +423,16 @@
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1"); XLSX.writeFile(wb, filename);
     }
 
-    /**
-     * 資料標準化與校正邏輯
-     */
     function normalizeParsedData(qs) {
         return qs.map(q => {
-            // 處理多種可能的屬性名稱，防止匯出空白
-            const item = {
-                q: q.q || q.question || q.題目 || q.題幹 || q.text || "",
-                a1: q.a1 || q.选项1 || q.option1 || q.A || (q.options ? q.options[0] : "") || "",
-                a2: q.a2 || q.选项2 || q.option2 || q.B || (q.options ? q.options[1] : "") || "",
-                a3: q.a3 || q.选项3 || q.option3 || q.C || (q.options ? q.options[2] : "") || "",
-                a4: q.a4 || q.选项4 || q.option4 || q.D || (q.options ? q.options[3] : "") || "",
-                ans: q.ans || q.answer || q.正確答案 || q.正確編號 || q.correct || ""
+            return {
+                q: q.q || q.question || q.題目 || "",
+                a1: q.a1 || q.選項1 || q.option1 || "",
+                a2: q.a2 || q.選項2 || q.option2 || "",
+                a3: q.a3 || q.選項3 || q.option3 || "",
+                a4: q.a4 || q.選項4 || q.option4 || "",
+                ans: q.ans || q.answer || q.正確答案 || ""
             };
-            return item;
         });
     }
 
@@ -448,27 +444,21 @@
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
+    // --- AI 解析區 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
     dropZone.onclick = () => fileInput.click();
-
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
     });
-
     ['dragenter', 'dragover'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.add('dragover'), false);
     });
-
     ['dragleave', 'drop'].forEach(name => {
         dropZone.addEventListener(name, () => dropZone.classList.remove('dragover'), false);
     });
-
-    dropZone.addEventListener('drop', (e) => {
-        handleAIReferenceFiles(e.dataTransfer.files);
-    }, false);
-
+    dropZone.addEventListener('drop', (e) => { handleAIReferenceFiles(e.dataTransfer.files); }, false);
     fileInput.onchange = (e) => handleAIReferenceFiles(e.target.files);
 
     async function handleAIReferenceFiles(files) {
@@ -534,7 +524,6 @@
         const areaHint = document.getElementById('area-hint');
         const areaCount = document.getElementById('area-count');
         const labelFile = document.getElementById('label-file');
-        
         if (mode === 'convert') {
             areaTopic.classList.add('hidden');
             areaHint.classList.add('hidden');
@@ -602,30 +591,31 @@ ${textContext}`;
                 ] : prompt
             });
 
-            // 健全字串處理邏輯
+            /**
+             * 修正關鍵：解決字串化報錯並提取 JSON
+             */
             let rawText = "";
-            try {
-                if (typeof response === 'string') {
-                    rawText = response;
-                } else if (response && typeof response.text === 'function') {
-                    rawText = response.text();
-                } else if (response && response.message && typeof response.message.content === 'string') {
-                    rawText = response.message.content;
-                } else {
-                    rawText = JSON.stringify(response);
+            if (response) {
+                if (typeof response === 'string') { rawText = response; } 
+                else if (typeof response.text === 'function') { rawText = response.text(); } 
+                else if (response.message && typeof response.message.content === 'string') { rawText = response.message.content; } 
+                else { 
+                    try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); }
                 }
-            } catch(e) {
-                rawText = String(response);
             }
 
             const raw = (rawText || "").toString().trim();
             if (!raw || raw === "" || raw.includes("ERROR_NO_DATA")) {
-                status.innerText = "❌ 未能解析到有效題目，請確認檔案。";
+                status.innerText = "❌ 未能解析到有效題目，請確認檔案是否有題目與答案。";
                 return;
             }
 
+            // 修改處：使用 Regex 抓取 [ 到 ] 之間的內容，過濾 AI 的解釋字句
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) throw new Error("AI 回傳內容不包含有效的 JSON 數據");
+            if (!jsonMatch) {
+                console.warn("AI Raw Response:", raw);
+                throw new Error("AI 回傳內容不包含有效的 JSON 數據");
+            }
             
             const parsedData = JSON.parse(jsonMatch[0]);
             if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
@@ -633,7 +623,7 @@ ${textContext}`;
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            console.error("AI 錯誤細節:", e);
+            console.error("AI 處理錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
         }
     };
