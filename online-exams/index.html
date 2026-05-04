@@ -193,7 +193,7 @@
         </div>
 
         <div id="view-report-tab" class="hidden">
-            <h2 class="text-xl font-bold mb-6 text-center">成績報告</h2>
+            <h2 class="text-xl font-bold mb-6 text-center">答題報告</h2>
             <div id="report-container" class="space-y-4"></div>
         </div>
 
@@ -202,6 +202,9 @@
         </div>
     </div>
 </div>
+
+<div id="qr-modal" onclick="toggleQRModal(false)"><img id="qr-image-large" src=""></div>
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000]"><div class="bg-white p-8 rounded-2xl text-center shadow-2xl"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4"></div><p id="loading-text" class="text-gray-800 font-bold">處理中...</p></div></div>
 
 <script>
     // --- 請替換為您的 GAS 佈署網址 ---
@@ -253,7 +256,7 @@
             } else { 
                 document.getElementById('loginArea').classList.add('hidden');
                 document.getElementById('applyForm').classList.remove('hidden');
-                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得授權";
+                document.getElementById('authMsg').innerText = (result.status === "Pending") ? "您的帳號授權申請審核中" : "您的帳號尚未獲得管理授權";
             }
         } catch (e) { hideLoading(); alert("連線錯誤"); }
     }
@@ -287,7 +290,7 @@
     async function handleUpload() {
         const fileInput = document.getElementById('upload-file');
         const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
-        if (fileInput.files.length === 0) return alert("請選擇 Excel 檔案");
+        if (fileInput.files.length === 0) return alert("請選擇檔案");
         const reader = new FileReader();
         showLoading("資料處理中...");
         reader.onload = async (e) => {
@@ -401,7 +404,7 @@
     }
 
     async function deleteReportRecord(qrId) {
-        if (!confirm(`確定要永久刪除紀錄 ${qrId}？`)) return;
+        if (!confirm(`永久刪除紀錄 ${qrId}？`)) return;
         showLoading("刪除中...");
         await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteByQrId", ssId: userSSID, qrId: qrId }) });
         loadReports(); hideLoading();
@@ -421,28 +424,33 @@
     }
 
     /**
-     * 修改處：欄位標準化映射邏輯
-     * 確保 AI 回傳的題目對象中無論鍵值為何，都能抓取到正確的題目與答案內容
+     * 關鍵修正：標準化 AI 欄位數據
+     * 確保即使用戶或 AI 回傳的 Key 名稱不完全符合 (例如 question 而不是 q)，
+     * 也能正確映射到 Excel 列中，解決題目與解答空白的問題。
      */
-    function downloadExamExcel(qs, cls, unt) {
-        const rows = qs.map(q => {
-            // 自動偵測 AI 可能回傳的不同鍵名 (例如 q, question, ans, answer, correct)
-            const questionText = q.q || q.question || "";
-            const a1 = q.a1 || (q.options ? q.options[0] : "");
-            const a2 = q.a2 || (q.options ? q.options[1] : "");
-            const a3 = q.a3 || (q.options ? q.options[2] : "");
-            const a4 = q.a4 || (q.options ? q.options[3] : "");
-            const ansIndex = q.ans || q.answer || q.correct || 1;
-
-            return [cls, unt, questionText, a1, a2, a3, a4, ansIndex];
+    function normalizeParsedData(qs) {
+        return qs.map(q => {
+            return {
+                q: q.q || q.question || q.題目 || "",
+                a1: q.a1 || q.選項1 || q.option1 || "",
+                a2: q.a2 || q.選項2 || q.option2 || "",
+                a3: q.a3 || q.選項3 || q.option3 || "",
+                a4: q.a4 || q.選項4 || q.option4 || "",
+                ans: q.ans || q.answer || q.正確答案 || ""
+            };
         });
+    }
 
+    function downloadExamExcel(qs, cls, unt) {
+        // 先進行資料標準化
+        const cleanData = normalizeParsedData(qs);
+        
+        const rows = cleanData.map(q => [cls, unt, q.q, q.a1, q.a2, q.a3, q.a4, q.ans]);
         const ws = XLSX.utils.aoa_to_sheet([["班級", "單元", "題目", "選項1", "選項2", "選項3", "選項4", "正確答案"], ...rows]);
         const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "題庫");
         XLSX.writeFile(wb, `題庫_${cls}_${unt}.xlsx`);
     }
 
-    // --- AI 分頁邏輯 ---
     const dropZone = document.getElementById('gen-drop-zone');
     const fileInput = document.getElementById('gen-refFile');
 
@@ -565,7 +573,6 @@
                 else if (f.type === 'image') images.push(f.content);
             });
 
-            // --- 提示語保留不修改 ---
             let prompt = "";
             if (mode === 'generate') {
                 prompt = `你是一位資深老師。請根據參考內容或主題生成 ${count} 題單選題。
@@ -600,15 +607,10 @@ ${textContext}`;
 
             let rawText = "";
             if (response) {
-                if (typeof response === 'string') {
-                    rawText = response;
-                } else if (typeof response.text === 'function') {
-                    rawText = response.text();
-                } else if (response.message && typeof response.message.content === 'string') {
-                    rawText = response.message.content;
-                } else {
-                    try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); }
-                }
+                if (typeof response === 'string') { rawText = response; } 
+                else if (typeof response.text === 'function') { rawText = response.text(); } 
+                else if (response.message && typeof response.message.content === 'string') { rawText = response.message.content; } 
+                else { try { rawText = JSON.stringify(response); } catch(e) { rawText = String(response); } }
             }
 
             const raw = (rawText || "").toString().trim();
@@ -623,11 +625,11 @@ ${textContext}`;
             const parsedData = JSON.parse(jsonMatch[0]);
             if (!parsedData || parsedData.length === 0) throw new Error("解析出的資料為空");
 
-            // 使用標準化映射邏輯進行匯出
+            // 執行下載 Excel
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            console.error("AI 處理錯誤細節:", e);
+            console.error("AI 處理錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
         }
     };
