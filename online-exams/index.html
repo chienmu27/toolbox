@@ -57,6 +57,7 @@
 </div>
 
 <div class="container">
+    <!-- 登入遮罩 -->
     <div id="authOverlay">
         <div class="max-w-md w-full">
             <div id="loginArea">
@@ -83,58 +84,56 @@
         </div>
 
         <div id="view-exam-tab">
-            <div id="examView">
-                <div id="view-admin" class="hidden">
-                    <h2 class="text-xl font-bold mb-4 text-center">考試管理</h2>
-                    <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
-                        <div class="flex items-center mb-2">
-                            <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
-                            <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=sharing" target="_blank" class="template-link">題庫範本</a>
-                            <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=sharing" target="_blank" class="template-link">名單範本</a>
-                        </div>
-                        <div class="flex gap-4 mb-2">
-                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
-                            <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
-                        </div>
-                        <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
-                        <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
+            <div id="view-admin" class="hidden">
+                <h2 class="text-xl font-bold mb-4 text-center">考試管理</h2>
+                <div class="border-b-2 border-dashed border-gray-100 pb-4 mb-4">
+                    <div class="flex items-center mb-2">
+                        <label class="text-sm font-bold text-gray-600">上傳資料 (Excel):</label>
+                        <a href="https://docs.google.com/spreadsheets/d/1dlSe0vY3mp0FDEVAJl7xdDsIZnCRFzy8/edit?usp=sharing" target="_blank" class="template-link">題庫範本</a>
+                        <a href="https://docs.google.com/spreadsheets/d/1-5Vo-i3Hy0XgsKVIqiedGIIYvi3JMLLN/edit?usp=sharing" target="_blank" class="template-link">名單範本</a>
                     </div>
-                    <div>
-                        <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
-                        <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
-                        <div class="grid grid-cols-1 gap-2 mt-2">
-                            <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
-                            <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
-                        </div>
+                    <div class="flex gap-4 mb-2">
+                        <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="questions" checked class="mr-1"> 上傳新題目</label>
+                        <label class="flex items-center text-sm cursor-pointer"><input type="radio" name="uploadType" value="users" class="mr-1"> 上傳學生名單</label>
                     </div>
-                    <div id="qr-container" class="hidden text-center mt-4">
-                        <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
-                        <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+                    <input type="file" id="upload-file" accept=".xlsx, .xls" class="exam-input">
+                    <button class="exam-button btn-upload" onclick="handleUpload()">執行資料上傳</button>
+                </div>
+                <div>
+                    <select id="select-class" onchange="updateUnitDropdown()" class="exam-select"><option>載入中...</option></select>
+                    <select id="select-unit" class="exam-select"><option>請先選擇班級</option></select>
+                    <div class="grid grid-cols-1 gap-2 mt-2">
+                        <button class="exam-button btn-primary" onclick="generateQRCode()">生成考試 QR-Code</button>
+                        <button class="exam-button btn-danger" onclick="confirmDelete()">刪除該單元題庫資料</button>
                     </div>
                 </div>
+                <div id="qr-container" class="hidden text-center mt-4">
+                    <p class="text-xs text-indigo-600 font-bold mb-2" id="qr-id-display"></p>
+                    <img id="qr-image" class="mx-auto border-8 border-white shadow-lg cursor-zoom-in w-44" onclick="toggleQRModal(true)">
+                </div>
+            </div>
 
-                <div id="view-student-login" class="hidden">
-                    <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
-                    <div class="bg-gray-50 p-6 rounded-xl">
-                        <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
-                        <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
-                        <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
-                    </div>
+            <div id="view-student-login" class="hidden">
+                <h2 id="exam-title" class="text-2xl font-bold mb-6 text-center text-gray-800 whitespace-pre-line">載入中...</h2>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <label class="block text-gray-600 mb-2 font-medium">請輸入您的 PIN 碼：</label>
+                    <input type="text" id="pin-input" placeholder="班級+座號，例如：50319" class="exam-input text-center text-xl tracking-widest">
+                    <button class="exam-button btn-primary mt-4 py-4 text-lg" onclick="studentLogin()">進入測驗</button>
                 </div>
+            </div>
 
-                <div id="view-quiz" class="hidden">
-                    <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
-                    <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
-                    <div id="options-box"></div>
-                    <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
-                    <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
-                </div>
+            <div id="view-quiz" class="hidden">
+                <div class="text-right text-sm text-gray-500 mb-2" id="quiz-progress"></div>
+                <div id="question-text" class="text-xl font-medium mb-6 leading-relaxed"></div>
+                <div id="options-box"></div>
+                <button id="btn-next" class="exam-button btn-primary hidden py-4" onclick="nextQuestion()">下一題</button>
+                <button id="btn-submit" class="exam-button hidden py-4" onclick="submitExam()" style="background: var(--exam-success);">提交試卷</button>
+            </div>
 
-                <div id="view-result" class="hidden text-center">
-                    <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
-                    <div id="result-stat" class="text-4xl font-black my-6"></div>
-                    <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
-                </div>
+            <div id="view-result" class="hidden text-center">
+                <h2 class="text-2xl font-bold text-green-600">測驗已提交</h2>
+                <div id="result-stat" class="text-4xl font-black my-6"></div>
+                <p class="text-gray-500 mb-4">若需重新測驗，請重新掃描 QR-Code</p>
             </div>
         </div>
 
@@ -150,9 +149,8 @@
                 </label>
             </div>
 
-            <!-- 新增：AI 模型選擇區 -->
             <div class="mb-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                <label class="font-bold block mb-1 text-sm text-indigo-900">模型選擇 (推薦使用 GPT 處理 JSON 更穩定)</label>
+                <label class="font-bold block mb-1 text-sm text-indigo-900">模型選擇</label>
                 <div class="flex gap-6">
                     <label class="flex items-center cursor-pointer text-sm font-medium"><input type="radio" name="ai-provider" value="gpt-4o-mini" checked class="mr-2"> GPT-4o Mini</label>
                     <label class="flex items-center cursor-pointer text-sm font-medium"><input type="radio" name="ai-provider" value="gemini-1.5-flash" class="mr-2"> Gemini 1.5 Flash</label>
@@ -528,8 +526,6 @@
         const count = document.getElementById('gen-count').value;
         const cls = document.getElementById('gen-className').value || "未命名";
         const unt = document.getElementById('gen-unitName').value || "未命名";
-        
-        // 獲取選擇的模型
         const selectedModel = document.querySelector('input[name="ai-provider"]:checked').value;
 
         if (mode === 'generate' && !topic && genAttachedFiles.length === 0) return alert("請輸入主題或提供參考檔案");
@@ -568,18 +564,31 @@ ${textContext}`;
 
             let response;
             try {
-                // 使用選擇的模型調用 Puter AI
+                // 修改處：處理 Puter AI 回傳結構，確保不為空
                 response = await puter.ai.chat(prompt, { model: selectedModel });
             } catch (aiErr) {
-                if (aiErr.message.includes("Low Balance") || aiErr.message.includes("funding")) {
+                if (aiErr.message && (aiErr.message.includes("Low Balance") || aiErr.message.includes("funding"))) {
                     throw new Error("AI 免費額度已耗盡，請更換帳號或稍後再試。");
                 }
                 throw aiErr;
             }
 
-            let rawText = response.toString().trim();
-            if (rawText.includes("Low Balance") || rawText.includes("funding")) {
-                throw new Error("AI 免費額度已耗盡，請嘗試更換 Google 帳號登入系統。");
+            // 修改處：增加安全性檢查，避免對 undefined 呼叫 trim()
+            let rawText = "";
+            if (response && typeof response === 'string') {
+                rawText = response;
+            } else if (response && response.message && response.message.content) {
+                rawText = response.message.content;
+            } else if (response && typeof response.text === 'function') {
+                rawText = response.text();
+            } else if (response) {
+                rawText = response.toString();
+            }
+
+            rawText = (rawText || "").trim();
+
+            if (rawText === "" || rawText.includes("Low Balance") || rawText.includes("funding")) {
+                throw new Error("AI 未能回傳有效內容，可能額度不足。");
             }
 
             const jsonMatch = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
@@ -589,7 +598,7 @@ ${textContext}`;
             downloadExamExcel(parsedData, cls, unt);
             status.innerText = "✅ 處理完成並已下載 Excel！";
         } catch (e) {
-            console.error(e);
+            console.error("AI 錯誤:", e);
             status.innerText = "❌ 處理失敗：" + e.message;
             alert(e.message);
         }
