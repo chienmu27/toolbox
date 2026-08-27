@@ -34,7 +34,7 @@
                 </p>
             </div>
             <!-- API Key 狀態按鈕 -->
-            <button id="openKeyModalBtn" class="bg-white/20 hover:bg-white/30 text-xs px-3.5 py-2 rounded-lg border border-white/30 backdrop-blur-sm transition flex items-center gap-1.5">
+            <button type="button" id="openKeyModalBtn" class="bg-white/20 hover:bg-white/30 text-xs px-3.5 py-2 rounded-lg border border-white/30 backdrop-blur-sm transition flex items-center gap-1.5 cursor-pointer">
                 <i class="fa-solid fa-key"></i> <span id="keyStatusText">Google API 設定 (選填)</span>
             </button>
         </header>
@@ -45,43 +45,43 @@
             <div class="lg:col-span-5 space-y-5">
                 
                 <!-- 1. 照片上傳 -->
-                <div class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-500 transition">
+                <div id="dropZone" class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:border-indigo-500 hover:bg-indigo-50/30 transition cursor-pointer">
                     <input type="file" id="uploadInput" accept="image/*" class="hidden">
-                    <label for="uploadInput" class="cursor-pointer flex flex-col items-center justify-center">
-                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-500 mb-2"></i>
-                        <span class="text-sm font-bold text-slate-700">點擊上傳學生生活照</span>
-                        <span class="text-xs text-slate-400 mt-1">支援偏斜、有背景之半身照片 (JPG/PNG)</span>
-                    </label>
+                    <div class="flex flex-col items-center justify-center pointer-events-none">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-500 mb-2"></i>
+                        <span class="text-sm font-bold text-slate-700">點擊上傳 或 拖曳學生照片至此</span>
+                        <span class="text-xs text-slate-400 mt-1">支援生活照、偏斜照 (JPG/PNG)</span>
+                    </div>
                 </div>
 
                 <!-- 2. AI 處理核心選擇 -->
                 <div class="bg-indigo-50/70 border border-indigo-100 p-4 rounded-xl space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> AI 去背與修復模組
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> AI 去背與修正模組
                         </span>
                         <span id="aiBadge" class="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-semibold">待命</span>
                     </div>
                     
-                    <!-- 模式 1: 本地 AI 去背換白底 (無額度限制) -->
-                    <button id="localAiBtn" disabled class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-bolt"></i> <span>🚀 本地 AI 一鍵去背換白底 (免 API、無限制)</span>
+                    <!-- 模式 1: 本地 AI 去背換白底 -->
+                    <button type="button" id="localAiBtn" disabled class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-bolt"></i> <span>🚀 本地 AI 一鍵去背換白底 (無額度限制)</span>
                     </button>
 
                     <!-- 模式 2: Google 雲端 Nano Banana -->
-                    <button id="cloudAiBtn" disabled class="w-full py-2 bg-white hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 border border-indigo-200 text-indigo-700 font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5">
+                    <button type="button" id="cloudAiBtn" disabled class="w-full py-2 bg-white hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed border border-indigo-200 text-indigo-700 font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <i class="fa-brands fa-google"></i> <span>Nano Banana 雲端姿態轉正 (需 API Key)</span>
                     </button>
                 </div>
 
                 <!-- 3. 輸出尺寸切換 -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <label class="block text-xs font-bold text-slate-700 mb-2">大頭照輸出規格 (300 DPI)：</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">大頭照規格 (300 DPI)：</label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="flex items-center p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
                             <input type="radio" name="photoSize" value="2inch" checked class="text-indigo-600 focus:ring-indigo-500">
                             <div class="ml-2.5">
-                                <div class="text-xs font-bold">2 吋證件照</div>
+                                <div class="text-xs font-bold">2 吋大頭照</div>
                                 <div class="text-[11px] text-slate-500">3.5 × 4.5 cm (413×531)</div>
                             </div>
                         </label>
@@ -95,35 +95,35 @@
                     </div>
                 </div>
 
-                <!-- 4. 手動微調 (轉正與縮放) -->
+                <!-- 4. 手動微調 -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                     <div class="flex justify-between items-center text-xs font-bold text-slate-700">
                         <span>人像微調校正</span>
-                        <button id="resetAdjustBtn" class="text-indigo-600 hover:underline text-[11px]">重設</button>
+                        <button type="button" id="resetAdjustBtn" class="text-indigo-600 hover:underline text-[11px] cursor-pointer">重設微調</button>
                     </div>
                     <div>
                         <div class="flex justify-between text-[11px] text-slate-500 mb-1">
                             <span>頭部水平轉正角度</span>
                             <span id="rotateVal">0°</span>
                         </div>
-                        <input type="range" id="rotateSlider" min="-25" max="25" value="0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
+                        <input type="range" id="rotateSlider" min="-30" max="30" value="0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
                     </div>
                     <div>
                         <div class="flex justify-between text-[11px] text-slate-500 mb-1">
                             <span>人像縮放大小</span>
                             <span id="scaleVal">1.0x</span>
                         </div>
-                        <input type="range" id="scaleSlider" min="0.5" max="2.5" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
+                        <input type="range" id="scaleSlider" min="0.4" max="2.5" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
                     </div>
-                    <p class="text-[11px] text-slate-400">💡 提示：在右側預覽畫布上可直接用滑鼠拖曳照片調整位置。</p>
+                    <p class="text-[11px] text-slate-400">💡 提示：在右側預覽畫布上可直接用滑鼠拖曳調整人像位置。</p>
                 </div>
 
                 <!-- 5. 下載區 -->
                 <div class="space-y-2 pt-1">
-                    <button id="download4x6Btn" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <button type="button" id="download4x6Btn" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-download"></i> <span>下載 4×6 吋沖洗排版檔 (內含 8 張)</span>
                     </button>
-                    <button id="downloadSingleBtn" disabled class="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 text-slate-700 font-semibold rounded-xl text-xs transition">
+                    <button type="button" id="downloadSingleBtn" disabled class="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer">
                         下載單張高畫質大頭照
                     </button>
                 </div>
@@ -138,16 +138,16 @@
                 <div class="relative w-full flex items-center justify-center overflow-hidden rounded-lg shadow-inner border border-slate-300 bg-white">
                     <canvas id="previewCanvas" class="max-w-full h-auto cursor-grab active:cursor-grabbing block"></canvas>
                     
-                    <!-- AI 生成中遮罩動畫 -->
-                    <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white hidden p-6 text-center">
+                    <!-- 載入動畫遮罩 -->
+                    <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white hidden p-6 text-center z-10">
                         <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-400 mb-3"></i>
-                        <p class="font-bold text-sm" id="loadingText">AI 正在進行智慧去背與修復...</p>
-                        <p class="text-xs text-slate-300 mt-1" id="loadingSubtext">首次使用載入模型約需數秒，請稍候</p>
+                        <p class="font-bold text-sm" id="loadingText">AI 正在進行智慧去背...</p>
+                        <p class="text-xs text-slate-300 mt-1" id="loadingSubtext">處理中，請稍候</p>
                     </div>
                 </div>
 
                 <div class="mt-3 text-[11px] text-slate-400 text-center">
-                    💡 超商沖印：下載後上傳至 7-11 ibon 或全家機台，選擇「4×6 吋相片沖印」（每張約 6～10 元），印出後沿裁切線剪開即可。
+                    💡 超商沖印：下載後上傳至 7-11 ibon 或全家機台，選擇「4×6 吋相片沖印」（每張約 6～10 元），印出後剪開即可使用。
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@
                 <i class="fa-brands fa-google text-indigo-600"></i> 設定 Google Gemini API Key
             </h3>
             <p class="text-xs text-slate-500 mt-2">
-                若欲使用 Google 雲端轉正功能，請輸入您的 API Key。若無 Key 亦可直接使用「本地 AI 一鍵去背」功能：
+                若欲使用 Google 雲端 Nano Banana 功能，請輸入您的 API Key：
             </p>
             <div class="mt-4">
                 <input type="password" id="apiKeyInput" placeholder="貼上 AI Studio API Key (AIzaSy...)" class="w-full text-xs p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
@@ -171,17 +171,15 @@
                 </a>
             </div>
             <div class="mt-5 flex justify-end gap-2">
-                <button id="closeKeyModalBtn" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
-                <button id="saveKeyBtn" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">儲存</button>
+                <button type="button" id="closeKeyModalBtn" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg">取消</button>
+                <button type="button" id="saveKeyBtn" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">儲存</button>
             </div>
         </div>
     </div>
 
-    <!-- 主邏輯 (ES Module 模式) -->
-    <script type="module">
-        // 透過 ESM 方式正確引入本地去背庫
-        import imglyRemoveBackground from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm';
-
+    <!-- 系統主程式碼 -->
+    <script>
+        // 畫布規格 (300 DPI 橫式 4x6 相片紙)
         const CANVAS_W = 1800;
         const CANVAS_H = 1200;
         const SIZES = {
@@ -204,7 +202,8 @@
         let isDragging = false;
         let startX, startY;
 
-        // UI 綁定
+        // UI 元件
+        const dropZone = document.getElementById('dropZone');
         const uploadInput = document.getElementById('uploadInput');
         const localAiBtn = document.getElementById('localAiBtn');
         const cloudAiBtn = document.getElementById('cloudAiBtn');
@@ -228,6 +227,17 @@
         const apiKeyInput = document.getElementById('apiKeyInput');
         const keyStatusText = document.getElementById('keyStatusText');
 
+        // 初始狀態繪製
+        function drawEmpty() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('請先從左側上傳學生照片', CANVAS_W / 2, CANVAS_H / 2);
+        }
+        drawEmpty();
+
         function checkApiKey() {
             const key = localStorage.getItem('gemini_api_key');
             if (key) {
@@ -238,16 +248,6 @@
             }
         }
         checkApiKey();
-
-        function drawEmpty() {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = 'bold 30px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('請先從左側上傳學生照片', CANVAS_W / 2, CANVAS_H / 2);
-        }
-        drawEmpty();
 
         function getSelectedSize() {
             for (const r of sizeRadios) {
@@ -267,10 +267,12 @@
             scaleVal.innerText = '1.0x';
         }
 
-        // 上傳照片
-        uploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // 核心檔案讀取函式
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                alert('請選擇有效的圖片檔案 (JPG / PNG)');
+                return;
+            }
             uploadedFile = file;
 
             const reader = new FileReader();
@@ -291,25 +293,53 @@
                 img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        // 上傳點擊與拖曳監聽 (確保 100% 觸發)
+        dropZone.addEventListener('click', () => uploadInput.click());
+        uploadInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFile(e.target.files[0]);
+            }
         });
 
-        // 模式 1：本地端 AI 免費去背換白底
+        // 拖曳支援
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 模式 1：本地端 AI 免費去背換白底 (動態隨選載入，不卡死上傳)
         localAiBtn.addEventListener('click', async () => {
             if (!uploadedFile && !rawImage) return;
 
             loadingOverlay.classList.remove('hidden');
             loadingText.textContent = "本地 AI 正在去背並合成純白底...";
-            loadingSubtext.textContent = "正在下載並執行神經網絡模型...";
+            loadingSubtext.textContent = "載入 AI 模型中，請稍候...";
             aiBadge.textContent = "本地去背中...";
             aiBadge.className = "text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-semibold animate-pulse";
 
             try {
-                // 執行本地 WASM AI 去背
-                const blob = await imglyRemoveBackground(uploadedFile || rawImage, {
+                // 動態載入套件
+                const module = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm');
+                const removeBg = module.default || module.removeBackground || module.imglyRemoveBackground;
+
+                const blob = await removeBg(uploadedFile || rawImage, {
                     progress: (key, current, total) => {
                         if (total > 0) {
                             const percent = Math.round((current / total) * 100);
-                            loadingSubtext.textContent = `模型進度: ${percent}%`;
+                            loadingSubtext.textContent = `運算進度: ${percent}%`;
                         }
                     }
                 });
@@ -434,7 +464,7 @@ Please transform this image into a professional ID passport photo:
             }
         });
 
-        // 渲染 4x6 排版
+        // 渲染 4x6 吋 8 張排版
         function render() {
             const currentImg = processedImage || rawImage;
             if (!currentImg) return;
@@ -449,6 +479,7 @@ Please transform this image into a professional ID passport photo:
             const spacingX = Math.floor((CANVAS_W - (target.w * cols)) / (cols + 1));
             const spacingY = Math.floor((CANVAS_H - (target.h * rows)) / (rows + 1));
 
+            // 建立單張照片的離屏畫布
             const singleCanvas = document.createElement('canvas');
             singleCanvas.width = target.w;
             singleCanvas.height = target.h;
@@ -477,6 +508,7 @@ Please transform this image into a professional ID passport photo:
             sCtx.drawImage(currentImg, -drawW / 2, -drawH / 2, drawW, drawH);
             sCtx.restore();
 
+            // 貼上 8 張與裁切導引線
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const x = spacingX + c * (target.w + spacingX);
@@ -484,7 +516,7 @@ Please transform this image into a professional ID passport photo:
 
                     ctx.drawImage(singleCanvas, x, y);
 
-                    // 裁切導引線
+                    // 裁切線 (淺灰色 1px)
                     ctx.strokeStyle = '#D1D5DB';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(x - 0.5, y - 0.5, target.w + 1, target.h + 1);
@@ -492,7 +524,7 @@ Please transform this image into a professional ID passport photo:
             }
         }
 
-        // 微調滑桿監聽
+        // 微調滑桿事件
         rotateSlider.addEventListener('input', (e) => {
             rotateAngle = parseInt(e.target.value);
             rotateVal.innerText = rotateAngle + '°';
@@ -512,7 +544,7 @@ Please transform this image into a professional ID passport photo:
 
         sizeRadios.forEach(radio => radio.addEventListener('change', render));
 
-        // 滑鼠拖曳位置調整
+        // 滑鼠拖曳微調
         canvas.addEventListener('mousedown', (e) => {
             if (!processedImage && !rawImage) return;
             isDragging = true;
@@ -536,7 +568,7 @@ Please transform this image into a professional ID passport photo:
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // 下載 4x6 排版相片檔
+        // 下載 4x6 吋排版相片
         download4x6Btn.addEventListener('click', () => {
             const link = document.createElement('a');
             const target = getSelectedSize();
