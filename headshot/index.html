@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 大頭照 4x6 自動排版生成器</title>
+    <!-- 引入 Tailwind CSS 進行美化 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .checkerboard {
+            background-color: #f3f4f6;
+            background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 py-8 px-4">
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        <!-- 頂部標題 -->
+        <header class="bg-indigo-600 px-6 py-5 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold">🎓 學生大頭照 4×6 排版工具</h1>
+                <p class="text-indigo-100 text-sm mt-1">支援 1 吋 / 2 吋 (300 DPI 標準)、角度微調與 4×6 吋 8 張相紙沖洗排版</p>
+            </div>
+            <span class="bg-indigo-700 text-xs px-3 py-1.5 rounded-full border border-indigo-400">300 DPI 印刷規格</span>
+        </header>
+
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- 左側：操作控制面板 -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- 1. 上傳照片 -->
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:border-indigo-400 transition bg-slate-50">
+                    <input type="file" id="uploadInput" accept="image/*" class="hidden">
+                    <label for="uploadInput" class="cursor-pointer flex flex-col items-center justify-center">
+                        <svg class="w-10 h-10 text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="text-sm font-semibold text-slate-700">點擊上傳學生照片</span>
+                        <span class="text-xs text-slate-400 mt-1">建議使用已去背或白底正面照 (JPG/PNG)</span>
+                    </label>
+                </div>
+
+                <!-- 2. 規格選擇 -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">選擇輸出規格：</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
+                            <input type="radio" name="photoSize" value="2inch" checked class="text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-2.5">
+                                <div class="text-sm font-bold">2 吋大頭照</div>
+                                <div class="text-xs text-slate-500">3.5 × 4.5 cm (413×531)</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
+                            <input type="radio" name="photoSize" value="1inch" class="text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-2.5">
+                                <div class="text-sm font-bold">1 吋大頭照</div>
+                                <div class="text-xs text-slate-500">2.8 × 3.5 cm (331×413)</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. 照片微調 (轉正/縮放) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-slate-700">影像微調校正</span>
+                        <button id="resetAdjustBtn" class="text-xs text-indigo-600 hover:underline">重設微調</button>
+                    </div>
+
+                    <!-- 旋轉轉正 -->
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-600 mb-1">
+                            <span>旋轉角度 (轉正水平)</span>
+                            <span id="rotateVal">0°</span>
+                        </div>
+                        <input type="range" id="rotateSlider" min="-30" max="30" value="0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- 縮放大小 -->
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-600 mb-1">
+                            <span>人像縮放</span>
+                            <span id="scaleVal">1.0x</span>
+                        </div>
+                        <input type="range" id="scaleSlider" min="0.5" max="2.5" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <p class="text-xs text-slate-400">💡 提示：可以在右方預覽區直接用滑鼠拖曳照片調整位置</p>
+                </div>
+
+                <!-- 4. 下載按鈕組 -->
+                <div class="space-y-2 pt-2">
+                    <button id="download4x6Btn" disabled class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-xl shadow transition flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>下載 4×6 吋排版相片 (8 張)</span>
+                    </button>
+                    <button id="downloadSingleBtn" disabled class="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 text-slate-700 font-semibold rounded-xl text-sm transition">
+                        下載單張大頭照檔案
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右側：即時畫布預覽 -->
+            <div class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[460px]">
+                <div class="text-xs text-slate-500 mb-2 font-medium flex items-center space-x-2">
+                    <span>4×6 吋相片紙預覽 (1800 × 1200 像素，包含 8 張照片)</span>
+                </div>
+                
+                <div class="relative w-full flex items-center justify-center overflow-hidden rounded-lg shadow-md border border-slate-300 bg-white">
+                    <canvas id="previewCanvas" class="max-w-full h-auto cursor-grab active:cursor-grabbing block"></canvas>
+                </div>
+                <div class="mt-3 text-xs text-slate-400 text-center">
+                    沖洗說明：下載後可至 7-11 ibon 或全家立可得機台沖印「4×6 吋相片」，沖印後沿裁切線剪開即可。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 核心邏輯 -->
+    <script>
+        // 畫布與變數初始化
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 4x6 吋畫布解析度 (300 DPI 橫式)
+        const CANVAS_W = 1800;
+        const CANVAS_H = 1200;
+        canvas.width = CANVAS_W;
+        canvas.height = CANVAS_H;
+
+        let loadedImage = null;
+        let scale = 1.0;
+        let rotateAngle = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        // UI 元素
+        const uploadInput = document.getElementById('uploadInput');
+        const rotateSlider = document.getElementById('rotateSlider');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const rotateVal = document.getElementById('rotateVal');
+        const scaleVal = document.getElementById('scaleVal');
+        const resetAdjustBtn = document.getElementById('resetAdjustBtn');
+        const download4x6Btn = document.getElementById('download4x6Btn');
+        const downloadSingleBtn = document.getElementById('downloadSingleBtn');
+        const sizeRadios = document.getElementsByName('photoSize');
+
+        // 尺寸定義 (300 DPI)
+        const SIZES = {
+            '2inch': { w: 413, h: 531 }, // 3.5 x 4.5 cm
+            '1inch': { w: 331, h: 413 }  // 2.8 x 3.5 cm
+        };
+
+        function getSelectedSize() {
+            for (const r of sizeRadios) {
+                if (r.checked) return SIZES[r.value];
+            }
+            return SIZES['2inch'];
+        }
+
+        // 初始化空白畫布
+        function drawEmpty() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('請先從左側上傳學生照片', CANVAS_W / 2, CANVAS_H / 2);
+        }
+        drawEmpty();
+
+        // 讀取上傳圖片
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    loadedImage = img;
+                    // 重設參數
+                    scale = 1.0;
+                    rotateAngle = 0;
+                    offsetX = 0;
+                    offsetY = 0;
+                    rotateSlider.value = 0;
+                    scaleSlider.value = 1.0;
+                    rotateVal.innerText = '0°';
+                    scaleVal.innerText = '1.0x';
+                    
+                    download4x6Btn.disabled = false;
+                    downloadSingleBtn.disabled = false;
+                    render();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 核心渲染邏輯 (8 張排版)
+        function render() {
+            if (!loadedImage) return;
+
+            // 1. 純白相片底色
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+            const target = getSelectedSize();
+            const cols = 4;
+            const rows = 2;
+            
+            // 計算置中間距
+            const spacingX = Math.floor((CANVAS_W - (target.w * cols)) / (cols + 1));
+            const spacingY = Math.floor((CANVAS_H - (target.h * rows)) / (rows + 1));
+
+            // 先產生單張照片的離屏 Canvas
+            const singleCanvas = document.createElement('canvas');
+            singleCanvas.width = target.w;
+            singleCanvas.height = target.h;
+            const sCtx = singleCanvas.getContext('2d');
+
+            // 填充單張白底
+            sCtx.fillStyle = '#FFFFFF';
+            sCtx.fillRect(0, 0, target.w, target.h);
+
+            // 繪製微調後的照片到單張 Canvas
+            sCtx.save();
+            sCtx.beginPath();
+            sCtx.rect(0, 0, target.w, target.h);
+            sCtx.clip(); // 限制在單張大頭照尺寸範圍內
+
+            // 移動到中心點做旋轉縮放與拖曳
+            sCtx.translate(target.w / 2 + offsetX, target.h / 2 + offsetY);
+            sCtx.rotate((rotateAngle * Math.PI) / 180);
+            sCtx.scale(scale, scale);
+
+            // 保持比例填滿目標寬度
+            const imgAspect = loadedImage.width / loadedImage.height;
+            let drawW = target.w;
+            let drawH = target.w / imgAspect;
+            if (drawH < target.h) {
+                drawH = target.h;
+                drawW = target.h * imgAspect;
+            }
+
+            sCtx.drawImage(loadedImage, -drawW / 2, -drawH / 2, drawW, drawH);
+            sCtx.restore();
+
+            // 2. 將 8 張照片排版至 4x6 畫布上並畫上裁切框
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = spacingX + c * (target.w + spacingX);
+                    const y = spacingY + r * (target.h + spacingY);
+
+                    // 貼上照片
+                    ctx.drawImage(singleCanvas, x, y);
+
+                    // 繪製極淡裁切輔助線
+                    ctx.strokeStyle = '#D1D5DB'; // 淺灰色
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x - 0.5, y - 0.5, target.w + 1, target.h + 1);
+                }
+            }
+        }
+
+        // 微調監聽事件
+        rotateSlider.addEventListener('input', (e) => {
+            rotateAngle = parseInt(e.target.value);
+            rotateVal.innerText = rotateAngle + '°';
+            render();
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            scale = parseFloat(e.target.value);
+            scaleVal.innerText = scale.toFixed(2) + 'x';
+            render();
+        });
+
+        resetAdjustBtn.addEventListener('click', () => {
+            scale = 1.0;
+            rotateAngle = 0;
+            offsetX = 0;
+            offsetY = 0;
+            rotateSlider.value = 0;
+            scaleSlider.value = 1.0;
+            rotateVal.innerText = '0°';
+            scaleVal.innerText = '1.0x';
+            render();
+        });
+
+        sizeRadios.forEach(radio => {
+            radio.addEventListener('change', render);
+        });
+
+        // 滑鼠拖曳微調位置
+        canvas.addEventListener('mousedown', (e) => {
+            if (!loadedImage) return;
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            startX = (e.clientX - rect.left) * (CANVAS_W / rect.width);
+            startY = (e.clientY - rect.top) * (CANVAS_H / rect.height);
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || !loadedImage) return;
+            const rect = canvas.getBoundingClientRect();
+            const currentX = (e.clientX - rect.left) * (CANVAS_W / rect.width);
+            const currentY = (e.clientY - rect.top) * (CANVAS_H / rect.height);
+
+            offsetX += (currentX - startX);
+            offsetY += (currentY - startY);
+
+            startX = currentX;
+            startY = currentY;
+            render();
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        // 下載 4x6 吋列印檔 (1800 x 1200 @ 300 DPI)
+        download4x6Btn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `photo_4x6_sheet_${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        });
+
+        // 下載單張大頭照檔案
+        downloadSingleBtn.addEventListener('click', () => {
+            if (!loadedImage) return;
+            const target = getSelectedSize();
+            const singleCanvas = document.createElement('canvas');
+            singleCanvas.width = target.w;
+            singleCanvas.height = target.h;
+            const sCtx = singleCanvas.getContext('2d');
+
+            sCtx.fillStyle = '#FFFFFF';
+            sCtx.fillRect(0, 0, target.w, target.h);
+
+            sCtx.save();
+            sCtx.translate(target.w / 2 + offsetX, target.h / 2 + offsetY);
+            sCtx.rotate((rotateAngle * Math.PI) / 180);
+            sCtx.scale(scale, scale);
+
+            const imgAspect = loadedImage.width / loadedImage.height;
+            let drawW = target.w;
+            let drawH = target.w / imgAspect;
+            if (drawH < target.h) {
+                drawH = target.h;
+                drawW = target.h * imgAspect;
+            }
+
+            sCtx.drawImage(loadedImage, -drawW / 2, -drawH / 2, drawW, drawH);
+            sCtx.restore();
+
+            const link = document.createElement('a');
+            link.download = `single_id_photo_${target.w}x${target.h}.jpg`;
+            link.href = singleCanvas.toDataURL('image/jpeg', 0.95);
+            link.click();
+        });
+    </script>
+</body>
+</html>
