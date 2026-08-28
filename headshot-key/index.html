@@ -3,22 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 學生大頭照生成與 4x6 排版系統</title>
+    <title>專業證件照生成與 4x6 排版系統</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome 圖標 -->
+    <!-- FontAwesome 圖標庫 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .checkerboard {
-            background-color: #f8fafc;
-            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
-                              linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
-                              linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
-                              linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
-            background-size: 16px 16px;
-            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-        }
-    </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 py-6 px-4">
     <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
@@ -27,10 +16,10 @@
         <header class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5 text-white flex flex-wrap justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-id-card-clip"></i> AI 學生大頭照生成與排版系統
+                    <i class="fa-solid fa-id-card-clip"></i> 專業證件照生成與 4×6 自動排版系統
                 </h1>
                 <p class="text-blue-100 text-xs md:text-sm mt-1">
-                    AI 去背換白底 ➔ 300 DPI 規格化 ➔ 4×6 吋 (8張) 超商沖印排版
+                    AI 去背換白底 ➔ 3 種標準人像比例範本自動適配 ➔ 4×6 吋超商相紙沖洗排版
                 </p>
             </div>
             <!-- API Key 狀態按鈕 -->
@@ -49,79 +38,108 @@
                     <input type="file" id="uploadInput" accept="image/*" class="hidden">
                     <div class="flex flex-col items-center justify-center pointer-events-none">
                         <i class="fa-solid fa-cloud-arrow-up text-4xl text-indigo-500 mb-2"></i>
-                        <span class="text-sm font-bold text-slate-700">點擊上傳 或 拖曳學生照片至此</span>
-                        <span class="text-xs text-slate-400 mt-1">支援生活照、偏斜照 (JPG/PNG)</span>
+                        <span class="text-sm font-bold text-slate-700">點擊上傳 或 拖曳照片至此</span>
+                        <span class="text-xs text-slate-400 mt-1">支援生活照、手機自拍正面半身照 (JPG/PNG)</span>
                     </div>
                 </div>
 
-                <!-- 2. AI 處理核心選擇 -->
+                <!-- 2. AI 處理模組 -->
                 <div class="bg-indigo-50/70 border border-indigo-100 p-4 rounded-xl space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> AI 去背與修正模組
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i> AI 智慧處理核心
                         </span>
                         <span id="aiBadge" class="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-semibold">待命</span>
                     </div>
                     
-                    <!-- 模式 1: 本地 AI 去背換白底 -->
+                    <!-- 本地 AI 去背換白底 (完全免費、免 API Key) -->
                     <button type="button" id="localAiBtn" disabled class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-lg text-xs shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-bolt"></i> <span>🚀 本地 AI 一鍵去背換白底 (無額度限制)</span>
+                        <i class="fa-solid fa-bolt"></i> <span>🚀 本地 AI 一鍵去背換純白底 (無額度限制)</span>
                     </button>
 
-                    <!-- 模式 2: Google 雲端 Nano Banana -->
+                    <!-- Google 雲端 Nano Banana -->
                     <button type="button" id="cloudAiBtn" disabled class="w-full py-2 bg-white hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed border border-indigo-200 text-indigo-700 font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <i class="fa-brands fa-google"></i> <span>Nano Banana 雲端姿態轉正 (需 API Key)</span>
                     </button>
                 </div>
 
-                <!-- 3. 輸出尺寸切換 -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <label class="block text-xs font-bold text-slate-700 mb-2">大頭照規格 (300 DPI)：</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="flex items-center p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
-                            <input type="radio" name="photoSize" value="2inch" checked class="text-indigo-600 focus:ring-indigo-500">
-                            <div class="ml-2.5">
-                                <div class="text-xs font-bold">2 吋大頭照</div>
-                                <div class="text-[11px] text-slate-500">3.5 × 4.5 cm (413×531)</div>
+                <!-- 3. 三種印刷尺寸與比例選擇 (精確比對截圖) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold text-slate-700">選擇證件格式 (自動套用範本比例)：</label>
+                    </div>
+                    
+                    <div class="space-y-2.5">
+                        <!-- 規格 1: 駕照 -->
+                        <label class="flex items-center p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-500 transition shadow-sm">
+                            <input type="radio" name="photoSize" value="license" checked class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <div class="ml-3 flex-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-800">1. 駕照 (1 吋)</span>
+                                    <span class="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full">4×6 內排 8 張</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">2.8 × 3.5 cm (半身比例，露出完整雙肩與胸口)</div>
                             </div>
                         </label>
-                        <label class="flex items-center p-3 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-indigo-500 transition">
-                            <input type="radio" name="photoSize" value="1inch" class="text-indigo-600 focus:ring-indigo-500">
-                            <div class="ml-2.5">
-                                <div class="text-xs font-bold">1 吋大頭照</div>
-                                <div class="text-[11px] text-slate-500">2.8 × 3.5 cm (331×413)</div>
+
+                        <!-- 規格 2: 身分證 / 健保卡 / 護照 / 台胞證 -->
+                        <label class="flex items-center p-3 bg-white rounded-xl border-2 border-indigo-500 bg-indigo-50/20 cursor-pointer hover:border-indigo-600 transition shadow-sm" id="passportCard">
+                            <input type="radio" name="photoSize" value="passport" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <div class="ml-3 flex-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-indigo-950">2. 身分證｜健保卡｜護照｜台胞證 (2 吋大頭)</span>
+                                    <span class="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded-full">4×6 內排 8 張</span>
+                                </div>
+                                <div class="text-[11px] text-indigo-800 font-medium mt-0.5">3.5 × 4.5 cm (★ 自動放大特寫：頭頂至下巴 3.2~3.6cm)</div>
+                            </div>
+                        </label>
+
+                        <!-- 規格 3: 識別證 / 國際駕照 / 證書執照 -->
+                        <label class="flex items-center p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-500 transition shadow-sm">
+                            <input type="radio" name="photoSize" value="idcard" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <div class="ml-3 flex-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-800">3. 識別證｜國際駕照｜證書執照 (2 吋)</span>
+                                    <span class="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-full">4×6 內排 6 張</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">4.2 × 4.7 cm (寬版比例，露出完整雙肩與胸膛)</div>
                             </div>
                         </label>
                     </div>
                 </div>
 
-                <!-- 4. 手動微調 -->
+                <!-- 4. 手動微調 (轉正、縮放、參考線) -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                     <div class="flex justify-between items-center text-xs font-bold text-slate-700">
-                        <span>人像微調校正</span>
-                        <button type="button" id="resetAdjustBtn" class="text-indigo-600 hover:underline text-[11px] cursor-pointer">重設微調</button>
+                        <span>手動微調校正</span>
+                        <div class="flex items-center gap-3">
+                            <label class="text-[11px] text-indigo-700 font-semibold flex items-center gap-1 cursor-pointer">
+                                <input type="checkbox" id="showGuideCheck" checked class="rounded text-indigo-600"> 顯示標準對齊導引線
+                            </label>
+                            <button type="button" id="resetAdjustBtn" class="text-indigo-600 hover:underline text-[11px] cursor-pointer">重設為預設比例</button>
+                        </div>
                     </div>
                     <div>
                         <div class="flex justify-between text-[11px] text-slate-500 mb-1">
-                            <span>頭部水平轉正角度</span>
+                            <span>頭部水平轉正</span>
                             <span id="rotateVal">0°</span>
                         </div>
                         <input type="range" id="rotateSlider" min="-30" max="30" value="0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
                     </div>
                     <div>
                         <div class="flex justify-between text-[11px] text-slate-500 mb-1">
-                            <span>人像縮放大小</span>
+                            <span>人像大小縮放</span>
                             <span id="scaleVal">1.0x</span>
                         </div>
-                        <input type="range" id="scaleSlider" min="0.4" max="2.5" step="0.05" value="1.0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
+                        <input type="range" id="scaleSlider" min="0.5" max="2.6" step="0.02" value="1.0" class="w-full h-1.5 bg-slate-200 rounded cursor-pointer">
                     </div>
-                    <p class="text-[11px] text-slate-400">💡 提示：在右側預覽畫布上可直接用滑鼠拖曳調整人像位置。</p>
+                    <p class="text-[11px] text-slate-400">💡 提示：在右側畫布上可直接用滑鼠拖曳照片調整人像位置。</p>
                 </div>
 
                 <!-- 5. 下載區 -->
                 <div class="space-y-2 pt-1">
                     <button type="button" id="download4x6Btn" disabled class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-download"></i> <span>下載 4×6 吋沖洗排版檔 (內含 8 張)</span>
+                        <i class="fa-solid fa-download"></i> <span id="downloadBtnText">下載 4×6 吋沖洗排版檔</span>
                     </button>
                     <button type="button" id="downloadSingleBtn" disabled class="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer">
                         下載單張高畫質大頭照
@@ -132,7 +150,7 @@
             <!-- 右側：排版預覽區 -->
             <div class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[480px]">
                 <div class="text-xs text-slate-500 mb-2 font-medium flex items-center gap-2">
-                    <i class="fa-regular fa-image"></i> 4×6 吋相片紙預覽 (1800 × 1200 像素 / 8 張排版含裁切線)
+                    <i class="fa-regular fa-image"></i> <span id="previewSheetTitle">4×6 吋相片紙預覽 (1800 × 1200 像素 / 300 DPI)</span>
                 </div>
                 
                 <div class="relative w-full flex items-center justify-center overflow-hidden rounded-lg shadow-inner border border-slate-300 bg-white">
@@ -141,13 +159,13 @@
                     <!-- 載入動畫遮罩 -->
                     <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white hidden p-6 text-center z-10">
                         <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-400 mb-3"></i>
-                        <p class="font-bold text-sm" id="loadingText">AI 正在進行智慧去背...</p>
-                        <p class="text-xs text-slate-300 mt-1" id="loadingSubtext">處理中，請稍候</p>
+                        <p class="font-bold text-sm" id="loadingText">AI 正在處理中...</p>
+                        <p class="text-xs text-slate-300 mt-1" id="loadingSubtext">請稍候</p>
                     </div>
                 </div>
 
                 <div class="mt-3 text-[11px] text-slate-400 text-center">
-                    💡 超商沖印：下載後上傳至 7-11 ibon 或全家機台，選擇「4×6 吋相片沖印」（每張約 6～10 元），印出後剪開即可使用。
+                    💡 沖印方式：下載圖檔後存至隨身碟或超商 APP，至 7-11 ibon 或全家機台沖印「4×6 吋相片」，剪開即可使用。
                 </div>
             </div>
         </div>
@@ -167,7 +185,7 @@
             </div>
             <div class="mt-2 text-right">
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-indigo-600 hover:underline">
-                    👉 前往 Google AI Studio 免費獲取 Key
+                    👉 前往 Google AI Studio 免費領取 Key
                 </a>
             </div>
             <div class="mt-5 flex justify-end gap-2">
@@ -177,14 +195,53 @@
         </div>
     </div>
 
-    <!-- 系統主程式碼 -->
+    <!-- 系統核心程式 -->
     <script>
-        // 畫布規格 (300 DPI 橫式 4x6 相片紙)
+        // 4x6 吋標準畫布解析度 (300 DPI 橫式)
         const CANVAS_W = 1800;
         const CANVAS_H = 1200;
+
+        // 【修改位置 1】：3 種格式標準比例、位置與導引線常數
         const SIZES = {
-            '2inch': { w: 413, h: 531, name: "2吋" }, // 3.5 x 4.5 cm
-            '1inch': { w: 331, h: 413, name: "1吋" }  // 2.8 x 3.5 cm
+            'license': { 
+                name: "駕照(1吋)", 
+                w: 331, 
+                h: 413, 
+                cols: 4, 
+                rows: 2, 
+                count: 8,
+                defaultScale: 1.08,        // 截圖左圖：1 吋半身標準比例
+                defaultOffsetYRatio: 0.02, // 適中置中
+                headGuideTop: 0.12, 
+                headGuideBottom: 0.72,
+                guideLabel: "1吋標準半身"
+            },
+            'passport': { 
+                name: "身分證護照(2吋大頭)", 
+                w: 413, 
+                h: 531, 
+                cols: 4, 
+                rows: 2, 
+                count: 8,
+                defaultScale: 1.55,        // 截圖中圖：自動特寫放大至 3.2~3.6cm
+                defaultOffsetYRatio: 0.08, // 向下偏移保留頂部 3~5mm 留白
+                headGuideTop: 0.06, 
+                headGuideBottom: 0.82,
+                guideLabel: "3.2cm ~ 3.6cm"
+            },
+            'idcard': { 
+                name: "識別證執照(2吋)", 
+                w: 496, 
+                h: 555, 
+                cols: 3, 
+                rows: 2, 
+                count: 6,                  // 截圖右圖：寬版 4.2x4.7cm 排 6 張
+                defaultScale: 1.00,        // 露出完整雙肩
+                defaultOffsetYRatio: 0.01,
+                headGuideTop: 0.10, 
+                headGuideBottom: 0.70,
+                guideLabel: "2吋標準半身"
+            }
         };
 
         const canvas = document.getElementById('previewCanvas');
@@ -209,11 +266,14 @@
         const cloudAiBtn = document.getElementById('cloudAiBtn');
         const download4x6Btn = document.getElementById('download4x6Btn');
         const downloadSingleBtn = document.getElementById('downloadSingleBtn');
+        const downloadBtnText = document.getElementById('downloadBtnText');
+        const previewSheetTitle = document.getElementById('previewSheetTitle');
         const rotateSlider = document.getElementById('rotateSlider');
         const scaleSlider = document.getElementById('scaleSlider');
         const rotateVal = document.getElementById('rotateVal');
         const scaleVal = document.getElementById('scaleVal');
         const resetAdjustBtn = document.getElementById('resetAdjustBtn');
+        const showGuideCheck = document.getElementById('showGuideCheck');
         const sizeRadios = document.getElementsByName('photoSize');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingText = document.getElementById('loadingText');
@@ -227,17 +287,6 @@
         const apiKeyInput = document.getElementById('apiKeyInput');
         const keyStatusText = document.getElementById('keyStatusText');
 
-        // 初始狀態繪製
-        function drawEmpty() {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = 'bold 32px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('請先從左側上傳學生照片', CANVAS_W / 2, CANVAS_H / 2);
-        }
-        drawEmpty();
-
         function checkApiKey() {
             const key = localStorage.getItem('gemini_api_key');
             if (key) {
@@ -249,25 +298,44 @@
         }
         checkApiKey();
 
-        function getSelectedSize() {
+        function drawEmpty() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('請先從左側上傳照片', CANVAS_W / 2, CANVAS_H / 2);
+        }
+        drawEmpty();
+
+        function getSelectedSpec() {
             for (const r of sizeRadios) {
                 if (r.checked) return SIZES[r.value];
             }
-            return SIZES['2inch'];
+            return SIZES['license'];
         }
 
-        function resetParams() {
-            scale = 1.0;
-            rotateAngle = 0;
-            offsetX = 0;
-            offsetY = 0;
-            rotateSlider.value = 0;
-            scaleSlider.value = 1.0;
-            rotateVal.innerText = '0°';
-            scaleVal.innerText = '1.0x';
+        // 【修改位置 2】：切換格式時，自動套用範本的特寫放大比例與座標
+        function applySpecPreset(keepUserOffset = false) {
+            const spec = getSelectedSpec();
+            scale = spec.defaultScale;
+            scaleSlider.value = scale;
+            scaleVal.innerText = scale.toFixed(2) + 'x';
+            
+            if (!keepUserOffset) {
+                rotateAngle = 0;
+                offsetX = 0;
+                offsetY = Math.round(spec.h * spec.defaultOffsetYRatio); // 自動向下微調保留頭頂留白
+                rotateSlider.value = 0;
+                rotateVal.innerText = '0°';
+            }
+
+            // 更新按鈕與標題
+            downloadBtnText.innerText = `下載 4×6 吋沖洗排版檔 (內含 ${spec.count} 張)`;
+            previewSheetTitle.innerText = `4×6 吋相片紙預覽 (內含 ${spec.count} 張 ${spec.name} 排版)`;
         }
 
-        // 核心檔案讀取函式
+        // 核心檔案上傳處理
         function handleFile(file) {
             if (!file || !file.type.startsWith('image/')) {
                 alert('請選擇有效的圖片檔案 (JPG / PNG)');
@@ -281,7 +349,7 @@
                 img.onload = function() {
                     rawImage = img;
                     processedImage = img;
-                    resetParams();
+                    applySpecPreset(false);
                     localAiBtn.disabled = false;
                     cloudAiBtn.disabled = false;
                     download4x6Btn.disabled = false;
@@ -295,15 +363,11 @@
             reader.readAsDataURL(file);
         }
 
-        // 上傳點擊與拖曳監聽 (確保 100% 觸發)
         dropZone.addEventListener('click', () => uploadInput.click());
         uploadInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                handleFile(e.target.files[0]);
-            }
+            if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
         });
 
-        // 拖曳支援
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
@@ -315,23 +379,20 @@
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                handleFile(e.dataTransfer.files[0]);
-            }
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
         });
 
-        // 模式 1：本地端 AI 免費去背換白底 (動態隨選載入，不卡死上傳)
+        // 模式 1：本地端 AI 去背換純白底
         localAiBtn.addEventListener('click', async () => {
             if (!uploadedFile && !rawImage) return;
 
             loadingOverlay.classList.remove('hidden');
             loadingText.textContent = "本地 AI 正在去背並合成純白底...";
-            loadingSubtext.textContent = "載入 AI 模型中，請稍候...";
+            loadingSubtext.textContent = "載入神經網絡模型中，請稍候...";
             aiBadge.textContent = "本地去背中...";
             aiBadge.className = "text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-semibold animate-pulse";
 
             try {
-                // 動態載入套件
                 const module = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.8/+esm');
                 const removeBg = module.default || module.removeBackground || module.imglyRemoveBackground;
 
@@ -339,7 +400,7 @@
                     progress: (key, current, total) => {
                         if (total > 0) {
                             const percent = Math.round((current / total) * 100);
-                            loadingSubtext.textContent = `運算進度: ${percent}%`;
+                            loadingSubtext.textContent = `模型進度: ${percent}%`;
                         }
                     }
                 });
@@ -347,7 +408,6 @@
                 const transparentUrl = URL.createObjectURL(blob);
                 const noBgImg = new Image();
                 noBgImg.onload = function() {
-                    // 合成純白底
                     const c = document.createElement('canvas');
                     c.width = noBgImg.width;
                     c.height = noBgImg.height;
@@ -359,7 +419,7 @@
                     const finalImg = new Image();
                     finalImg.onload = function() {
                         processedImage = finalImg;
-                        resetParams();
+                        applySpecPreset(true);
                         render();
                         loadingOverlay.classList.add('hidden');
                         aiBadge.textContent = "純白底去背完成";
@@ -377,7 +437,7 @@
             }
         });
 
-        // 模式 2：Google 雲端 Nano Banana (Gemini)
+        // 模式 2：Google 雲端 Nano Banana
         cloudAiBtn.addEventListener('click', async () => {
             const apiKey = localStorage.getItem('gemini_api_key');
             if (!apiKey) {
@@ -401,11 +461,11 @@
                 tCtx.drawImage(rawImage, 0, 0);
                 const base64Data = tempCanvas.toDataURL('image/jpeg', 0.9).split(',')[1];
 
-                const prompt = `This is a student ID portrait photo. 
-Please transform this image into a professional ID passport photo:
-1. Straighten the student's head and upper body to face completely forward, upright and balanced. Correct head tilt.
-2. Remove the background completely and replace it with a clean solid pure white background (#FFFFFF).
-3. Ensure even studio lighting. Retain the student's authentic facial identity, expression, hairstyle, school uniform, and chest emblem. Output the full front-facing portrait.`;
+                const prompt = `This is a portrait photo for an official ID card / passport. 
+Please transform this image into a professional ID photo:
+1. Straighten the person's head and body to face completely forward, upright and balanced. Correct any head tilt.
+2. Remove the background completely and replace it with a solid pure white background (#FFFFFF).
+3. Retain authentic facial identity, expression, hairstyle, and clothing. Output the full front-facing portrait.`;
 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`, {
                     method: 'POST',
@@ -425,7 +485,7 @@ Please transform this image into a professional ID passport photo:
                 
                 if (result.error) {
                     if (result.error.message.includes('Quota exceeded')) {
-                        throw new Error('Google 免費 API 額度已達上限！請直接點擊上方「🚀 本地 AI 一鍵去背換白底」完成處理。');
+                        throw new Error('Google API 額度已達上限！請直接點擊上方「🚀 本地 AI 一鍵去背換白底」完成處理。');
                     }
                     throw new Error(result.error.message);
                 }
@@ -441,14 +501,12 @@ Please transform this image into a professional ID passport photo:
                     }
                 }
 
-                if (!generatedBase64) {
-                    throw new Error('未接收到生成影像內容，請重試或改用本地 AI。');
-                }
+                if (!generatedBase64) throw new Error('未接收到生成影像內容，請重試或改用本地 AI。');
 
                 const aiImg = new Image();
                 aiImg.onload = function() {
                     processedImage = aiImg;
-                    resetParams();
+                    applySpecPreset(true);
                     render();
                     loadingOverlay.classList.add('hidden');
                     aiBadge.textContent = "Nano Banana 轉正完成";
@@ -464,67 +522,106 @@ Please transform this image into a professional ID passport photo:
             }
         });
 
-        // 渲染 4x6 吋 8 張排版
+        // 【修改位置 3】：繪圖與動態排版函式 (包含 3.2~3.6cm 標記導引框)
         function render() {
             const currentImg = processedImage || rawImage;
             if (!currentImg) return;
 
+            // 純白 4x6 畫布
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-            const target = getSelectedSize();
-            const cols = 4;
-            const rows = 2;
+            const spec = getSelectedSpec();
+            const cols = spec.cols;
+            const rows = spec.rows;
 
-            const spacingX = Math.floor((CANVAS_W - (target.w * cols)) / (cols + 1));
-            const spacingY = Math.floor((CANVAS_H - (target.h * rows)) / (rows + 1));
+            // 自動計算置中間距
+            const spacingX = Math.floor((CANVAS_W - (spec.w * cols)) / (cols + 1));
+            const spacingY = Math.floor((CANVAS_H - (spec.h * rows)) / (rows + 1));
 
-            // 建立單張照片的離屏畫布
+            // 單張照片離屏畫布
             const singleCanvas = document.createElement('canvas');
-            singleCanvas.width = target.w;
-            singleCanvas.height = target.h;
+            singleCanvas.width = spec.w;
+            singleCanvas.height = spec.h;
             const sCtx = singleCanvas.getContext('2d');
 
             sCtx.fillStyle = '#FFFFFF';
-            sCtx.fillRect(0, 0, target.w, target.h);
+            sCtx.fillRect(0, 0, spec.w, spec.h);
 
             sCtx.save();
             sCtx.beginPath();
-            sCtx.rect(0, 0, target.w, target.h);
+            sCtx.rect(0, 0, spec.w, spec.h);
             sCtx.clip();
 
-            sCtx.translate(target.w / 2 + offsetX, target.h / 2 + offsetY);
+            // 中心變換與縮放位移
+            sCtx.translate(spec.w / 2 + offsetX, spec.h / 2 + offsetY);
             sCtx.rotate((rotateAngle * Math.PI) / 180);
             sCtx.scale(scale, scale);
 
             const imgAspect = currentImg.width / currentImg.height;
-            let drawW = target.w;
-            let drawH = target.w / imgAspect;
-            if (drawH < target.h) {
-                drawH = target.h;
-                drawW = target.h * imgAspect;
+            let drawW = spec.w;
+            let drawH = spec.w / imgAspect;
+            if (drawH < spec.h) {
+                drawH = spec.h;
+                drawW = spec.h * imgAspect;
             }
 
             sCtx.drawImage(currentImg, -drawW / 2, -drawH / 2, drawW, drawH);
             sCtx.restore();
 
-            // 貼上 8 張與裁切導引線
+            // 繪製截圖標準導引線 (3.2~3.6cm 範圍)
+            if (showGuideCheck.checked) {
+                sCtx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+                sCtx.lineWidth = 1.5;
+                sCtx.setLineDash([4, 3]);
+
+                // 垂直中軸線
+                sCtx.beginPath();
+                sCtx.moveTo(spec.w / 2, 0);
+                sCtx.lineTo(spec.w / 2, spec.h);
+                sCtx.stroke();
+
+                // 頭頂線與下巴線
+                const yTop = spec.h * spec.headGuideTop;
+                const yBottom = spec.h * spec.headGuideBottom;
+                sCtx.beginPath();
+                sCtx.moveTo(10, yTop);
+                sCtx.lineTo(spec.w - 10, yTop);
+                sCtx.moveTo(10, yBottom);
+                sCtx.lineTo(spec.w - 10, yBottom);
+                sCtx.stroke();
+                sCtx.setLineDash([]);
+
+                // 標示文字 (如 3.2cm ~ 3.6cm)
+                sCtx.fillStyle = 'rgba(30, 64, 175, 0.85)';
+                sCtx.font = 'bold 12px sans-serif';
+                sCtx.textAlign = 'right';
+                sCtx.fillText(spec.guideLabel, spec.w - 8, yTop + (yBottom - yTop) / 2 + 4);
+            }
+
+            // 排版至 4x6 畫布並畫上 1px 裁切框
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
-                    const x = spacingX + c * (target.w + spacingX);
-                    const y = spacingY + r * (target.h + spacingY);
+                    const x = spacingX + c * (spec.w + spacingX);
+                    const y = spacingY + r * (spec.h + spacingY);
 
                     ctx.drawImage(singleCanvas, x, y);
 
-                    // 裁切線 (淺灰色 1px)
                     ctx.strokeStyle = '#D1D5DB';
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(x - 0.5, y - 0.5, target.w + 1, target.h + 1);
+                    ctx.strokeRect(x - 0.5, y - 0.5, spec.w + 1, spec.h + 1);
                 }
             }
         }
 
-        // 微調滑桿事件
+        // 切換規格時觸發重設並渲染
+        sizeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                applySpecPreset(false);
+                render();
+            });
+        });
+
         rotateSlider.addEventListener('input', (e) => {
             rotateAngle = parseInt(e.target.value);
             rotateVal.innerText = rotateAngle + '°';
@@ -537,14 +634,14 @@ Please transform this image into a professional ID passport photo:
             render();
         });
 
+        showGuideCheck.addEventListener('change', render);
+
         resetAdjustBtn.addEventListener('click', () => {
-            resetParams();
+            applySpecPreset(false);
             render();
         });
 
-        sizeRadios.forEach(radio => radio.addEventListener('change', render));
-
-        // 滑鼠拖曳微調
+        // 畫布滑鼠拖曳調整
         canvas.addEventListener('mousedown', (e) => {
             if (!processedImage && !rawImage) return;
             isDragging = true;
@@ -568,51 +665,59 @@ Please transform this image into a professional ID passport photo:
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // 下載 4x6 吋排版相片
+        // 下載 4x6 吋列印檔 (自動隱藏輔助線)
         download4x6Btn.addEventListener('click', () => {
+            const spec = getSelectedSpec();
+            const wasGuideChecked = showGuideCheck.checked;
+            showGuideCheck.checked = false;
+            render();
+
             const link = document.createElement('a');
-            const target = getSelectedSize();
-            link.download = `photo_4x6_${target.name}_8pcs.jpg`;
+            link.download = `photo_4x6_${spec.name}_${spec.count}pcs.jpg`;
             link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
+
+            showGuideCheck.checked = wasGuideChecked;
+            render();
         });
 
         // 下載單張大頭照
         downloadSingleBtn.addEventListener('click', () => {
             const currentImg = processedImage || rawImage;
             if (!currentImg) return;
-            const target = getSelectedSize();
+            const spec = getSelectedSpec();
+            
             const singleCanvas = document.createElement('canvas');
-            singleCanvas.width = target.w;
-            singleCanvas.height = target.h;
+            singleCanvas.width = spec.w;
+            singleCanvas.height = spec.h;
             const sCtx = singleCanvas.getContext('2d');
 
             sCtx.fillStyle = '#FFFFFF';
-            sCtx.fillRect(0, 0, target.w, target.h);
+            sCtx.fillRect(0, 0, spec.w, spec.h);
 
             sCtx.save();
-            sCtx.translate(target.w / 2 + offsetX, target.h / 2 + offsetY);
+            sCtx.translate(spec.w / 2 + offsetX, spec.h / 2 + offsetY);
             sCtx.rotate((rotateAngle * Math.PI) / 180);
             sCtx.scale(scale, scale);
 
             const imgAspect = currentImg.width / currentImg.height;
-            let drawW = target.w;
-            let drawH = target.w / imgAspect;
-            if (drawH < target.h) {
-                drawH = target.h;
-                drawW = target.h * imgAspect;
+            let drawW = spec.w;
+            let drawH = spec.w / imgAspect;
+            if (drawH < spec.h) {
+                drawH = spec.h;
+                drawW = spec.h * imgAspect;
             }
 
             sCtx.drawImage(currentImg, -drawW / 2, -drawH / 2, drawW, drawH);
             sCtx.restore();
 
             const link = document.createElement('a');
-            link.download = `student_id_${target.name}.jpg`;
+            link.download = `id_photo_${spec.name}_${spec.w}x${spec.h}.jpg`;
             link.href = singleCanvas.toDataURL('image/jpeg', 0.95);
             link.click();
         });
 
-        // Key Modal
+        // Key Modal 控制
         openKeyModalBtn.addEventListener('click', () => keyModal.classList.remove('hidden'));
         closeKeyModalBtn.addEventListener('click', () => keyModal.classList.add('hidden'));
         saveKeyBtn.addEventListener('click', () => {
