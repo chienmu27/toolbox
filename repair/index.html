@@ -290,7 +290,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal -->
+  <!-- ⚙️ 後台設定 Modal（徹底移除 GAS API 欄位、強化初次自訂密碼防護） -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -304,38 +304,70 @@
         </button>
       </div>
 
-      <!-- 視圖 1：登入驗證介面（支援自愈應急登入） -->
+      <!-- 視圖 1：登入驗證與初次自訂密碼啟用 -->
       <div id="view-login" class="space-y-4">
         
-        <div id="first-setup-box" class="hidden p-3.5 bg-amber-50 rounded-2xl border border-amber-200 space-y-2.5">
-          <div class="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
-            <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
-            <span>首次系統建置導引</span>
+        <!-- 初次建置導引（強制設定自訂密碼） -->
+        <div id="first-setup-box" class="hidden p-4 bg-emerald-50 rounded-2xl border border-emerald-300 space-y-3">
+          <div class="flex items-center space-x-1.5 text-xs font-bold text-emerald-950">
+            <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+            <span>初次啟用：綁定試算表與設定管理密碼</span>
           </div>
-          <p class="text-[11px] text-amber-700 leading-relaxed">
-            請輸入目標試算表與照片存放資料夾網址，系統將自動完成初始化：
+          <p class="text-[11px] text-emerald-800 leading-relaxed">
+            初次使用，請填入試算表網址並<strong>設定您的專屬管理密碼</strong>，以防止其他人員擅自登入修改設定：
           </p>
           <div>
-            <label class="block text-[11px] font-bold text-amber-900 mb-0.5">Google 試算表網址 <span class="text-rose-500">*</span></label>
+            <label class="block text-[11px] font-bold text-emerald-900 mb-0.5">Google 試算表完整網址 <span class="text-rose-500">*</span></label>
             <input 
               type="text" 
               id="initial-sheet-url" 
-              class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-xs" 
               placeholder="https://docs.google.com/spreadsheets/d/.../edit"
             >
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-amber-900 mb-0.5">照片存檔 Google Drive 資料夾網址 (建議填寫)</label>
+            <label class="block text-[11px] font-bold text-emerald-900 mb-0.5">照片存檔 Google Drive 資料夾網址 (建議填寫)</label>
             <input 
               type="text" 
               id="initial-folder-url" 
-              class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-xs" 
               placeholder="https://drive.google.com/drive/folders/..."
             >
           </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-emerald-200">
+            <div>
+              <label class="block text-[11px] font-bold text-rose-700 mb-0.5">設定專屬管理密碼 <span class="text-rose-500">*</span></label>
+              <input 
+                type="password" 
+                id="initial-new-pass" 
+                autocomplete="new-password"
+                class="w-full px-3 py-2 bg-white border border-rose-300 rounded-xl text-xs" 
+                placeholder="不可設為 1234"
+              >
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-rose-700 mb-0.5">確認專屬管理密碼 <span class="text-rose-500">*</span></label>
+              <input 
+                type="password" 
+                id="initial-confirm-pass" 
+                autocomplete="new-password"
+                class="w-full px-3 py-2 bg-white border border-rose-300 rounded-xl text-xs" 
+                placeholder="再次輸入新密碼"
+              >
+            </div>
+          </div>
+          <button 
+            type="button" 
+            id="btn-initial-setup"
+            onclick="handleInitialSetup()" 
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer"
+          >
+            完成綁定並建立專屬系統
+          </button>
         </div>
 
-        <div class="space-y-3">
+        <!-- 日常管理員登入區（僅接受該校自訂密碼） -->
+        <div id="normal-login-box" class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
             <input 
@@ -354,22 +386,22 @@
               value="" 
               autocomplete="new-password"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" 
-              placeholder="請輸入管理者密碼 (預設: 1234)"
+              placeholder="請輸入貴校自訂之管理者密碼"
             >
           </div>
+          <button 
+            type="button"
+            onclick="handleAdminLogin()" 
+            id="btn-login" 
+            class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md shadow-blue-500/20"
+          >
+            登入管理後台
+          </button>
         </div>
 
-        <button 
-          type="button"
-          onclick="handleAdminLogin()" 
-          id="btn-login" 
-          class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md shadow-blue-500/20"
-        >
-          登入管理後台
-        </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 -->
+      <!-- 視圖 2：管理功能主面板 (徹底移除 GAS API 欄位) -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
         
         <!-- 短網址卡片 -->
@@ -431,25 +463,11 @@
           </p>
         </div>
 
-        <!-- 1. GAS 核心 API 網址設定 (解決死鎖關鍵) -->
-        <div class="space-y-1.5 border-t pt-3">
-          <div class="font-bold text-slate-800 flex items-center space-x-1">
-            <i class="fa-solid fa-bolt text-indigo-600"></i>
-            <span>1. Google Apps Script (GAS) 核心 Web App API 網址</span>
-          </div>
-          <input 
-            type="text" 
-            id="cfg-gas-url" 
-            class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" 
-            placeholder="https://script.google.com/macros/s/.../exec"
-          >
-        </div>
-
-        <!-- 2. 管理者通知 Gmail 設置 -->
+        <!-- 1. 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
-            <span>2. 管理者通知 Gmail 設置</span>
+            <span>1. 管理者通知 Gmail 設置</span>
           </div>
           <p class="text-[11px] text-amber-700">新報修或緊急通報時，系統自動發信至此信箱（多筆請以逗號隔開）。</p>
           <input 
@@ -460,12 +478,12 @@
           >
         </div>
 
-        <!-- 3. 試算表設定 -->
+        <!-- 2. 試算表設定 -->
         <div class="space-y-2.5 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center justify-between">
             <div class="flex items-center space-x-1">
               <i class="fa-solid fa-table-cells text-blue-600"></i>
-              <span>3. 綁定之 Google 試算表完整網址</span>
+              <span>2. 綁定之 Google 試算表完整網址</span>
             </div>
             <button 
               type="button" 
@@ -485,11 +503,11 @@
           >
         </div>
 
-        <!-- 4. 照片存放資料夾設定 -->
+        <!-- 3. 照片存放資料夾設定 -->
         <div class="space-y-2 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-folder-open text-amber-600"></i>
-            <span>4. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
+            <span>3. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
           </div>
           <p class="text-[11px] text-slate-500">照片將直接存入此指定資料夾，不再堆積在雲端硬碟根目錄。</p>
           <input 
@@ -500,11 +518,11 @@
           >
         </div>
 
-        <!-- 5. 修改帳號與密碼 -->
+        <!-- 4. 修改帳號與密碼 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
-            <span>5. 修改管理者帳號與密碼</span>
+            <span>4. 修改管理者帳號與密碼</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
@@ -559,12 +577,8 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 預設獨立外掛 GAS Web App 網址（可在後台自訂修改並儲存）
-    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
-
-    function getGasApiUrl() {
-      return localStorage.getItem('repair_gas_api_url') || DEFAULT_GAS_URL;
-    }
+    // 固定核心 GAS Web App API 網址（底層常數綁定，不在後台暴露防竄改）
+    const MASTER_GAS_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
 
     const dispatchRules = {
       "water-electric": { name: "水電工友 (陳師傅 / 分機 215)", style: "bg-cyan-50 border-cyan-200 text-cyan-800", icon: "fa-faucet-drip" },
@@ -578,8 +592,8 @@
     let currentAdminPass = "";
     let currentRoster = [];
 
-    // 附帶 3.5 秒超時的 fetch 封裝，徹底杜絕連線卡死
-    async function fetchWithTimeout(url, options = {}, timeout = 3500) {
+    // 寬裕的超時控制函數（預設放寬至 35 秒，徹底消滅 AbortError）
+    async function fetchWithTimeout(url, options = {}, timeout = 35000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       try {
@@ -596,7 +610,6 @@
     }
 
     window.onload = async function() {
-      // 1. 解析專屬短網址 (?c=代碼)
       const urlParams = new URLSearchParams(window.location.search);
       const shortCodeParam = urlParams.get('c') || urlParams.get('code');
       const paramSheet = urlParams.get('sheet');
@@ -605,21 +618,21 @@
         const resolvingBanner = document.getElementById('resolving-banner');
         if (resolvingBanner) resolvingBanner.classList.remove('hidden');
         try {
-          const res = await fetchWithTimeout(getGasApiUrl(), {
+          const res = await fetchWithTimeout(MASTER_GAS_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
               action: "resolveShortCode",
               code: shortCodeParam
             })
-          }, 3000);
+          }, 10000);
           const result = await res.json();
           if (result.success && result.sheetUrl) {
             localStorage.setItem('repair_sheet_url', result.sheetUrl);
             localStorage.setItem('repair_short_code', result.shortCode);
           }
         } catch (err) {
-          console.warn("短代碼解析略過或離線:", err);
+          console.warn("短代碼解析略過:", err);
         } finally {
           if (resolvingBanner) resolvingBanner.classList.add('hidden');
         }
@@ -629,7 +642,7 @@
 
       refreshSystemStatus();
 
-      // 2. 載入處室與教職員名單（具備超時熔斷保護）
+      // 載入處室與教職員名單
       const currentSheet = localStorage.getItem('repair_sheet_url');
       if (currentSheet) {
         loadTeacherOptions(currentSheet);
@@ -637,7 +650,7 @@
         setFallbackTeacherOptions();
       }
 
-      // 3. 帳號欄位防瀏覽器誤填入網址監聽
+      // 防瀏覽器將網址誤填入帳號監聽
       const userInput = document.getElementById('login-user');
       if (userInput) {
         userInput.addEventListener('input', function() {
@@ -714,23 +727,17 @@
       }
     }
 
-    // 動態載入名冊（超時 3.5 秒自動使用備援名冊，絕對不卡死）
+    // 動態載入名冊
     async function loadTeacherOptions(sheetUrl) {
-      const apiUrl = getGasApiUrl();
-      if (!apiUrl || apiUrl.includes('YOUR_GAS_ID')) {
-        setFallbackTeacherOptions();
-        return;
-      }
-
       try {
-        const res = await fetchWithTimeout(apiUrl, {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "getTeacherData",
             sheetUrl: sheetUrl
           })
-        }, 3500);
+        }, 12000);
         const result = await res.json();
 
         if (result.success && result.roster && result.roster.length > 0) {
@@ -740,7 +747,7 @@
           setFallbackTeacherOptions();
         }
       } catch (err) {
-        console.warn("名冊載入逾時或連線未完成，啟動本地備援名冊:", err);
+        console.warn("名冊連線未完成，啟用備援名冊:", err);
         setFallbackTeacherOptions();
       }
     }
@@ -819,26 +826,12 @@
       }
     }
 
-    // 本地備用完整名冊（確保即使沒有網路也 100% 能選擇）
     function setFallbackTeacherOptions() {
       currentRoster = [
-        { dept: "教務處", sub: "教務主任", name: "林主任", ext: "201" },
-        { dept: "教務處", sub: "教學組", name: "陳組長", ext: "202" },
-        { dept: "教務處", sub: "註冊組", name: "張組長", ext: "203" },
-        { dept: "教務處", sub: "資訊組", name: "鄭組長", ext: "205" },
-        { dept: "學務處", sub: "學務主任", name: "趙主任", ext: "220" },
-        { dept: "學務處", sub: "生教組", name: "洪組長", ext: "222" },
-        { dept: "總務處", sub: "總務主任", name: "黃主任", ext: "210" },
+        { dept: "教務處", sub: "教學組", name: "陳組長", ext: "201" },
         { dept: "總務處", sub: "事務組", name: "郭組長", ext: "211" },
-        { dept: "輔導處", sub: "輔導主任", name: "周主任", ext: "230" },
         { dept: "一年級", sub: "一年一班", name: "王老師", ext: "101" },
-        { dept: "一年級", sub: "一年二班", name: "李老師", ext: "102" },
-        { dept: "二年級", sub: "二年一班", name: "林老師", ext: "201" },
-        { dept: "二年級", sub: "二年三班", name: "謝老師", ext: "203" },
-        { dept: "三年級", sub: "三年一班", name: "黃老師", ext: "301" },
-        { dept: "四年級", sub: "四年一班", name: "吳老師", ext: "401" },
-        { dept: "五年級", sub: "五年一班", name: "楊老師", ext: "501" },
-        { dept: "六年級", sub: "六年一班", name: "蔡老師", ext: "601" }
+        { dept: "二年級", sub: "二年一班", name: "林老師", ext: "201" }
       ];
       renderDeptDropdown();
     }
@@ -898,17 +891,18 @@
       }
     }
 
-    // 開啟後台設定視窗（保證 100% 順暢彈出，絕不拋錯）
     function openConfigModal() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
       const firstBox = document.getElementById('first-setup-box');
+      const normalBox = document.getElementById('normal-login-box');
 
-      if (firstBox) {
-        if (!savedSheet) {
-          firstBox.classList.remove('hidden');
-        } else {
-          firstBox.classList.add('hidden');
-        }
+      // 若為全新使用者尚未綁定，顯示強制改密碼的綁定導引
+      if (!savedSheet) {
+        if (firstBox) firstBox.classList.remove('hidden');
+        if (normalBox) normalBox.classList.add('hidden');
+      } else {
+        if (firstBox) firstBox.classList.add('hidden');
+        if (normalBox) normalBox.classList.remove('hidden');
       }
 
       const userInput = document.getElementById('login-user');
@@ -928,26 +922,89 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    // 管理員登入（具備遠端驗證 + 本地應急自愈雙機制）
-    async function handleAdminLogin() {
-      let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
-      let folderUrl = "";
-      
+    // 初次使用者設定：綁定試算表並強制自訂密碼
+    async function handleInitialSetup() {
+      const sheetUrl = document.getElementById('initial-sheet-url')?.value.trim() || "";
+      const folderUrl = document.getElementById('initial-folder-url')?.value.trim() || "";
+      const newPass = document.getElementById('initial-new-pass')?.value.trim() || "";
+      const confirmPass = document.getElementById('initial-confirm-pass')?.value.trim() || "";
+      const btn = document.getElementById('btn-initial-setup');
+
       if (!sheetUrl) {
-        sheetUrl = document.getElementById('initial-sheet-url')?.value.trim() || "";
-        folderUrl = document.getElementById('initial-folder-url')?.value.trim() || "";
-        if (!sheetUrl) {
-          alert("首次使用請先輸入欲綁定的 Google 試算表網址！");
-          return;
-        }
+        alert("請輸入 Google 試算表網址！");
+        return;
+      }
+      if (!newPass) {
+        alert("為了確保系統安全，請務必設定您的專屬管理密碼！");
+        return;
+      }
+      if (newPass === "1234") {
+        alert("不可使用預設密碼 1234，請設定您專屬的自訂密碼！");
+        return;
+      }
+      if (newPass !== confirmPass) {
+        alert("兩次輸入的密碼不一致，請重新確認！");
+        return;
       }
 
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "系統初始化與權限同步中（約需10秒）...";
+      }
+
+      try {
+        const initRes = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "initSheet", 
+            sheetUrl: sheetUrl, 
+            folderUrl: folderUrl,
+            initialPassword: newPass
+          })
+        }, 35000); // 放寬為 35 秒
+        const result = await initRes.json();
+
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+
+          currentAdminUser = "admin";
+          currentAdminPass = newPass;
+
+          document.getElementById('cfg-sheet-url').value = sheetUrl;
+          document.getElementById('cfg-folder-url').value = folderUrl;
+          
+          alert("🎉 系統初始化成功！專屬管理密碼已建立。");
+          document.getElementById('view-login')?.classList.add('hidden');
+          document.getElementById('view-dashboard')?.classList.remove('hidden');
+          refreshSystemStatus();
+          loadTeacherOptions(sheetUrl);
+        } else {
+          alert("初始化失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("連線初始化失敗，請檢查試算表網址是否正確並已開放「知道連結的人均可編輯」！\n" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "完成綁定並建立專屬系統";
+        }
+      }
+    }
+
+    // 日常管理員登入（嚴格依賴該試算表後端驗證，無密碼後門）
+    async function handleAdminLogin() {
+      const sheetUrl = localStorage.getItem('repair_sheet_url') || "";
       const user = document.getElementById('login-user')?.value.trim() || "admin";
       const pass = document.getElementById('login-pass')?.value.trim();
       const btn = document.getElementById('btn-login');
 
       if (!pass) {
-        alert("請輸入管理者密碼！(預設: 1234)");
+        alert("請輸入管理密碼！");
         return;
       }
 
@@ -956,93 +1013,50 @@
         btn.textContent = "驗證身分中...";
       }
 
-      const apiUrl = getGasApiUrl();
-      let loginSuccess = false;
-      let remoteData = null;
+      try {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "adminLogin",
+            sheetUrl: sheetUrl,
+            username: user,
+            password: pass
+          })
+        }, 15000);
+        const result = await res.json();
 
-      // 嘗試遠端連線驗證
-      if (apiUrl && !apiUrl.includes('YOUR_GAS_ID')) {
-        try {
-          // 若為初次建置，先嘗試初始化
-          if (!localStorage.getItem('repair_sheet_url')) {
-            try {
-              const initRes = await fetchWithTimeout(apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl, folderUrl: folderUrl })
-              }, 4000);
-              const initResult = await initRes.json();
-              if (initResult.shortCode) {
-                localStorage.setItem('repair_short_code', initResult.shortCode);
-              }
-            } catch (e) {
-              console.warn("初次初始化略過，直接驗證登入:", e);
-            }
+        if (result.success) {
+          currentAdminUser = user;
+          currentAdminPass = pass;
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
           }
 
-          const res = await fetchWithTimeout(apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              action: "adminLogin",
-              sheetUrl: sheetUrl,
-              username: user,
-              password: pass
-            })
-          }, 3500);
-          const result = await res.json();
-          if (result.success) {
-            loginSuccess = true;
-            remoteData = result;
-          } else {
-            alert("登入失敗：" + result.message);
-          }
-        } catch (err) {
-          console.warn("遠端 API 連線異常，啟用本地應急驗證:", err);
+          document.getElementById('cfg-sheet-url').value = sheetUrl;
+          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
+          document.getElementById('cfg-folder-url').value = result.photoFolderUrl || "";
+
+          const passInput = document.getElementById('login-pass');
+          if (passInput) passInput.value = "";
+
+          document.getElementById('view-login')?.classList.add('hidden');
+          document.getElementById('view-dashboard')?.classList.remove('hidden');
+          refreshSystemStatus();
+          loadTeacherOptions(sheetUrl);
+        } else {
+          alert(result.message);
         }
-      }
-
-      // 應急自愈機制：如果遠端連不上，只要帳密為預設 admin/1234 或已儲存密碼，允許應急進入後台
-      const localSavedPass = localStorage.getItem('repair_admin_pass') || "1234";
-      if (!loginSuccess && user === "admin" && pass === localSavedPass) {
-        loginSuccess = true;
-        alert("💡 提示：遠端 API 暫時連線逾時，已透過管理員憑證進入應急設定模式。\n請在後台檢查並確認您的「GAS API 網址」與「試算表網址」。");
-      }
-
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "登入管理後台";
-      }
-
-      if (loginSuccess) {
-        currentAdminUser = user;
-        currentAdminPass = pass;
-        localStorage.setItem('repair_sheet_url', sheetUrl);
-
-        const savedCode = remoteData?.shortCode || localStorage.getItem('repair_short_code');
-        if (savedCode) {
-          localStorage.setItem('repair_short_code', savedCode);
-          updateShortUrlDisplay(savedCode);
+      } catch (err) {
+        alert("連線驗證逾時或失敗，請檢查網路連線！\n" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "登入管理後台";
         }
-
-        // 載入設定至後台面板
-        const gasInput = document.getElementById('cfg-gas-url');
-        const sheetInput = document.getElementById('cfg-sheet-url');
-        const emailInput = document.getElementById('cfg-admin-email');
-        const folderInput = document.getElementById('cfg-folder-url');
-
-        if (gasInput) gasInput.value = getGasApiUrl();
-        if (sheetInput) sheetInput.value = sheetUrl;
-        if (emailInput) emailInput.value = remoteData?.adminEmail || localStorage.getItem('repair_admin_email') || "";
-        if (folderInput) folderInput.value = remoteData?.photoFolderUrl || localStorage.getItem('repair_folder_url') || "";
-
-        const passInput = document.getElementById('login-pass');
-        if (passInput) passInput.value = "";
-
-        document.getElementById('view-login')?.classList.add('hidden');
-        document.getElementById('view-dashboard')?.classList.remove('hidden');
-        refreshSystemStatus();
-        loadTeacherOptions(sheetUrl);
       }
     }
 
@@ -1059,7 +1073,7 @@
       document.getElementById('view-login')?.classList.remove('hidden');
     }
 
-    // 重新初始化試算表
+    // 重新初始化試算表（長連線 35 秒，不覆蓋名冊，絕不拋 AbortError）
     async function reInitCurrentSheet() {
       const sheetUrl = document.getElementById('cfg-sheet-url')?.value.trim();
       const folderUrl = document.getElementById('cfg-folder-url')?.value.trim();
@@ -1069,15 +1083,19 @@
 
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步權限中...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步權限中（約需10秒）...`;
       }
 
       try {
-        const res = await fetchWithTimeout(getGasApiUrl(), {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl, folderUrl: folderUrl })
-        }, 5000);
+          body: JSON.stringify({ 
+            action: "initSheet", 
+            sheetUrl: sheetUrl, 
+            folderUrl: folderUrl 
+          })
+        }, 35000); // 放寬為 35 秒
         const result = await res.json();
         alert(result.message);
         if (result.success && result.shortCode) {
@@ -1086,7 +1104,7 @@
           loadTeacherOptions(sheetUrl);
         }
       } catch (err) {
-        alert("連線初始化失敗，請檢查 GAS API 網址與試算表網址是否正確！\n" + err);
+        alert("連線初始化失敗，請檢查試算表網址是否正確並已開放編輯權限！\n" + err);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -1097,7 +1115,6 @@
 
     // 儲存所有管理設定
     async function saveAllAdminSettings() {
-      const gasUrl = document.getElementById('cfg-gas-url')?.value.trim() || DEFAULT_GAS_URL;
       const sheetUrl = document.getElementById('cfg-sheet-url')?.value.trim();
       const folderUrl = document.getElementById('cfg-folder-url')?.value.trim() || "";
       const adminEmail = document.getElementById('cfg-admin-email')?.value.trim() || "";
@@ -1110,46 +1127,46 @@
         return;
       }
 
-      // 優先存入本地快取
-      localStorage.setItem('repair_gas_api_url', gasUrl);
-      localStorage.setItem('repair_sheet_url', sheetUrl);
-      localStorage.setItem('repair_folder_url', folderUrl);
-      localStorage.setItem('repair_admin_email', adminEmail);
-      if (newPass) localStorage.setItem('repair_admin_pass', newPass);
-
       if (btn) {
         btn.disabled = true;
         btn.textContent = "儲存中...";
       }
 
       try {
-        const res = await fetchWithTimeout(gasUrl, {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({
             action: "updateAdminSettings",
             sheetUrl: sheetUrl,
             currentUsername: currentAdminUser || "admin",
-            currentPassword: currentAdminPass || "1234",
+            currentPassword: currentAdminPass,
             newUsername: newUser || currentAdminUser || "admin",
-            newPassword: newPass || currentAdminPass || "1234",
+            newPassword: newPass || currentAdminPass,
             adminEmail: adminEmail,
             photoFolderUrl: folderUrl
           })
-        }, 5000);
+        }, 20000);
         const result = await res.json();
 
         if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
           if (result.shortCode) {
             localStorage.setItem('repair_short_code', result.shortCode);
             updateShortUrlDisplay(result.shortCode);
           }
+          if (newPass) currentAdminPass = newPass;
+          if (newUser) currentAdminUser = newUser;
+
+          document.getElementById('cfg-new-user').value = "";
+          document.getElementById('cfg-new-pass').value = "";
           alert(result.message);
+          closeConfigModal();
         } else {
-          alert("本地設定已儲存，遠端更新回應：" + result.message);
+          alert("儲存失敗：" + result.message);
         }
       } catch (err) {
-        alert("設定已儲存在此瀏覽器！\n（若遠端同步逾時，請確認 GAS API 網址是否正確部署）");
+        alert("儲存逾時或連線異常：" + err);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -1157,7 +1174,6 @@
         }
         refreshSystemStatus();
         loadTeacherOptions(sheetUrl);
-        closeConfigModal();
       }
     }
 
@@ -1211,11 +1227,11 @@
       };
 
       try {
-        const res = await fetchWithTimeout(getGasApiUrl(), {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
-        }, 10000);
+        }, 20000);
         const result = await res.json();
 
         if (result.success) {
@@ -1231,7 +1247,7 @@
           alert("報修單送出失敗：" + result.message);
         }
       } catch (err) {
-        alert("連線失敗，請檢查網路或確認後台 GAS API 網址設定！\n" + err);
+        alert("連線逾時，請檢查網路連線或確認試算表權限！\n" + err);
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
