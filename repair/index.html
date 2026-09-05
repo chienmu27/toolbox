@@ -25,32 +25,31 @@
         </div>
       </div>
       <button onclick="openConfigModal()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5 cursor-pointer">
-        <i class="fa-solid fa-lock text-slate-500"></i>
+        <i class="fa-solid fa-shield-halved text-slate-500"></i>
         <span>後台管理設置</span>
       </button>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto px-4 mt-6">
+  <main class="max-w-3xl mx-auto px-4 mt-4">
 
-    <!-- 解析短代碼中的提示橫幅 -->
-    <div id="resolving-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 mb-5 text-xs text-indigo-900 flex items-center space-x-2">
+    <!-- 解析專屬短代碼時的提示橫幅 -->
+    <div id="resolving-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4 text-xs text-indigo-900 flex items-center space-x-2">
       <i class="fa-solid fa-spinner fa-spin text-indigo-600"></i>
-      <span>正在載入專屬學校報修設定，請稍候...</span>
+      <span>正在連線學校專屬報修代碼，請稍候...</span>
     </div>
 
-    <!-- 狀態橫幅 -->
-    <div id="status-banner" class="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-5 text-xs text-blue-900 flex items-center justify-between">
-      <div class="flex items-center space-x-2 truncate">
-        <i class="fa-solid fa-table text-blue-600 text-sm"></i>
-        <span class="font-semibold">目前儲存於：</span>
-        <span id="current-sheet-label" class="truncate font-mono underline">未設定試算表</span>
+    <!-- 安全隱私狀態指示燈 (不再顯示試算表網址與ID，保護資料安全) -->
+    <div class="flex items-center justify-between text-xs px-1 mb-3 text-slate-400">
+      <div id="status-indicator" class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="status-text" class="font-medium text-slate-600">系統服務正常運作中</span>
       </div>
-      <button onclick="openConfigModal()" class="text-xs text-blue-600 hover:text-blue-800 font-bold shrink-0 ml-2 cursor-pointer">設定</button>
+      <span class="text-[11px] text-slate-400">總務處資訊流直接派工</span>
     </div>
 
     <!-- 報修表單 -->
-    <form id="repair-form" class="space-y-6" onsubmit="handleFormSubmit(event)">
+    <form id="repair-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
 
       <!-- 區塊 1：填報教職員身分 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
@@ -73,7 +72,7 @@
               onchange="rememberTeacherProfile()"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
             >
-              <option value="">載入清單中...</option>
+              <option value="">載入名冊中...</option>
             </select>
           </div>
           <div>
@@ -86,13 +85,13 @@
               onchange="rememberTeacherProfile()"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
             >
-              <option value="">載入清單中...</option>
+              <option value="">載入名冊中...</option>
             </select>
           </div>
         </div>
         <p class="text-[11px] text-slate-400 flex items-center gap-1">
           <i class="fa-solid fa-circle-info"></i>
-          <span>選單資料自動同步自試算表「人員與班級名單」，系統會記住您選過的姓名。</span>
+          <span>選單資料自動同步自後台試算表「人員與班級名單」，系統會記住您選過的姓名。</span>
         </p>
       </div>
 
@@ -229,7 +228,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal -->
+  <!-- ⚙️ 後台設定 Modal（登入前絕對不顯示試算表網址，密碼完全不暫存） -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -243,72 +242,74 @@
         </button>
       </div>
 
-      <!-- 視圖 1：登入與連線設定面板 -->
+      <!-- 視圖 1：純淨登入驗證介面（隱藏試算表網址，密碼不保留預設值） -->
       <div id="view-login" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">
-            1. 目標 Google 試算表網址 <span class="text-rose-500">*</span>
-          </label>
+        
+        <!-- 僅在完全尚未綁定任何試算表時，才顯示初次建置提示 -->
+        <div id="first-setup-box" class="hidden p-3.5 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+          <div class="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
+            <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
+            <span>首次系統建置導引</span>
+          </div>
+          <p class="text-[11px] text-amber-700 leading-relaxed">
+            系統尚未綁定試算表。請先在下方貼上空白試算表網址，並輸入預設密碼 (1234) 完成初始化：
+          </p>
           <input 
             type="text" 
-            id="login-sheet-url" 
-            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+            id="initial-sheet-url" 
+            class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
             placeholder="https://docs.google.com/spreadsheets/d/.../edit"
           >
-          <p class="text-[11px] text-rose-500 mt-1 font-medium">⚠️ 試算表請在右上角共用設定為「知道連結的人均可編輯」。</p>
+          <p class="text-[10px] text-rose-500 font-medium">⚠️ 試算表請在右上角設定為「知道連結的人均可編輯」。</p>
         </div>
 
-        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between gap-2">
+        <div class="space-y-3">
           <div>
-            <div class="text-xs font-bold text-emerald-800">首次使用全新試算表？</div>
-            <p class="text-[11px] text-emerald-600">點此自動建立工單、名冊與專屬短網址</p>
-          </div>
-          <button 
-            type="button" 
-            id="btn-init-login" 
-            onclick="initFromLoginView()" 
-            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1 cursor-pointer"
-          >
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>一鍵初始化</span>
-          </button>
-        </div>
-
-        <div class="border-t border-slate-100 pt-3 space-y-3">
-          <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold text-slate-700">2. 管理者身分驗證</label>
-            <span class="text-[10px] text-slate-400">預設帳密：admin / 1234</span>
-          </div>
-          
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">管理者帳號</label>
-            <input type="text" id="login-user" value="admin" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
+            <input 
+              type="text" 
+              id="login-user" 
+              value="admin" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
           </div>
           <div>
-            <label class="block text-xs text-slate-500 mb-1">管理者密碼</label>
-            <input type="password" id="login-pass" value="1234" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="請輸入密碼">
+            <label class="block text-xs font-bold text-slate-700 mb-1">管理者密碼</label>
+            <!-- 徹底清空密碼預設值，防他人竄改 -->
+            <input 
+              type="password" 
+              id="login-pass" 
+              value="" 
+              autocomplete="new-password"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" 
+              placeholder="請輸入管理者密碼"
+            >
           </div>
         </div>
 
-        <button onclick="handleAdminLogin()" id="btn-login" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md shadow-blue-500/20">
+        <button 
+          onclick="handleAdminLogin()" 
+          id="btn-login" 
+          class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md shadow-blue-500/20"
+        >
           登入管理後台
         </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 -->
+      <!-- 視圖 2：管理功能主面板 (只有登入成功後，才會看到試算表網址與設定) -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
         
-        <!-- 🌟 新增：專屬免廣告短網址與 QR Code 卡片 -->
-        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-3">
+        <!-- 學校專屬短網址卡片 -->
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-2.5">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-1.5 text-emerald-900 font-bold">
               <i class="fa-solid fa-link text-emerald-600"></i>
-              <span>學校專屬報修短網址（無第三方廣告）</span>
+              <span>全校專屬報修短網址（無第三方廣告）</span>
             </div>
             <span class="text-[10px] bg-emerald-200/60 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold" id="badge-short-code">CODE</span>
           </div>
           <p class="text-[11px] text-emerald-700">
-            全校教職員點開此連結直接報修，無需輸入試算表網址，絕無轉址廣告！
+            請將此網址發布給全校老師，點開即自動綁定報修，絕不露出試算表 ID。
           </p>
           <div class="flex items-center gap-2">
             <input 
@@ -340,7 +341,7 @@
             <i class="fa-solid fa-envelope"></i>
             <span>1. 管理者通知 Gmail 設置</span>
           </div>
-          <p class="text-[11px] text-amber-700">有新報修或緊急通報時，系統將自動發送郵件至此信箱（多筆請以逗號隔開）。</p>
+          <p class="text-[11px] text-amber-700">新報修或緊急通報時，系統自動發信至此信箱（多筆請以逗號隔開）。</p>
           <input 
             type="email" 
             id="cfg-admin-email" 
@@ -349,13 +350,29 @@
           >
         </div>
 
-        <!-- 試算表設定 -->
-        <div class="space-y-2 border-t pt-3">
-          <div class="font-bold text-slate-800 flex items-center space-x-1">
-            <i class="fa-solid fa-table-cells text-blue-600"></i>
-            <span>2. 綁定之 Google 試算表完整網址</span>
+        <!-- 試算表設定 (僅在登入後台才顯示與維護) -->
+        <div class="space-y-2.5 border-t pt-3">
+          <div class="font-bold text-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-1">
+              <i class="fa-solid fa-table-cells text-blue-600"></i>
+              <span>2. 綁定之 Google 試算表完整網址</span>
+            </div>
+            <button 
+              type="button" 
+              id="btn-reinit" 
+              onclick="reInitCurrentSheet()" 
+              class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-rotate"></i>
+              <span>重新初始化欄位</span>
+            </button>
           </div>
-          <input type="text" id="cfg-sheet-url" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+          <input 
+            type="text" 
+            id="cfg-sheet-url" 
+            class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" 
+            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+          >
         </div>
 
         <!-- 修改管理者帳號與密碼 -->
@@ -371,10 +388,10 @@
             </div>
             <div>
               <label class="block text-slate-500 mb-1">新管理者密碼</label>
-              <input type="password" id="cfg-new-pass" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="若不修改請留空">
+              <input type="password" id="cfg-new-pass" value="" autocomplete="new-password" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="若不修改請留空">
             </div>
           </div>
-          <p class="text-[11px] text-slate-400">💡 提示：若忘記密碼，試算表擁有者可隨時打開該試算表「系統設定」分頁查看或修改。</p>
+          <p class="text-[11px] text-slate-400">💡 提示：若忘記密碼，試算表擁有者可隨時打開試算表「系統設定」分頁查看或修改。</p>
         </div>
 
         <div class="flex justify-between items-center pt-2 border-t">
@@ -395,8 +412,8 @@
       <div class="p-3 bg-slate-50 border rounded-2xl inline-block shadow-inner">
         <img id="qr-image" src="" alt="報修專屬 QR Code" class="w-48 h-48 mx-auto rounded-lg">
       </div>
-      <p class="text-[11px] text-slate-400">可列印張貼於各辦公室或班級，老師手機掃描即可填單</p>
-      <button onclick="closeQrModal()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">關閉</button>
+      <p class="text-[11px] text-slate-400">可列印張貼於辦公室或班級，手機掃碼直接填單</p>
+      <button onclick="closeQrModal()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer">關閉</button>
     </div>
   </div>
 
@@ -417,7 +434,7 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 獨立外掛 GAS Web App 網址 (請填入您部署的 Google Apps Script URL)
+    // 獨立外掛 GAS Web App 網址 (請換成您部署的 Google Apps Script URL)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
 
     // 地點資料庫
@@ -462,7 +479,7 @@
         areaSelect.appendChild(opt);
       }
 
-      // 2. 核心：解析專屬免廣告短網址 (?c=代碼)
+      // 2. 解析專屬短網址 (?c=代碼)
       const urlParams = new URLSearchParams(window.location.search);
       const shortCodeParam = urlParams.get('c') || urlParams.get('code');
       const paramSheet = urlParams.get('sheet');
@@ -492,9 +509,9 @@
         localStorage.setItem('repair_sheet_url', decodeURIComponent(paramSheet));
       }
 
-      updateSheetBanner();
+      refreshSystemStatus();
 
-      // 3. 載入處室與人員名單
+      // 3. 載入處室與人員名冊
       const currentSheet = localStorage.getItem('repair_sheet_url');
       if (currentSheet) {
         loadTeacherOptions(currentSheet);
@@ -503,28 +520,22 @@
       }
     };
 
-    function getCleanBaseUrl() {
-      return window.location.origin + window.location.pathname;
-    }
-
-    function updateSheetBanner() {
+    function refreshSystemStatus() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
-      const savedCode = localStorage.getItem('repair_short_code') || "";
-      const label = document.getElementById('current-sheet-label');
-      document.getElementById('login-sheet-url').value = savedSheet;
-      document.getElementById('cfg-sheet-url').value = savedSheet;
+      const statusText = document.getElementById('status-text');
+      const indicator = document.getElementById('status-indicator');
 
       if (savedSheet) {
-        label.textContent = savedSheet;
-        label.parentElement.parentElement.className = "bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-5 text-xs text-blue-900 flex items-center justify-between";
+        statusText.textContent = "系統服務正常運作中";
+        indicator.firstElementChild.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
       } else {
-        label.textContent = "未設定！請點此設定 Google 試算表網址以開始使用";
-        label.parentElement.parentElement.className = "bg-rose-50 border border-rose-200 rounded-2xl p-3.5 mb-5 text-xs text-rose-900 flex items-center justify-between";
+        statusText.textContent = "尚未設定試算表，請點右上角登入後台初始化";
+        indicator.firstElementChild.className = "w-2 h-2 rounded-full bg-amber-500";
       }
+    }
 
-      if (savedCode) {
-        updateShortUrlDisplay(savedCode);
-      }
+    function getCleanBaseUrl() {
+      return window.location.origin + window.location.pathname;
     }
 
     function updateShortUrlDisplay(code) {
@@ -537,13 +548,12 @@
       const input = document.getElementById('short-url-display');
       input.select();
       navigator.clipboard.writeText(input.value);
-      alert("專屬短網址已複製到剪貼簿！\n" + input.value);
+      alert("學校專屬短網址已複製到剪貼簿！\n" + input.value);
     }
 
     function showQrCodeModal() {
       const shortUrl = document.getElementById('short-url-display').value;
       if (!shortUrl) return;
-      // 使用純淨無廣告開源 QR API 渲染圖片
       const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(shortUrl);
       document.getElementById('qr-image').src = qrApi;
       document.getElementById('qr-modal').classList.remove('hidden');
@@ -551,6 +561,212 @@
 
     function closeQrModal() {
       document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    // Modal 控制（每次開啟或關閉皆徹底清空密碼欄位）
+    function openConfigModal() {
+      const savedSheet = localStorage.getItem('repair_sheet_url') || "";
+      const firstBox = document.getElementById('first-setup-box');
+
+      // 若從未設定過試算表，才提示首次導引
+      if (!savedSheet) {
+        firstBox.classList.remove('hidden');
+      } else {
+        firstBox.classList.add('hidden');
+      }
+
+      // 安全機制：密碼絕對不留值
+      document.getElementById('login-pass').value = "";
+      document.getElementById('config-modal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('login-pass').value = "";
+      document.getElementById('config-modal').classList.add('hidden');
+    }
+
+    // 管理員登入邏輯
+    async function handleAdminLogin() {
+      let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
+      const firstSetupBox = document.getElementById('first-setup-box');
+      
+      // 若為初次建置，從導引框獲取試算表網址
+      if (!sheetUrl) {
+        sheetUrl = document.getElementById('initial-sheet-url').value.trim();
+        if (!sheetUrl) {
+          alert("首次使用請先輸入欲綁定的 Google 試算表網址！");
+          return;
+        }
+      }
+
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value.trim();
+      const btn = document.getElementById('btn-login');
+
+      if (!pass) {
+        alert("請輸入管理者密碼！");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "驗證身分中...";
+
+      try {
+        // 如果是全新試算表尚未初始化過，先呼叫 initSheet
+        if (!localStorage.getItem('repair_sheet_url')) {
+          const initRes = await fetch(GAS_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl })
+          });
+          const initResult = await initRes.json();
+          if (!initResult.success) {
+            throw new Error("試算表初始化失敗：" + initResult.message);
+          }
+          if (initResult.shortCode) {
+            localStorage.setItem('repair_short_code', initResult.shortCode);
+          }
+        }
+
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "adminLogin",
+            sheetUrl: sheetUrl,
+            username: user,
+            password: pass
+          })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          currentAdminUser = user;
+          currentAdminPass = pass;
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+
+          document.getElementById('cfg-sheet-url').value = sheetUrl;
+          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
+          
+          // 清空登入密碼框，避免記憶
+          document.getElementById('login-pass').value = "";
+          
+          document.getElementById('view-login').classList.add('hidden');
+          document.getElementById('view-dashboard').classList.remove('hidden');
+          refreshSystemStatus();
+          loadTeacherOptions(sheetUrl);
+        } else {
+          alert("登入失敗：" + result.message);
+          document.getElementById('login-pass').value = "";
+        }
+      } catch (err) {
+        alert("連線驗證失敗：" + err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "登入管理後台";
+      }
+    }
+
+    function handleAdminLogout() {
+      currentAdminUser = "";
+      currentAdminPass = "";
+      // 登出時徹底清空密碼
+      document.getElementById('login-pass').value = "";
+      document.getElementById('cfg-new-pass').value = "";
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+    }
+
+    // 重新初始化當前試算表
+    async function reInitCurrentSheet() {
+      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const btn = document.getElementById('btn-reinit');
+
+      if (!confirm("確定要重新初始化試算表欄位結構嗎？這不會刪除已填寫的資料。")) return;
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 初始化中...`;
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl })
+        });
+        const result = await res.json();
+        alert(result.message);
+        if (result.success && result.shortCode) {
+          localStorage.setItem('repair_short_code', result.shortCode);
+          updateShortUrlDisplay(result.shortCode);
+          loadTeacherOptions(sheetUrl);
+        }
+      } catch (err) {
+        alert("初始化失敗：" + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>重新初始化欄位</span>`;
+      }
+    }
+
+    async function saveAllAdminSettings() {
+      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const adminEmail = document.getElementById('cfg-admin-email').value.trim();
+      const newUser = document.getElementById('cfg-new-user').value.trim();
+      const newPass = document.getElementById('cfg-new-pass').value.trim();
+      const btn = document.getElementById('btn-save-settings');
+
+      if (!sheetUrl) {
+        alert("試算表網址不可為空！");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "儲存中...";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "updateAdminSettings",
+            sheetUrl: sheetUrl,
+            currentUsername: currentAdminUser,
+            currentPassword: currentAdminPass,
+            newUsername: newUser || currentAdminUser,
+            newPassword: newPass || currentAdminPass,
+            adminEmail: adminEmail
+          })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+          refreshSystemStatus();
+          loadTeacherOptions(sheetUrl);
+          if (newUser) currentAdminUser = newUser;
+          if (newPass) currentAdminPass = newPass;
+          
+          document.getElementById('cfg-new-user').value = "";
+          document.getElementById('cfg-new-pass').value = "";
+          alert(result.message);
+          closeConfigModal();
+        } else {
+          alert("儲存失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("發生錯誤：" + err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "儲存所有設定";
+      }
     }
 
     // 動態載入名冊
@@ -578,7 +794,6 @@
           setFallbackTeacherOptions();
         }
       } catch (err) {
-        console.warn("載入名單失敗，使用預設名單:", err);
         setFallbackTeacherOptions();
       }
     }
@@ -713,181 +928,13 @@
       }
     }
 
-    function openConfigModal() {
-      document.getElementById('config-modal').classList.remove('hidden');
-      updateSheetBanner();
-    }
-    function closeConfigModal() {
-      document.getElementById('config-modal').classList.add('hidden');
-    }
-
-    // 登入前直接一鍵初始化新試算表
-    async function initFromLoginView() {
-      const sheetUrl = document.getElementById('login-sheet-url').value.trim();
-      const btn = document.getElementById('btn-init-login');
-
-      if (!sheetUrl) {
-        alert("請先在上方輸入 Google 試算表網址！");
-        document.getElementById('login-sheet-url').focus();
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 初始化中...`;
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "initSheet",
-            sheetUrl: sheetUrl
-          })
-        });
-        const result = await res.json();
-        alert(result.message);
-        if (result.success) {
-          localStorage.setItem('repair_sheet_url', sheetUrl);
-          if (result.shortCode) {
-            localStorage.setItem('repair_short_code', result.shortCode);
-          }
-          updateSheetBanner();
-          loadTeacherOptions(sheetUrl);
-        }
-      } catch (err) {
-        alert("初始化失敗，請確認試算表已設為「知道連結的人均可編輯」且 GAS 網址正確！\n" + err);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>一鍵初始化</span>`;
-      }
-    }
-
-    // 管理員登入邏輯
-    async function handleAdminLogin() {
-      const sheetUrl = document.getElementById('login-sheet-url').value.trim() || localStorage.getItem('repair_sheet_url');
-      const user = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value.trim();
-      const btn = document.getElementById('btn-login');
-
-      if (!sheetUrl) {
-        alert("請先在上方填入試算表連結！");
-        document.getElementById('login-sheet-url').focus();
-        return;
-      }
-      if (!pass) {
-        alert("請輸入管理者密碼！");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "驗證身分中...";
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "adminLogin",
-            sheetUrl: sheetUrl,
-            username: user,
-            password: pass
-          })
-        });
-        const result = await res.json();
-
-        if (result.success) {
-          currentAdminUser = user;
-          currentAdminPass = pass;
-          localStorage.setItem('repair_sheet_url', sheetUrl);
-          if (result.shortCode) {
-            localStorage.setItem('repair_short_code', result.shortCode);
-          }
-          updateSheetBanner();
-
-          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
-          document.getElementById('view-login').classList.add('hidden');
-          document.getElementById('view-dashboard').classList.remove('hidden');
-        } else {
-          alert("登入失敗：" + result.message + "\n\n若為初次使用的全新試算表，請先點擊綠色「一鍵初始化」按鈕！");
-        }
-      } catch (err) {
-        alert("連線失敗：" + err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "登入管理後台";
-      }
-    }
-
-    function handleAdminLogout() {
-      currentAdminUser = "";
-      currentAdminPass = "";
-      document.getElementById('login-pass').value = "1234";
-      document.getElementById('view-dashboard').classList.add('hidden');
-      document.getElementById('view-login').classList.remove('hidden');
-    }
-
-    async function saveAllAdminSettings() {
-      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
-      const adminEmail = document.getElementById('cfg-admin-email').value.trim();
-      const newUser = document.getElementById('cfg-new-user').value.trim();
-      const newPass = document.getElementById('cfg-new-pass').value.trim();
-      const btn = document.getElementById('btn-save-settings');
-
-      if (!sheetUrl) {
-        alert("試算表網址不可為空！");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "儲存中...";
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "updateAdminSettings",
-            sheetUrl: sheetUrl,
-            currentUsername: currentAdminUser,
-            currentPassword: currentAdminPass,
-            newUsername: newUser || currentAdminUser,
-            newPassword: newPass || currentAdminPass,
-            adminEmail: adminEmail
-          })
-        });
-        const result = await res.json();
-
-        if (result.success) {
-          localStorage.setItem('repair_sheet_url', sheetUrl);
-          if (result.shortCode) {
-            localStorage.setItem('repair_short_code', result.shortCode);
-          }
-          updateSheetBanner();
-          loadTeacherOptions(sheetUrl);
-          if (newUser) currentAdminUser = newUser;
-          if (newPass) currentAdminPass = newPass;
-          document.getElementById('cfg-new-user').value = "";
-          document.getElementById('cfg-new-pass').value = "";
-          alert(result.message);
-          closeConfigModal();
-        } else {
-          alert("儲存失敗：" + result.message);
-        }
-      } catch (err) {
-        alert("發生錯誤：" + err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "儲存所有設定";
-      }
-    }
-
-    // 表單送出
+    // 提交報修單
     async function handleFormSubmit(e) {
       e.preventDefault();
 
       const sheetUrl = localStorage.getItem('repair_sheet_url');
       if (!sheetUrl) {
-        alert("尚未設定目標試算表！請點右上角【後台管理設置】進行綁定。");
+        alert("系統尚未綁定試算表，請點右上角【後台管理設置】進行設定。");
         openConfigModal();
         return;
       }
