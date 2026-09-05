@@ -51,7 +51,7 @@
     <!-- 報修表單 -->
     <form id="repair-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
 
-      <!-- 區塊 1：填報教職員身分（處室學年 -> 組別班級 -> 自動產生姓名與分機） -->
+      <!-- 區塊 1：填報教職員身分（完全動態自試算表同步階層） -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center space-x-2">
@@ -93,7 +93,7 @@
             </select>
           </div>
 
-          <!-- 第 3 層：教職員姓名（自動帶出） -->
+          <!-- 第 3 層：教職員姓名（自動產生並填入） -->
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-name">
               3. 教職員姓名 <span class="text-rose-500">*</span>
@@ -110,11 +110,11 @@
         </div>
         <p class="text-[11px] text-slate-400 flex items-center gap-1">
           <i class="fa-solid fa-circle-info"></i>
-          <span>選定組別或班級後，系統自動帶入姓名與校內分機。</span>
+          <span>選定組別或班級後，系統自動帶入試算表中對應的姓名與校內分機。</span>
         </p>
       </div>
 
-      <!-- 區塊 2：聯絡電話/分機（由身分自動帶出，亦可自填修改手機） -->
+      <!-- 區塊 2：聯絡電話/分機 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
         <label class="block text-xs font-semibold text-slate-600" for="phone">
           填報人聯絡分機 / 手機門號 <span class="text-rose-500">*</span>
@@ -183,7 +183,7 @@
             </select>
           </div>
 
-          <!-- 具體報修地點輸入框（可手動修改或自由自填） -->
+          <!-- 具體報修地點輸入框 -->
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1" for="location-custom">
               具體報修地點 <span class="text-rose-500">*</span> <span class="text-slate-400 font-normal">（可自由修改或直接手動打字輸入）</span>
@@ -370,6 +370,7 @@
 
       <!-- 視圖 2：管理功能主面板 -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
+        
         <!-- 短網址卡片 -->
         <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-2.5">
           <div class="flex items-center justify-between">
@@ -406,7 +407,27 @@
           </div>
         </div>
 
-        <!-- Gmail 設置 -->
+        <!-- 🌟 重點新增：全校編制名冊自訂管理區塊 🌟 -->
+        <div class="bg-emerald-50/70 border border-emerald-300 rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between text-emerald-950 font-bold text-xs">
+            <div class="flex items-center space-x-1.5">
+              <i class="fa-solid fa-users-gear text-emerald-600 text-sm"></i>
+              <span>學校教職員與班級編制管理</span>
+            </div>
+            <button 
+              onclick="openRosterInSheet()" 
+              class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-up-right-from-square"></i>
+              <span>開啟試算表編輯名單</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-emerald-800 leading-relaxed">
+            貴校的處室、組別、年級、班級及老師姓名，可直接在試算表的<strong>《人員與班級名單》</strong>分頁自由增刪。修改後重新整理網頁即可即時連動，完美符合各校不同編制！
+          </p>
+        </div>
+
+        <!-- 1. 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -421,7 +442,7 @@
           >
         </div>
 
-        <!-- 試算表設定 -->
+        <!-- 2. 試算表設定 -->
         <div class="space-y-2.5 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center justify-between">
             <div class="flex items-center space-x-1">
@@ -435,7 +456,7 @@
               class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <i class="fa-solid fa-rotate"></i>
-              <span>一鍵重新初始化（更新名單結構）</span>
+              <span>一鍵同步權限（不會刪除自訂名冊）</span>
             </button>
           </div>
           <input 
@@ -446,13 +467,13 @@
           >
         </div>
 
-        <!-- 照片資料夾設定 -->
+        <!-- 3. 照片存放資料夾設定 -->
         <div class="space-y-2 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-folder-open text-amber-600"></i>
             <span>3. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
           </div>
-          <p class="text-[11px] text-slate-500">照片將直接存入此資料夾，不再堆積在雲端硬碟根目錄。</p>
+          <p class="text-[11px] text-slate-500">照片將直接存入此指定資料夾，不再堆積在雲端硬碟根目錄。</p>
           <input 
             type="text" 
             id="cfg-folder-url" 
@@ -461,7 +482,7 @@
           >
         </div>
 
-        <!-- 修改帳密 -->
+        <!-- 4. 修改帳號與密碼 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
@@ -568,7 +589,7 @@
 
       refreshSystemStatus();
 
-      // 2. 載入處室與教職員階層名冊
+      // 2. 載入處室與教職員動態名冊
       const currentSheet = localStorage.getItem('repair_sheet_url');
       if (currentSheet) {
         loadTeacherOptions(currentSheet);
@@ -576,7 +597,7 @@
         setFallbackTeacherOptions();
       }
 
-      // 3. 帳號欄位防瀏覽器誤填入網址監聽
+      // 3. 防網址誤填入監聽
       const userInput = document.getElementById('login-user');
       userInput.addEventListener('input', function() {
         if (this.value.includes('http') || this.value.includes('docs.google')) {
@@ -628,11 +649,21 @@
       document.getElementById('qr-modal').classList.add('hidden');
     }
 
-    // 地點快捷選擇變更時，自動帶入下方輸入框
+    // 地點快捷選擇
     function onLocationPresetChange() {
       const presetVal = document.getElementById('location-preset').value;
       if (presetVal) {
         document.getElementById('location-custom').value = presetVal;
+      }
+    }
+
+    // 跳轉開啟試算表維護全校名冊
+    function openRosterInSheet() {
+      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      if (sheetUrl) {
+        window.open(sheetUrl, '_blank');
+      } else {
+        alert("尚未設定試算表網址！");
       }
     }
 
@@ -663,7 +694,7 @@
       }
     }
 
-    // 渲染第 1 層：處室 / 學年
+    // 渲染第 1 層：處室 / 學年（完全自訂去重）
     function renderDeptDropdown() {
       const deptSelect = document.getElementById('teacher-dept');
       const depts = [...new Set(currentRoster.map(item => item.dept))];
@@ -725,14 +756,11 @@
 
       const matched = currentRoster.find(r => r.dept === selectedDept && r.sub === selectedSub);
       if (matched) {
-        // 直接產生並帶入老師姓名
         nameInput.value = matched.name;
-        // 自動帶入分機
         if (matched.ext) {
           phoneInput.value = "分機 " + matched.ext;
         }
 
-        // 記憶選項
         localStorage.setItem('last_teacher_dept', selectedDept);
         localStorage.setItem('last_teacher_sub', selectedSub);
         localStorage.setItem('last_teacher_name', matched.name);
@@ -743,12 +771,10 @@
 
     function setFallbackTeacherOptions() {
       currentRoster = [
-        { dept: "教務處", sub: "資訊組", name: "鄭組長", ext: "205" },
-        { dept: "教務處", sub: "教學組", name: "陳組長", ext: "202" },
+        { dept: "教務處", sub: "教學組", name: "陳組長", ext: "201" },
         { dept: "總務處", sub: "事務組", name: "郭組長", ext: "211" },
-        { dept: "學務處", sub: "生教組", name: "洪組長", ext: "222" },
-        { dept: "二年級", sub: "二年三班", name: "謝佩珊 老師", ext: "203" },
-        { dept: "一年級", sub: "一年一班", name: "王大明 老師", ext: "101" }
+        { dept: "一年級", sub: "一年一班", name: "王老師", ext: "101" },
+        { dept: "二年級", sub: "二年一班", name: "林老師", ext: "201" }
       ];
       renderDeptDropdown();
     }
@@ -760,365 +786,4 @@
       const icon = document.getElementById('dispatch-icon');
 
       if (!cat || !dispatchRules[cat]) {
-        box.classList.add('hidden');
-        return;
-      }
-
-      const r = dispatchRules[cat];
-      box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${r.style}`;
-      name.textContent = r.name;
-      icon.className = `fa-solid ${r.icon} mr-1`;
-      box.classList.remove('hidden');
-    }
-
-    function previewPhoto(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          base64Photo = e.target.result;
-          document.getElementById('photo-preview').src = base64Photo;
-          document.getElementById('upload-placeholder').classList.add('hidden');
-          document.getElementById('photo-preview-box').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function removePhoto(e) {
-      e.stopPropagation();
-      base64Photo = "";
-      document.getElementById('photo-input').value = "";
-      document.getElementById('photo-preview').src = "";
-      document.getElementById('photo-preview-box').classList.add('hidden');
-      document.getElementById('upload-placeholder').classList.remove('hidden');
-    }
-
-    function toggleEmergency(e) {
-      const isChecked = e.target.checked;
-      const card = document.getElementById('emergency-card');
-      const alertTip = document.getElementById('emergency-alert');
-      if (isChecked) {
-        card.classList.add('border-rose-300', 'bg-rose-50/50');
-        alertTip.classList.remove('hidden');
-      } else {
-        card.classList.remove('border-rose-300', 'bg-rose-50/50');
-        alertTip.classList.add('hidden');
-      }
-    }
-
-    function openConfigModal() {
-      const savedSheet = localStorage.getItem('repair_sheet_url') || "";
-      const firstBox = document.getElementById('first-setup-box');
-
-      if (!savedSheet) {
-        firstBox.classList.remove('hidden');
-      } else {
-        firstBox.classList.add('hidden');
-      }
-
-      const userInput = document.getElementById('login-user');
-      const passInput = document.getElementById('login-pass');
-      
-      userInput.value = "admin";
-      passInput.value = "";
-
-      setTimeout(() => {
-        if (userInput.value.includes('http') || userInput.value.includes('docs.google')) {
-          userInput.value = "admin";
-        }
-        passInput.value = "";
-      }, 50);
-
-      document.getElementById('config-modal').classList.remove('hidden');
-    }
-
-    function closeConfigModal() {
-      document.getElementById('login-pass').value = "";
-      document.getElementById('config-modal').classList.add('hidden');
-    }
-
-    async function handleAdminLogin() {
-      let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
-      let folderUrl = "";
-      
-      if (!sheetUrl) {
-        sheetUrl = document.getElementById('initial-sheet-url').value.trim();
-        folderUrl = document.getElementById('initial-folder-url').value.trim();
-        if (!sheetUrl) {
-          alert("首次使用請先輸入欲綁定的 Google 試算表網址！");
-          return;
-        }
-      }
-
-      const user = document.getElementById('login-user').value.trim();
-      const pass = document.getElementById('login-pass').value.trim();
-      const btn = document.getElementById('btn-login');
-
-      if (!pass) {
-        alert("請輸入管理者密碼！");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "驗證身分中...";
-
-      try {
-        if (!localStorage.getItem('repair_sheet_url')) {
-          const initRes = await fetch(GAS_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ 
-              action: "initSheet", 
-              sheetUrl: sheetUrl, 
-              folderUrl: folderUrl 
-            })
-          });
-          const initResult = await initRes.json();
-          if (!initResult.success) {
-            throw new Error("試算表初始化失敗：" + initResult.message);
-          }
-          if (initResult.shortCode) {
-            localStorage.setItem('repair_short_code', initResult.shortCode);
-          }
-        }
-
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "adminLogin",
-            sheetUrl: sheetUrl,
-            username: user,
-            password: pass
-          })
-        });
-        const result = await res.json();
-
-        if (result.success) {
-          currentAdminUser = user;
-          currentAdminPass = pass;
-          localStorage.setItem('repair_sheet_url', sheetUrl);
-          if (result.shortCode) {
-            localStorage.setItem('repair_short_code', result.shortCode);
-            updateShortUrlDisplay(result.shortCode);
-          }
-
-          document.getElementById('cfg-sheet-url').value = sheetUrl;
-          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
-          document.getElementById('cfg-folder-url').value = result.photoFolderUrl || "";
-          
-          document.getElementById('login-pass').value = "";
-          document.getElementById('view-login').classList.add('hidden');
-          document.getElementById('view-dashboard').classList.remove('hidden');
-          refreshSystemStatus();
-          loadTeacherOptions(sheetUrl);
-        } else {
-          alert("登入失敗：" + result.message);
-          document.getElementById('login-pass').value = "";
-        }
-      } catch (err) {
-        alert("連線驗證失敗：" + err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "登入管理後台";
-      }
-    }
-
-    function handleAdminLogout() {
-      currentAdminUser = "";
-      currentAdminPass = "";
-      document.getElementById('login-user').value = "admin";
-      document.getElementById('login-pass').value = "";
-      document.getElementById('cfg-new-pass').value = "";
-      document.getElementById('view-dashboard').classList.add('hidden');
-      document.getElementById('view-login').classList.remove('hidden');
-    }
-
-    async function reInitCurrentSheet() {
-      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
-      const folderUrl = document.getElementById('cfg-folder-url').value.trim();
-      const btn = document.getElementById('btn-reinit');
-
-      if (!confirm("確定要執行初始化嗎？這會更新名單階層結構，並設定試算表與照片資料夾權限。")) return;
-
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 更新初始化中...`;
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ 
-            action: "initSheet", 
-            sheetUrl: sheetUrl, 
-            folderUrl: folderUrl 
-          })
-        });
-        const result = await res.json();
-        alert(result.message);
-        if (result.success && result.shortCode) {
-          localStorage.setItem('repair_short_code', result.shortCode);
-          updateShortUrlDisplay(result.shortCode);
-          loadTeacherOptions(sheetUrl);
-        }
-      } catch (err) {
-        alert("初始化失敗：" + err);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>一鍵重新初始化（更新名單結構）</span>`;
-      }
-    }
-
-    async function saveAllAdminSettings() {
-      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
-      const folderUrl = document.getElementById('cfg-folder-url').value.trim();
-      const adminEmail = document.getElementById('cfg-admin-email').value.trim();
-      const newUser = document.getElementById('cfg-new-user').value.trim();
-      const newPass = document.getElementById('cfg-new-pass').value.trim();
-      const btn = document.getElementById('btn-save-settings');
-
-      if (!sheetUrl) {
-        alert("試算表網址不可為空！");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "儲存中...";
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "updateAdminSettings",
-            sheetUrl: sheetUrl,
-            currentUsername: currentAdminUser,
-            currentPassword: currentAdminPass,
-            newUsername: newUser || currentAdminUser,
-            newPassword: newPass || currentAdminPass,
-            adminEmail: adminEmail,
-            photoFolderUrl: folderUrl
-          })
-        });
-        const result = await res.json();
-
-        if (result.success) {
-          localStorage.setItem('repair_sheet_url', sheetUrl);
-          if (result.shortCode) {
-            localStorage.setItem('repair_short_code', result.shortCode);
-            updateShortUrlDisplay(result.shortCode);
-          }
-          refreshSystemStatus();
-          loadTeacherOptions(sheetUrl);
-          if (newUser) currentAdminUser = newUser;
-          if (newPass) currentAdminPass = newPass;
-          
-          document.getElementById('cfg-new-user').value = "";
-          document.getElementById('cfg-new-pass').value = "";
-          alert(result.message);
-          closeConfigModal();
-        } else {
-          alert("儲存失敗：" + result.message);
-        }
-      } catch (err) {
-        alert("發生錯誤：" + err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "儲存所有設定";
-      }
-    }
-
-    // 提交報修單
-    async function handleFormSubmit(e) {
-      e.preventDefault();
-
-      const sheetUrl = localStorage.getItem('repair_sheet_url');
-      if (!sheetUrl) {
-        alert("系統尚未綁定試算表，請點右上角【後台管理設置】進行設定。");
-        openConfigModal();
-        return;
-      }
-
-      const deptVal = document.getElementById('teacher-dept').value;
-      const subVal = document.getElementById('teacher-sub').value;
-      const teacherVal = document.getElementById('teacher-name').value;
-      const locationVal = document.getElementById('location-custom').value.trim();
-
-      if (!deptVal || !subVal || !teacherVal) {
-        alert("請選擇完整的「處室/學年」與「組別/班級」！");
-        return;
-      }
-
-      if (!locationVal) {
-        alert("請填寫或選取「故障發生地點」！");
-        return;
-      }
-
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>派單傳輸中...</span>`;
-
-      const category = document.getElementById('category').value;
-      const payload = {
-        action: "submitTicket",
-        sheetUrl: sheetUrl,
-        data: {
-          reporterName: teacherVal,
-          department: deptVal + " " + subVal,
-          phone: document.getElementById('phone').value,
-          location: locationVal, // 自由輸入或快捷選取的完整地點
-          categoryName: document.getElementById('category').options[document.getElementById('category').selectedIndex].text,
-          dispatchTarget: dispatchRules[category] ? dispatchRules[category].name : "總務處",
-          description: document.getElementById('description').value,
-          photoBase64: base64Photo,
-          isUrgent: document.getElementById('emergency').checked
-        }
-      };
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
-
-        if (result.success) {
-          document.getElementById('ticket-id').textContent = result.ticketId;
-          document.getElementById('modal-summary').innerHTML = `
-            <div>填報人：${payload.data.reporterName}（${payload.data.department}）</div>
-            <div>地點：${payload.data.location}</div>
-            <div>指派：${payload.data.dispatchTarget}</div>
-            <div>通報：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
-          `;
-          document.getElementById('success-modal').classList.remove('hidden');
-        } else {
-          alert("報修單送出失敗：" + result.message);
-        }
-      } catch (err) {
-        alert("連線失敗：" + err);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>30 秒快速送出報修單</span>`;
-      }
-    }
-
-    function closeSuccessModal() {
-      document.getElementById('success-modal').classList.add('hidden');
-      document.getElementById('repair-form').reset();
-      removePhoto({ stopPropagation: () => {} });
-      updateDispatchBadge();
-      toggleEmergency({ target: { checked: false } });
-
-      // 保留教職員記憶
-      const lastDept = localStorage.getItem('last_teacher_dept');
-      const lastSub = localStorage.getItem('last_teacher_sub');
-      if (lastDept) {
-        document.getElementById('teacher-dept').value = lastDept;
-        onDeptChange(lastSub);
-      }
-    }
-  </script>
-</body>
-</html>
+        bo
