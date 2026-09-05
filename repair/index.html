@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校園維護報修系統 - 教職員高效率通道</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .transition-all-ease { transition: all 0.25s ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16 antialiased">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-600 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-screwdriver-wrench text-base"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-800 text-base leading-tight">校園維護報修系統</h1>
+          <p class="text-xs text-slate-400">教職員高效率通道 • 免審核直派</p>
+        </div>
+      </div>
+      <button onclick="openConfigModal()" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1.5 cursor-pointer">
+        <i class="fa-solid fa-lock text-slate-500"></i>
+        <span>後台管理設置</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 mt-6">
+
+    <!-- 狀態橫幅 -->
+    <div id="status-banner" class="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-5 text-xs text-blue-900 flex items-center justify-between">
+      <div class="flex items-center space-x-2 truncate">
+        <i class="fa-solid fa-table text-blue-600 text-sm"></i>
+        <span class="font-semibold">目前儲存於：</span>
+        <span id="current-sheet-label" class="truncate font-mono underline">未設定試算表</span>
+      </div>
+      <button onclick="openConfigModal()" class="text-xs text-blue-600 hover:text-blue-800 font-bold shrink-0 ml-2 cursor-pointer">設定</button>
+    </div>
+
+    <!-- 填報人卡片 -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mb-6 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 text-lg">
+          <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="user-name" class="font-bold text-slate-800 text-sm">陳小華 老師</span>
+            <span class="bg-emerald-50 text-emerald-700 text-[11px] px-2 py-0.5 rounded border border-emerald-200">免審核直接派單</span>
+          </div>
+          <p id="user-dept" class="text-xs text-slate-500">二年三班導師 / 教務處</p>
+        </div>
+      </div>
+      <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">OpenID 認證</span>
+    </div>
+
+    <!-- 報修表單 -->
+    <form id="repair-form" class="space-y-6" onsubmit="handleFormSubmit(event)">
+
+      <!-- 聯絡電話/分機 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+        <label class="block text-xs font-semibold text-slate-600" for="phone">
+          填報人聯絡電話 / 校內分機 <span class="text-rose-500">*</span>
+        </label>
+        <input 
+          type="text" 
+          id="phone" 
+          required 
+          value="分機 203" 
+          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+          placeholder="例如：分機 203 或 0912-345678"
+        >
+      </div>
+
+      <!-- 地點選單 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <i class="fa-solid fa-location-dot text-blue-600"></i>
+          <h2 class="font-bold text-slate-800 text-sm">故障發生地點 <span class="text-rose-500">*</span></h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">1. 校園區域</label>
+            <select id="location-area" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" onchange="updateBuildings()" required>
+              <option value="">選擇區域</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">2. 大樓 / 樓層</label>
+            <select id="location-building" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" onchange="updateDetails()" disabled required>
+              <option value="">先選區域</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">3. 具體位置</label>
+            <select id="location-detail" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" disabled required>
+              <option value="">先選大樓</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 設備類別 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-tags text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">設備類別 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-xs text-slate-400">自動分流派單</span>
+        </div>
+        <select id="category" required onchange="updateDispatchBadge()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">
+          <option value="">請選擇故障類別...</option>
+          <option value="water-electric">🔹 水電類（電燈、插座、風扇、開關、水龍頭、水箱漏水）</option>
+          <option value="facility">🔹 營繕類（門窗、鎖具、磁磚、天花板、牆面漏水）</option>
+          <option value="it">🔹 資訊/視聽類（投影機、大螢幕、電腦、擴音設備）</option>
+          <option value="furniture">🔹 公物公具（辦公桌椅、課桌椅、黑板）</option>
+        </select>
+        <div id="dispatch-box" class="hidden p-3 rounded-xl border flex items-center justify-between text-xs transition-all-ease">
+          <div class="flex items-center space-x-2">
+            <i id="dispatch-icon" class="fa-solid fa-user-gear"></i>
+            <span class="font-medium text-slate-700">自動指派責任窗口：</span>
+            <span id="dispatch-name" class="font-bold"></span>
+          </div>
+          <span class="text-[11px] bg-white/90 px-2 py-0.5 rounded border border-slate-200">免審核即刻通報</span>
+        </div>
+      </div>
+
+      <!-- 狀況描述 & 拍照 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <i class="fa-solid fa-camera text-blue-600"></i>
+          <h2 class="font-bold text-slate-800 text-sm">狀況描述與拍照</h2>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="description">
+            故障描述 <span class="text-rose-500">*</span>
+          </label>
+          <textarea 
+            id="description" 
+            rows="3" 
+            required 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+            placeholder="請簡述故障狀況（例如：燈管兩端黑掉持續閃爍、喇叭鎖卡死無法開門）..."
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳）</label>
+          <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50 relative" onclick="document.getElementById('photo-input').click()">
+            <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" onchange="previewPhoto(event)">
+            <div id="upload-placeholder" class="space-y-1.5">
+              <i class="fa-solid fa-camera text-2xl text-blue-500"></i>
+              <p class="text-xs font-semibold text-slate-700">點擊拍照或選取現場相片</p>
+              <p class="text-[11px] text-slate-400">方便技工直接攜帶相符料件</p>
+            </div>
+            <div id="photo-preview-box" class="hidden relative inline-block">
+              <img id="photo-preview" src="" class="max-h-52 rounded-xl object-contain shadow-md mx-auto">
+              <button type="button" onclick="removePhoto(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 緊急通報 -->
+      <div id="emergency-card" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm transition-all-ease">
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" id="emergency" class="mt-1 w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-slate-300" onchange="toggleEmergency(event)">
+          <div>
+            <span class="font-bold text-slate-800 text-sm">標記為【危險 / 緊急安全疑慮】</span>
+            <p class="text-xs text-slate-500 mt-0.5">有漏電起火風險、天花板崩塌、大面積漏水等危及師生安全之事項。</p>
+            <div id="emergency-alert" class="hidden mt-2 text-xs font-semibold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i>系統將高亮紅色標記，並立即以最高優先級發送 Gmail 通報管理人員！
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- 送出按鈕 -->
+      <button 
+        type="submit" 
+        id="submit-btn" 
+        class="w-full py-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2 text-base cursor-pointer"
+      >
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>30 秒快速送出報修單</span>
+      </button>
+
+    </form>
+  </main>
+
+  <!-- ⚙️ 後台設定 Modal（包含登入驗證、Gmail設定、密碼變更） -->
+  <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      
+      <!-- 標題列 -->
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-shield-halved text-blue-600"></i>
+          <h3 class="font-bold text-slate-800 text-base">後台系統管理</h3>
+        </div>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- 視圖 1：管理員登入介面 -->
+      <div id="view-login" class="space-y-4">
+        <p class="text-xs text-slate-500">為了維護系統設定安全，請先驗證管理員身分。（全新試算表預設帳密：<code class="bg-slate-100 px-1 py-0.5 rounded font-mono">admin</code> / <code class="bg-slate-100 px-1 py-0.5 rounded font-mono">admin123</code>）</p>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
+          <input type="text" id="login-user" value="admin" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">管理者密碼</label>
+          <input type="password" id="login-pass" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="請輸入密碼">
+        </div>
+
+        <button onclick="handleAdminLogin()" id="btn-login" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">
+          登入管理後台
+        </button>
+      </div>
+
+      <!-- 視圖 2：管理功能主面板 (登入後顯示) -->
+      <div id="view-dashboard" class="space-y-5 hidden text-xs">
+        
+        <!-- 管理者通知 Gmail 設置 -->
+        <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
+          <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
+            <i class="fa-solid fa-envelope"></i>
+            <span>1. 管理者通知 Gmail 設置</span>
+          </div>
+          <p class="text-[11px] text-amber-700">當有任何老師提交報修（或勾選緊急安全事故）時，系統將自動以此信箱發送通知信。</p>
+          <input 
+            type="email" 
+            id="cfg-admin-email" 
+            placeholder="例如：general_affairs@school.edu.tw (多筆可用逗號隔開)" 
+            class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs"
+          >
+        </div>
+
+        <!-- 試算表串接與初始化 -->
+        <div class="space-y-3 border-t pt-3">
+          <div class="font-bold text-slate-800 flex items-center space-x-1">
+            <i class="fa-solid fa-table-cells text-blue-600"></i>
+            <span>2. 試算表設定與初始化</span>
+          </div>
+          <div>
+            <label class="block text-slate-600 mb-1">目標 Google 試算表網址：</label>
+            <input type="text" id="cfg-sheet-url" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+          </div>
+          <button 
+            type="button" 
+            id="init-sheet-btn" 
+            onclick="initRemoteSheet()" 
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center space-x-2 transition cursor-pointer"
+          >
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>一鍵自動初始化試算表（自動建立欄位）</span>
+          </button>
+        </div>
+
+        <!-- 修改管理者帳號與密碼 -->
+        <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
+          <div class="font-bold text-slate-800 flex items-center space-x-1">
+            <i class="fa-solid fa-key text-slate-600"></i>
+            <span>3. 修改管理者帳號與密碼</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-500 mb-1">新管理者帳號</label>
+              <input type="text" id="cfg-new-user" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="不修改請留空">
+            </div>
+            <div>
+              <label class="block text-slate-500 mb-1">新管理者密碼</label>
+              <input type="password" id="cfg-new-pass" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="不修改請留空">
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">💡 提示：若忘記密碼，試算表擁有者可直接打開試算表的「系統設定」分頁查看或修改，不需擔心被鎖死。</p>
+        </div>
+
+        <!-- 儲存變更按鈕 -->
+        <div class="flex justify-between items-center pt-2 border-t">
+          <button onclick="handleAdminLogout()" class="text-rose-600 hover:underline text-xs">登出後台</button>
+          <button onclick="saveAllAdminSettings()" id="btn-save-settings" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md">
+            儲存所有設定
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 成功送出彈窗 -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">報修單已成功派發！</h3>
+        <p class="text-xs text-slate-500 mt-1">工單編號：<span id="ticket-id" class="font-mono font-bold text-slate-700"></span></p>
+      </div>
+      <div id="modal-summary" class="bg-slate-50 rounded-xl p-3 text-left text-xs space-y-1 border border-slate-100 font-medium text-slate-600"></div>
+      <button onclick="closeSuccessModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">完成</button>
+    </div>
+  </div>
+
+  <!-- JavaScript 邏輯 -->
+  <script>
+    // 獨立外掛 GAS Web App 網址 (請填入您部署的 URL)
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
+
+    // 地點資料
+    const locationData = {
+      "教學區": {
+        "和平樓 1 樓": ["101 班教室", "102 班教室", "一年級洗手間"],
+        "和平樓 2 樓": ["201 班教室", "202 班教室", "二年級洗手間"],
+        "和平樓 3 樓": ["301 班教室", "302 班教室", "三年級洗手間"],
+        "忠孝樓 1 樓": ["401 班教室", "402 班教室", "四年級洗手間"]
+      },
+      "行政區": {
+        "行政大樓 1 樓": ["教務處", "總務處", "健康中心", "穿堂玄關"],
+        "行政大樓 2 樓": ["校長室", "輔導室", "教師大辦公室"]
+      },
+      "專科教室": {
+        "專科大樓 1 樓": ["自然實驗室(一)", "自然器材室"],
+        "專科大樓 2 樓": ["音樂教室(一)", "電腦教室 A"]
+      },
+      "公共區域": {
+        "戶外運動場": ["操場跑道", "司令台", "籃球場", "兒童遊樂區"]
+      }
+    };
+
+    const dispatchRules = {
+      "water-electric": { name: "水電工友 (陳師傅 / 分機 215)", style: "bg-cyan-50 border-cyan-200 text-cyan-800", icon: "fa-faucet-drip" },
+      "facility": { name: "事務組長 (黃組長 / 分機 210)", style: "bg-amber-50 border-amber-200 text-amber-800", icon: "fa-hammer" },
+      "it": { name: "資訊組長 (林組長 / 分機 216)", style: "bg-indigo-50 border-indigo-200 text-indigo-800", icon: "fa-desktop" },
+      "furniture": { name: "公物庫房 (分機 212)", style: "bg-emerald-50 border-emerald-200 text-emerald-800", icon: "fa-chair" }
+    };
+
+    let base64Photo = "";
+    let currentAdminUser = "";
+    let currentAdminPass = "";
+
+    window.onload = function() {
+      // 1. 初始化地點選單
+      const areaSelect = document.getElementById('location-area');
+      for (let area in locationData) {
+        let opt = document.createElement('option');
+        opt.value = area;
+        opt.textContent = area;
+        areaSelect.appendChild(opt);
+      }
+
+      // 2. 支援以 URL 參數 ?sheet=... 帶入
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramSheet = urlParams.get('sheet');
+      if (paramSheet) {
+        localStorage.setItem('repair_sheet_url', decodeURIComponent(paramSheet));
+      }
+
+      updateSheetBanner();
+    };
+
+    function updateSheetBanner() {
+      const savedSheet = localStorage.getItem('repair_sheet_url') || "";
+      const label = document.getElementById('current-sheet-label');
+      document.getElementById('cfg-sheet-url').value = savedSheet;
+
+      if (savedSheet) {
+        label.textContent = savedSheet;
+        label.parentElement.parentElement.className = "bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-5 text-xs text-blue-900 flex items-center justify-between";
+      } else {
+        label.textContent = "未設定！請點此設定 Google 試算表網址以開始使用";
+        label.parentElement.parentElement.className = "bg-rose-50 border border-rose-200 rounded-2xl p-3.5 mb-5 text-xs text-rose-900 flex items-center justify-between";
+      }
+    }
+
+    // 地點連動下拉選單
+    function updateBuildings() {
+      const area = document.getElementById('location-area').value;
+      const bldgSelect = document.getElementById('location-building');
+      const detailSelect = document.getElementById('location-detail');
+
+      bldgSelect.innerHTML = '<option value="">選擇大樓/樓層</option>';
+      detailSelect.innerHTML = '<option value="">先選大樓</option>';
+      detailSelect.disabled = true;
+
+      if (!area) { bldgSelect.disabled = true; return; }
+      bldgSelect.disabled = false;
+
+      for (let bldg in locationData[area]) {
+        let opt = document.createElement('option');
+        opt.value = bldg;
+        opt.textContent = bldg;
+        bldgSelect.appendChild(opt);
+      }
+    }
+
+    function updateDetails() {
+      const area = document.getElementById('location-area').value;
+      const bldg = document.getElementById('location-building').value;
+      const detailSelect = document.getElementById('location-detail');
+
+      detailSelect.innerHTML = '<option value="">選擇具體位置</option>';
+      if (!bldg) { detailSelect.disabled = true; return; }
+      detailSelect.disabled = false;
+
+      locationData[area][bldg].forEach(d => {
+        let opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        detailSelect.appendChild(opt);
+      });
+    }
+
+    function updateDispatchBadge() {
+      const cat = document.getElementById('category').value;
+      const box = document.getElementById('dispatch-box');
+      const name = document.getElementById('dispatch-name');
+      const icon = document.getElementById('dispatch-icon');
+
+      if (!cat || !dispatchRules[cat]) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      const r = dispatchRules[cat];
+      box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${r.style}`;
+      name.textContent = r.name;
+      icon.className = `fa-solid ${r.icon} mr-1`;
+      box.classList.remove('hidden');
+    }
+
+    function previewPhoto(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          base64Photo = e.target.result;
+          document.getElementById('photo-preview').src = base64Photo;
+          document.getElementById('upload-placeholder').classList.add('hidden');
+          document.getElementById('photo-preview-box').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removePhoto(e) {
+      e.stopPropagation();
+      base64Photo = "";
+      document.getElementById('photo-input').value = "";
+      document.getElementById('photo-preview').src = "";
+      document.getElementById('photo-preview-box').classList.add('hidden');
+      document.getElementById('upload-placeholder').classList.remove('hidden');
+    }
+
+    function toggleEmergency(e) {
+      const isChecked = e.target.checked;
+      const card = document.getElementById('emergency-card');
+      const alertTip = document.getElementById('emergency-alert');
+      if (isChecked) {
+        card.classList.add('border-rose-300', 'bg-rose-50/50');
+        alertTip.classList.remove('hidden');
+      } else {
+        card.classList.remove('border-rose-300', 'bg-rose-50/50');
+        alertTip.classList.add('hidden');
+      }
+    }
+
+    // Modal 與管理後台開關
+    function openConfigModal() {
+      document.getElementById('config-modal').classList.remove('hidden');
+    }
+    function closeConfigModal() {
+      document.getElementById('config-modal').classList.add('hidden');
+    }
+
+    // 登入邏輯
+    async function handleAdminLogin() {
+      const sheetUrl = localStorage.getItem('repair_sheet_url') || document.getElementById('cfg-sheet-url').value.trim();
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value.trim();
+      const btn = document.getElementById('btn-login');
+
+      if (!sheetUrl) {
+        alert("請先在下方輸入目標 Google 試算表網址！");
+        return;
+      }
+      if (!pass) {
+        alert("請輸入密碼！");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "驗證中...";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "adminLogin",
+            sheetUrl: sheetUrl,
+            username: user,
+            password: pass
+          })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          currentAdminUser = user;
+          currentAdminPass = pass;
+          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
+          document.getElementById('view-login').classList.add('hidden');
+          document.getElementById('view-dashboard').classList.remove('hidden');
+        } else {
+          alert("登入失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("連線驗證失敗：" + err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "登入管理後台";
+      }
+    }
+
+    function handleAdminLogout() {
+      currentAdminUser = "";
+      currentAdminPass = "";
+      document.getElementById('login-pass').value = "";
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-login').classList.remove('hidden');
+    }
+
+    // 儲存管理者各項設定（Gmail、新帳號、新密碼、試算表網址）
+    async function saveAllAdminSettings() {
+      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const adminEmail = document.getElementById('cfg-admin-email').value.trim();
+      const newUser = document.getElementById('cfg-new-user').value.trim();
+      const newPass = document.getElementById('cfg-new-pass').value.trim();
+      const btn = document.getElementById('btn-save-settings');
+
+      if (!sheetUrl) {
+        alert("試算表網址不可為空！");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "儲存中...";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "updateAdminSettings",
+            sheetUrl: sheetUrl,
+            currentUsername: currentAdminUser,
+            currentPassword: currentAdminPass,
+            newUsername: newUser || currentAdminUser,
+            newPassword: newPass || currentAdminPass,
+            adminEmail: adminEmail
+          })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          updateSheetBanner();
+          if (newUser) currentAdminUser = newUser;
+          if (newPass) currentAdminPass = newPass;
+          document.getElementById('cfg-new-user').value = "";
+          document.getElementById('cfg-new-pass').value = "";
+          alert(result.message);
+          closeConfigModal();
+        } else {
+          alert("儲存失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("發生錯誤：" + err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "儲存所有設定";
+      }
+    }
+
+    // 一鍵初始化試算表
+    async function initRemoteSheet() {
+      const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const btn = document.getElementById('init-sheet-btn');
+
+      if (!sheetUrl) {
+        alert("請先輸入 Google 試算表網址！");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>正在初始化試算表...</span>`;
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "initSheet",
+            sheetUrl: sheetUrl
+          })
+        });
+        const result = await res.json();
+        alert(result.message);
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          updateSheetBanner();
+        }
+      } catch (err) {
+        alert("初始化失敗，請確認試算表權限已開啟為「知道連結的人均可編輯」！\n" + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i><span>一鍵自動初始化試算表（自動建立欄位）</span>`;
+      }
+    }
+
+    // 提交報修表單
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const sheetUrl = localStorage.getItem('repair_sheet_url');
+      if (!sheetUrl) {
+        alert("尚未設定目標試算表！請點右上角【後台管理設置】進行綁定。");
+        openConfigModal();
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>派單傳輸中...</span>`;
+
+      const category = document.getElementById('category').value;
+      const payload = {
+        action: "submitTicket",
+        sheetUrl: sheetUrl,
+        data: {
+          reporterName: document.getElementById('user-name').textContent,
+          department: document.getElementById('user-dept').textContent,
+          phone: document.getElementById('phone').value,
+          area: document.getElementById('location-area').value,
+          building: document.getElementById('location-building').value,
+          detailLocation: document.getElementById('location-detail').value,
+          categoryName: document.getElementById('category').options[document.getElementById('category').selectedIndex].text,
+          dispatchTarget: dispatchRules[category] ? dispatchRules[category].name : "總務處",
+          description: document.getElementById('description').value,
+          photoBase64: base64Photo,
+          isUrgent: document.getElementById('emergency').checked
+        }
+      };
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          document.getElementById('ticket-id').textContent = result.ticketId;
+          document.getElementById('modal-summary').innerHTML = `
+            <div>地點：${payload.data.area} / ${payload.data.building} / ${payload.data.detailLocation}</div>
+            <div>指派：${payload.data.dispatchTarget}</div>
+            <div>通報：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
+          `;
+          document.getElementById('success-modal').classList.remove('hidden');
+        } else {
+          alert("報修單送出失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("連線失敗：" + err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>30 秒快速送出報修單</span>`;
+      }
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('success-modal').classList.add('hidden');
+      document.getElementById('repair-form').reset();
+      removePhoto({ stopPropagation: () => {} });
+      updateBuildings();
+      updateDispatchBadge();
+      toggleEmergency({ target: { checked: false } });
+    }
+  </script>
+</body>
+</html>
