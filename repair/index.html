@@ -196,7 +196,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal（修復：將試算表網址輸入框移至最上方） -->
+  <!-- ⚙️ 後台設定 Modal（預設密碼已更新為 1234） -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -211,10 +211,10 @@
         </button>
       </div>
 
-      <!-- 視圖 1：登入與連線設定面板 (未登入時顯示) -->
+      <!-- 視圖 1：登入與連線設定面板 -->
       <div id="view-login" class="space-y-4">
 
-        <!-- 關鍵修正點：將試算表網址直接放在登入第一項 -->
+        <!-- 試算表網址輸入框 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">
             1. 目標 Google 試算表網址 <span class="text-rose-500">*</span>
@@ -245,7 +245,7 @@
           </button>
         </div>
 
-        <!-- 帳號密碼登入區 -->
+        <!-- 帳號密碼登入區（提示與預設值均為 1234） -->
         <div class="border-t border-slate-100 pt-3 space-y-3">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold text-slate-700">2. 管理者身分驗證</label>
@@ -258,7 +258,7 @@
           </div>
           <div>
             <label class="block text-xs text-slate-500 mb-1">管理者密碼</label>
-            <input type="password" id="login-pass" value="admin123" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="請輸入密碼">
+            <input type="password" id="login-pass" value="1234" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs" placeholder="請輸入密碼">
           </div>
         </div>
 
@@ -285,7 +285,7 @@
           >
         </div>
 
-        <!-- 試算表設定 (可在後台隨時變更) -->
+        <!-- 試算表設定 -->
         <div class="space-y-3 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-table-cells text-blue-600"></i>
@@ -345,7 +345,7 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 獨立外掛 GAS Web App 網址 (請換成您部屬的 Google Apps Script 網址)
+    // 獨立外掛 GAS Web App 網址 (請換成您部署的 Google Apps Script 網址)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
 
     // 地點資料庫
@@ -553,7 +553,7 @@
       }
     }
 
-    // 管理員登入邏輯（修復：優先讀取畫面上登入框的試算表網址）
+    // 管理員登入邏輯（預設密碼已更新為 1234）
     async function handleAdminLogin() {
       const sheetUrl = document.getElementById('login-sheet-url').value.trim() || localStorage.getItem('repair_sheet_url');
       const user = document.getElementById('login-user').value.trim();
@@ -609,6 +609,7 @@
     function handleAdminLogout() {
       currentAdminUser = "";
       currentAdminPass = "";
+      // 登出時還原為預設密碼 1234
       document.getElementById('login-pass').value = "1234";
       document.getElementById('view-dashboard').classList.add('hidden');
       document.getElementById('view-login').classList.remove('hidden');
