@@ -39,7 +39,7 @@
       <span>正在連線學校專屬報修代碼，請稍候...</span>
     </div>
 
-    <!-- 安全隱私狀態指示燈 (不再顯示試算表網址與ID，保護資料安全) -->
+    <!-- 安全隱私狀態指示燈 (不露出任何試算表網址與 ID) -->
     <div class="flex items-center justify-between text-xs px-1 mb-3 text-slate-400">
       <div id="status-indicator" class="flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -228,7 +228,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal（登入前絕對不顯示試算表網址，密碼完全不暫存） -->
+  <!-- ⚙️ 後台設定 Modal（加入防瀏覽器自動填入網址機制） -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -242,7 +242,7 @@
         </button>
       </div>
 
-      <!-- 視圖 1：純淨登入驗證介面（隱藏試算表網址，密碼不保留預設值） -->
+      <!-- 視圖 1：純淨登入驗證介面（已加入防瀏覽器誤填入網址設計） -->
       <div id="view-login" class="space-y-4">
         
         <!-- 僅在完全尚未綁定任何試算表時，才顯示初次建置提示 -->
@@ -266,9 +266,12 @@
         <div class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
+            <!-- 加上 autocomplete="off" 防止瀏覽器將舊試算表網址當帳號自動帶入 -->
             <input 
               type="text" 
               id="login-user" 
+              name="admin_user_account"
+              autocomplete="off"
               value="admin" 
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
@@ -279,6 +282,7 @@
             <input 
               type="password" 
               id="login-pass" 
+              name="admin_user_password"
               value="" 
               autocomplete="new-password"
               class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" 
@@ -296,7 +300,7 @@
         </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 (只有登入成功後，才會看到試算表網址與設定) -->
+      <!-- 視圖 2：管理功能主面板 (登入後才會顯示試算表網址與設定) -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
         
         <!-- 學校專屬短網址卡片 -->
@@ -350,7 +354,7 @@
           >
         </div>
 
-        <!-- 試算表設定 (僅在登入後台才顯示與維護) -->
+        <!-- 試算表設定 (僅登入後台才顯示與維護) -->
         <div class="space-y-2.5 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center justify-between">
             <div class="flex items-center space-x-1">
@@ -518,6 +522,19 @@
       } else {
         setFallbackTeacherOptions();
       }
+
+      // 防禦機制：即時監聽帳號欄位，一旦被瀏覽器自動填入網址，立即還原為 admin
+      const userInput = document.getElementById('login-user');
+      userInput.addEventListener('input', function() {
+        if (this.value.includes('http') || this.value.includes('docs.google')) {
+          this.value = 'admin';
+        }
+      });
+      userInput.addEventListener('change', function() {
+        if (this.value.includes('http') || this.value.includes('docs.google')) {
+          this.value = 'admin';
+        }
+      });
     };
 
     function refreshSystemStatus() {
@@ -563,20 +580,32 @@
       document.getElementById('qr-modal').classList.add('hidden');
     }
 
-    // Modal 控制（每次開啟或關閉皆徹底清空密碼欄位）
+    // Modal 控制（清空密碼與洗淨帳號欄位，徹底防止瀏覽器自動代入網址）
     function openConfigModal() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
       const firstBox = document.getElementById('first-setup-box');
 
-      // 若從未設定過試算表，才提示首次導引
       if (!savedSheet) {
         firstBox.classList.remove('hidden');
       } else {
         firstBox.classList.add('hidden');
       }
 
-      // 安全機制：密碼絕對不留值
-      document.getElementById('login-pass').value = "";
+      // 強制重設帳號與密碼，清空瀏覽器帶入的痕跡
+      const userInput = document.getElementById('login-user');
+      const passInput = document.getElementById('login-pass');
+      
+      userInput.value = "admin";
+      passInput.value = "";
+
+      // 防範瀏覽器在 Modal 彈出後延遲自動填入舊網址
+      setTimeout(() => {
+        if (userInput.value.includes('http') || userInput.value.includes('docs.google')) {
+          userInput.value = "admin";
+        }
+        passInput.value = "";
+      }, 50);
+
       document.getElementById('config-modal').classList.remove('hidden');
     }
 
@@ -588,7 +617,6 @@
     // 管理員登入邏輯
     async function handleAdminLogin() {
       let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
-      const firstSetupBox = document.getElementById('first-setup-box');
       
       // 若為初次建置，從導引框獲取試算表網址
       if (!sheetUrl) {
@@ -652,7 +680,7 @@
           document.getElementById('cfg-sheet-url').value = sheetUrl;
           document.getElementById('cfg-admin-email').value = result.adminEmail || "";
           
-          // 清空登入密碼框，避免記憶
+          // 登入成功後再次徹底清空登入密碼框
           document.getElementById('login-pass').value = "";
           
           document.getElementById('view-login').classList.add('hidden');
@@ -674,7 +702,7 @@
     function handleAdminLogout() {
       currentAdminUser = "";
       currentAdminPass = "";
-      // 登出時徹底清空密碼
+      document.getElementById('login-user').value = "admin";
       document.getElementById('login-pass').value = "";
       document.getElementById('cfg-new-pass').value = "";
       document.getElementById('view-dashboard').classList.add('hidden');
