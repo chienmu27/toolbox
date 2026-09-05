@@ -39,7 +39,7 @@
       <span>正在連線學校專屬報修代碼，請稍候...</span>
     </div>
 
-    <!-- 安全隱私狀態指示燈 (不露出任何試算表網址與 ID) -->
+    <!-- 安全隱私狀態指示燈 -->
     <div class="flex items-center justify-between text-xs px-1 mb-3 text-slate-400">
       <div id="status-indicator" class="flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -183,7 +183,7 @@
           ></textarea>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳）</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳，存入後台指定資料夾）</label>
           <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50 relative" onclick="document.getElementById('photo-input').click()">
             <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" onchange="previewPhoto(event)">
             <div id="upload-placeholder" class="space-y-1.5">
@@ -228,7 +228,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal（加入防瀏覽器自動填入網址機制） -->
+  <!-- ⚙️ 後台設定 Modal（登入後可設定照片資料夾與查看短網址） -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -242,31 +242,41 @@
         </button>
       </div>
 
-      <!-- 視圖 1：純淨登入驗證介面（已加入防瀏覽器誤填入網址設計） -->
+      <!-- 視圖 1：純淨登入驗證介面 -->
       <div id="view-login" class="space-y-4">
         
         <!-- 僅在完全尚未綁定任何試算表時，才顯示初次建置提示 -->
-        <div id="first-setup-box" class="hidden p-3.5 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+        <div id="first-setup-box" class="hidden p-3.5 bg-amber-50 rounded-2xl border border-amber-200 space-y-2.5">
           <div class="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
             <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
             <span>首次系統建置導引</span>
           </div>
           <p class="text-[11px] text-amber-700 leading-relaxed">
-            系統尚未綁定試算表。請先在下方貼上空白試算表網址，並輸入預設密碼 (1234) 完成初始化：
+            系統尚未綁定試算表。請輸入目標試算表與照片存放資料夾網址，系統將自動設定為「知道連結的人均可編輯」：
           </p>
-          <input 
-            type="text" 
-            id="initial-sheet-url" 
-            class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
-            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
-          >
-          <p class="text-[10px] text-rose-500 font-medium">⚠️ 試算表請在右上角設定為「知道連結的人均可編輯」。</p>
+          <div>
+            <label class="block text-[11px] font-bold text-amber-900 mb-0.5">Google 試算表網址 <span class="text-rose-500">*</span></label>
+            <input 
+              type="text" 
+              id="initial-sheet-url" 
+              class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
+              placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+            >
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-amber-900 mb-0.5">照片存檔 Google Drive 資料夾網址 (建議填寫)</label>
+            <input 
+              type="text" 
+              id="initial-folder-url" 
+              class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs" 
+              placeholder="https://drive.google.com/drive/folders/..."
+            >
+          </div>
         </div>
 
         <div class="space-y-3">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
-            <!-- 加上 autocomplete="off" 防止瀏覽器將舊試算表網址當帳號自動帶入 -->
             <input 
               type="text" 
               id="login-user" 
@@ -278,7 +288,6 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">管理者密碼</label>
-            <!-- 徹底清空密碼預設值，防他人竄改 -->
             <input 
               type="password" 
               id="login-pass" 
@@ -300,7 +309,7 @@
         </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 (登入後才會顯示試算表網址與設定) -->
+      <!-- 視圖 2：管理功能主面板 (登入後顯示) -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
         
         <!-- 學校專屬短網址卡片 -->
@@ -339,7 +348,7 @@
           </div>
         </div>
 
-        <!-- 管理者通知 Gmail 設置 -->
+        <!-- 1. 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -354,7 +363,7 @@
           >
         </div>
 
-        <!-- 試算表設定 (僅登入後台才顯示與維護) -->
+        <!-- 2. 試算表設定 -->
         <div class="space-y-2.5 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center justify-between">
             <div class="flex items-center space-x-1">
@@ -368,7 +377,7 @@
               class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <i class="fa-solid fa-rotate"></i>
-              <span>重新初始化欄位</span>
+              <span>一鍵重新初始化（同步設為可編輯）</span>
             </button>
           </div>
           <input 
@@ -379,11 +388,26 @@
           >
         </div>
 
-        <!-- 修改管理者帳號與密碼 -->
+        <!-- 3. 新增：照片存放 Google Drive 資料夾設定 -->
+        <div class="space-y-2 border-t pt-3">
+          <div class="font-bold text-slate-800 flex items-center space-x-1">
+            <i class="fa-solid fa-folder-open text-amber-600"></i>
+            <span>3. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
+          </div>
+          <p class="text-[11px] text-slate-500">照片將直接存入此指定資料夾，不再堆積在雲端硬碟根目錄。初始化將同步開放為「知道連結的人均可編輯」。</p>
+          <input 
+            type="text" 
+            id="cfg-folder-url" 
+            class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" 
+            placeholder="https://drive.google.com/drive/folders/..."
+          >
+        </div>
+
+        <!-- 4. 修改管理者帳號與密碼 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
-            <span>3. 修改管理者帳號與密碼</span>
+            <span>4. 修改管理者帳號與密碼</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
@@ -523,7 +547,7 @@
         setFallbackTeacherOptions();
       }
 
-      // 防禦機制：即時監聽帳號欄位，一旦被瀏覽器自動填入網址，立即還原為 admin
+      // 4. 防網址誤填入監聽
       const userInput = document.getElementById('login-user');
       userInput.addEventListener('input', function() {
         if (this.value.includes('http') || this.value.includes('docs.google')) {
@@ -580,7 +604,7 @@
       document.getElementById('qr-modal').classList.add('hidden');
     }
 
-    // Modal 控制（清空密碼與洗淨帳號欄位，徹底防止瀏覽器自動代入網址）
+    // 開啟設定視窗
     function openConfigModal() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
       const firstBox = document.getElementById('first-setup-box');
@@ -591,14 +615,12 @@
         firstBox.classList.add('hidden');
       }
 
-      // 強制重設帳號與密碼，清空瀏覽器帶入的痕跡
       const userInput = document.getElementById('login-user');
       const passInput = document.getElementById('login-pass');
       
       userInput.value = "admin";
       passInput.value = "";
 
-      // 防範瀏覽器在 Modal 彈出後延遲自動填入舊網址
       setTimeout(() => {
         if (userInput.value.includes('http') || userInput.value.includes('docs.google')) {
           userInput.value = "admin";
@@ -614,13 +636,14 @@
       document.getElementById('config-modal').classList.add('hidden');
     }
 
-    // 管理員登入邏輯
+    // 管理員登入邏輯（初次建置時支援資料夾網址同步授權）
     async function handleAdminLogin() {
       let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
+      let folderUrl = "";
       
-      // 若為初次建置，從導引框獲取試算表網址
       if (!sheetUrl) {
         sheetUrl = document.getElementById('initial-sheet-url').value.trim();
+        folderUrl = document.getElementById('initial-folder-url').value.trim();
         if (!sheetUrl) {
           alert("首次使用請先輸入欲綁定的 Google 試算表網址！");
           return;
@@ -640,12 +663,16 @@
       btn.textContent = "驗證身分中...";
 
       try {
-        // 如果是全新試算表尚未初始化過，先呼叫 initSheet
+        // 如果是全新試算表尚未初始化過，先呼叫 initSheet 同步設定權限
         if (!localStorage.getItem('repair_sheet_url')) {
           const initRes = await fetch(GAS_API_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl })
+            body: JSON.stringify({ 
+              action: "initSheet", 
+              sheetUrl: sheetUrl, 
+              folderUrl: folderUrl 
+            })
           });
           const initResult = await initRes.json();
           if (!initResult.success) {
@@ -679,10 +706,9 @@
 
           document.getElementById('cfg-sheet-url').value = sheetUrl;
           document.getElementById('cfg-admin-email').value = result.adminEmail || "";
+          document.getElementById('cfg-folder-url').value = result.photoFolderUrl || "";
           
-          // 登入成功後再次徹底清空登入密碼框
           document.getElementById('login-pass').value = "";
-          
           document.getElementById('view-login').classList.add('hidden');
           document.getElementById('view-dashboard').classList.remove('hidden');
           refreshSystemStatus();
@@ -709,21 +735,26 @@
       document.getElementById('view-login').classList.remove('hidden');
     }
 
-    // 重新初始化當前試算表
+    // 重新初始化試算表與資料夾權限
     async function reInitCurrentSheet() {
       const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const folderUrl = document.getElementById('cfg-folder-url').value.trim();
       const btn = document.getElementById('btn-reinit');
 
-      if (!confirm("確定要重新初始化試算表欄位結構嗎？這不會刪除已填寫的資料。")) return;
+      if (!confirm("確定要執行初始化嗎？這會同步將試算表與照片資料夾設定為「知道連結的人均可編輯」。")) return;
 
       btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 初始化中...`;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 設定權限中...`;
 
       try {
         const res = await fetch(GAS_API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "initSheet", sheetUrl: sheetUrl })
+          body: JSON.stringify({ 
+            action: "initSheet", 
+            sheetUrl: sheetUrl, 
+            folderUrl: folderUrl 
+          })
         });
         const result = await res.json();
         alert(result.message);
@@ -736,12 +767,14 @@
         alert("初始化失敗：" + err);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>重新初始化欄位</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>一鍵重新初始化（同步設為可編輯）</span>`;
       }
     }
 
+    // 儲存所有管理設定（包含照片資料夾網址）
     async function saveAllAdminSettings() {
       const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
+      const folderUrl = document.getElementById('cfg-folder-url').value.trim();
       const adminEmail = document.getElementById('cfg-admin-email').value.trim();
       const newUser = document.getElementById('cfg-new-user').value.trim();
       const newPass = document.getElementById('cfg-new-pass').value.trim();
@@ -766,7 +799,8 @@
             currentPassword: currentAdminPass,
             newUsername: newUser || currentAdminUser,
             newPassword: newPass || currentAdminPass,
-            adminEmail: adminEmail
+            adminEmail: adminEmail,
+            photoFolderUrl: folderUrl
           })
         });
         const result = await res.json();
