@@ -43,27 +43,54 @@
       <button onclick="openConfigModal()" class="text-xs text-blue-600 hover:text-blue-800 font-bold shrink-0 ml-2 cursor-pointer">設定</button>
     </div>
 
-    <!-- 填報人卡片 (模擬 OpenID) -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mb-6 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 text-lg">
-          <i class="fa-solid fa-user-check"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <span id="user-name" class="font-bold text-slate-800 text-sm">陳小華 老師</span>
-            <span class="bg-emerald-50 text-emerald-700 text-[11px] px-2 py-0.5 rounded border border-emerald-200">免審核直接派單</span>
-          </div>
-          <p id="user-dept" class="text-xs text-slate-500">二年三班導師 / 教務處</p>
-        </div>
-      </div>
-      <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">OpenID 認證通道</span>
-    </div>
-
     <!-- 報修表單 -->
     <form id="repair-form" class="space-y-6" onsubmit="handleFormSubmit(event)">
 
-      <!-- 聯絡電話/分機 -->
+      <!-- 區塊 1：填報教職員身分（已升級為動態下拉選單，由試算表取得） -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-chalkboard-user text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">填報教職員身分 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">免審核直接派單</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-dept">
+              1. 所屬處室 / 班級 <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              id="teacher-dept" 
+              required 
+              onchange="rememberTeacherProfile()"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
+            >
+              <option value="">載入清單中...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-name">
+              2. 填報人姓名 <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              id="teacher-name" 
+              required 
+              onchange="rememberTeacherProfile()"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
+            >
+              <option value="">載入清單中...</option>
+            </select>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400 flex items-center gap-1">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>選單資料自動同步自試算表「人員與班級名單」分頁，系統會記住您選過的姓名。</span>
+        </p>
+      </div>
+
+      <!-- 區塊 2：聯絡電話/分機 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
         <label class="block text-xs font-semibold text-slate-600" for="phone">
           填報人聯絡電話 / 校內分機 <span class="text-rose-500">*</span>
@@ -78,7 +105,7 @@
         >
       </div>
 
-      <!-- 地點選單 -->
+      <!-- 區塊 3：地點選單 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
           <i class="fa-solid fa-location-dot text-blue-600"></i>
@@ -106,7 +133,7 @@
         </div>
       </div>
 
-      <!-- 設備類別 -->
+      <!-- 區塊 4：設備類別 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center space-x-2">
@@ -132,7 +159,7 @@
         </div>
       </div>
 
-      <!-- 狀況描述 & 拍照 -->
+      <!-- 區塊 5：狀況描述 & 拍照 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
           <i class="fa-solid fa-camera text-blue-600"></i>
@@ -169,7 +196,7 @@
         </div>
       </div>
 
-      <!-- 緊急通報 -->
+      <!-- 區塊 6：緊急通報 -->
       <div id="emergency-card" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm transition-all-ease">
         <label class="flex items-start space-x-3 cursor-pointer">
           <input type="checkbox" id="emergency" class="mt-1 w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-slate-300" onchange="toggleEmergency(event)">
@@ -196,11 +223,10 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal（預設密碼已更新為 1234） -->
+  <!-- ⚙️ 後台設定 Modal -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
-      <!-- 標題列 -->
       <div class="flex items-center justify-between border-b pb-3">
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-shield-halved text-blue-600"></i>
@@ -213,8 +239,6 @@
 
       <!-- 視圖 1：登入與連線設定面板 -->
       <div id="view-login" class="space-y-4">
-
-        <!-- 試算表網址輸入框 -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">
             1. 目標 Google 試算表網址 <span class="text-rose-500">*</span>
@@ -228,11 +252,10 @@
           <p class="text-[11px] text-rose-500 mt-1 font-medium">⚠️ 試算表請在右上角共用設定為「知道連結的人均可編輯」。</p>
         </div>
 
-        <!-- 首次使用一鍵初始化區塊 -->
         <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between gap-2">
           <div>
             <div class="text-xs font-bold text-emerald-800">首次使用全新試算表？</div>
-            <p class="text-[11px] text-emerald-600">貼上網址後點此，自動建立工單與設定分頁</p>
+            <p class="text-[11px] text-emerald-600">點此自動建立工單、名冊與設定分頁</p>
           </div>
           <button 
             type="button" 
@@ -245,7 +268,6 @@
           </button>
         </div>
 
-        <!-- 帳號密碼登入區（提示與預設值均為 1234） -->
         <div class="border-t border-slate-100 pt-3 space-y-3">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold text-slate-700">2. 管理者身分驗證</label>
@@ -267,10 +289,8 @@
         </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 (登入成功後顯示) -->
+      <!-- 視圖 2：管理功能主面板 -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
-        
-        <!-- 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -285,7 +305,6 @@
           >
         </div>
 
-        <!-- 試算表設定 -->
         <div class="space-y-3 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-table-cells text-blue-600"></i>
@@ -296,7 +315,6 @@
           </div>
         </div>
 
-        <!-- 修改管理者帳號與密碼 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
@@ -315,14 +333,12 @@
           <p class="text-[11px] text-slate-400">💡 提示：若忘記密碼，試算表擁有者可隨時打開該試算表「系統設定」分頁查看或修改。</p>
         </div>
 
-        <!-- 儲存變更按鈕 -->
         <div class="flex justify-between items-center pt-2 border-t">
           <button onclick="handleAdminLogout()" class="text-rose-600 hover:underline text-xs cursor-pointer">登出後台</button>
           <button onclick="saveAllAdminSettings()" id="btn-save-settings" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md">
             儲存所有設定
           </button>
         </div>
-
       </div>
 
     </div>
@@ -345,7 +361,7 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 獨立外掛 GAS Web App 網址 (請換成您部署的 Google Apps Script 網址)
+    // 獨立外掛 GAS Web App 網址 (請填入您部署的 URL)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
 
     // 地點資料庫
@@ -381,7 +397,7 @@
     let currentAdminPass = "";
 
     window.onload = function() {
-      // 初始化地點選單
+      // 1. 初始化地點選單
       const areaSelect = document.getElementById('location-area');
       for (let area in locationData) {
         let opt = document.createElement('option');
@@ -390,7 +406,7 @@
         areaSelect.appendChild(opt);
       }
 
-      // 支援以 URL 參數 ?sheet=... 帶入試算表網址
+      // 2. 支援以 URL 參數 ?sheet=... 帶入試算表網址
       const urlParams = new URLSearchParams(window.location.search);
       const paramSheet = urlParams.get('sheet');
       if (paramSheet) {
@@ -398,6 +414,14 @@
       }
 
       updateSheetBanner();
+
+      // 3. 從試算表動態載入處室與教師名單
+      const currentSheet = localStorage.getItem('repair_sheet_url');
+      if (currentSheet) {
+        loadTeacherOptions(currentSheet);
+      } else {
+        setFallbackTeacherOptions();
+      }
     };
 
     function updateSheetBanner() {
@@ -415,7 +439,77 @@
       }
     }
 
-    // 地點下拉選單連動
+    // 動態載入處室與教師名單
+    async function loadTeacherOptions(sheetUrl) {
+      const deptSelect = document.getElementById('teacher-dept');
+      const nameSelect = document.getElementById('teacher-name');
+
+      deptSelect.innerHTML = '<option value="">載入中...</option>';
+      nameSelect.innerHTML = '<option value="">載入中...</option>';
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "getTeacherData",
+            sheetUrl: sheetUrl
+          })
+        });
+        const result = await res.json();
+
+        if (result.success && result.departments && result.teachers) {
+          renderTeacherOptions(result.departments, result.teachers);
+        } else {
+          setFallbackTeacherOptions();
+        }
+      } catch (err) {
+        console.warn("載入名單失敗，使用預設名單:", err);
+        setFallbackTeacherOptions();
+      }
+    }
+
+    function renderTeacherOptions(depts, teachers) {
+      const deptSelect = document.getElementById('teacher-dept');
+      const nameSelect = document.getElementById('teacher-name');
+
+      deptSelect.innerHTML = '<option value="">請選擇處室或班級</option>';
+      depts.forEach(d => {
+        let opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        deptSelect.appendChild(opt);
+      });
+
+      nameSelect.innerHTML = '<option value="">請選擇教師姓名</option>';
+      teachers.forEach(t => {
+        let opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        nameSelect.appendChild(opt);
+      });
+
+      // 自動還原上次使用者選擇
+      const lastDept = localStorage.getItem('last_teacher_dept');
+      const lastName = localStorage.getItem('last_teacher_name');
+      if (lastDept && depts.includes(lastDept)) deptSelect.value = lastDept;
+      if (lastName && teachers.includes(lastName)) nameSelect.value = lastName;
+    }
+
+    function setFallbackTeacherOptions() {
+      const defaultDepts = ["一年一班", "二年一班", "二年三班", "三年一班", "教務處", "總務處", "學務處", "輔導室"];
+      const defaultTeachers = ["陳小華 老師", "王大明 老師", "李美麗 老師", "張志豪 老師"];
+      renderTeacherOptions(defaultDepts, defaultTeachers);
+    }
+
+    function rememberTeacherProfile() {
+      const dept = document.getElementById('teacher-dept').value;
+      const name = document.getElementById('teacher-name').value;
+      if (dept) localStorage.setItem('last_teacher_dept', dept);
+      if (name) localStorage.setItem('last_teacher_name', name);
+    }
+
+    // 地點連動選單
     function updateBuildings() {
       const area = document.getElementById('location-area').value;
       const bldgSelect = document.getElementById('location-building');
@@ -507,7 +601,6 @@
       }
     }
 
-    // Modal 開關
     function openConfigModal() {
       document.getElementById('config-modal').classList.remove('hidden');
       updateSheetBanner();
@@ -544,6 +637,7 @@
         if (result.success) {
           localStorage.setItem('repair_sheet_url', sheetUrl);
           updateSheetBanner();
+          loadTeacherOptions(sheetUrl);
         }
       } catch (err) {
         alert("初始化失敗，請確認試算表已設為「知道連結的人均可編輯」且 GAS 網址正確！\n" + err);
@@ -553,7 +647,7 @@
       }
     }
 
-    // 管理員登入邏輯（預設密碼已更新為 1234）
+    // 管理員登入邏輯
     async function handleAdminLogin() {
       const sheetUrl = document.getElementById('login-sheet-url').value.trim() || localStorage.getItem('repair_sheet_url');
       const user = document.getElementById('login-user').value.trim();
@@ -609,13 +703,11 @@
     function handleAdminLogout() {
       currentAdminUser = "";
       currentAdminPass = "";
-      // 登出時還原為預設密碼 1234
       document.getElementById('login-pass').value = "1234";
       document.getElementById('view-dashboard').classList.add('hidden');
       document.getElementById('view-login').classList.remove('hidden');
     }
 
-    // 儲存管理者設定
     async function saveAllAdminSettings() {
       const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
       const adminEmail = document.getElementById('cfg-admin-email').value.trim();
@@ -650,6 +742,7 @@
         if (result.success) {
           localStorage.setItem('repair_sheet_url', sheetUrl);
           updateSheetBanner();
+          loadTeacherOptions(sheetUrl);
           if (newUser) currentAdminUser = newUser;
           if (newPass) currentAdminPass = newPass;
           document.getElementById('cfg-new-user').value = "";
@@ -667,7 +760,7 @@
       }
     }
 
-    // 送出報修單
+    // 送出報修單（讀取下拉選單的值）
     async function handleFormSubmit(e) {
       e.preventDefault();
 
@@ -675,6 +768,14 @@
       if (!sheetUrl) {
         alert("尚未設定目標試算表！請點右上角【後台管理設置】進行綁定。");
         openConfigModal();
+        return;
+      }
+
+      const deptVal = document.getElementById('teacher-dept').value;
+      const teacherVal = document.getElementById('teacher-name').value;
+
+      if (!deptVal || !teacherVal) {
+        alert("請選擇「所屬處室/班級」與「填報人姓名」！");
         return;
       }
 
@@ -687,8 +788,8 @@
         action: "submitTicket",
         sheetUrl: sheetUrl,
         data: {
-          reporterName: document.getElementById('user-name').textContent,
-          department: document.getElementById('user-dept').textContent,
+          reporterName: teacherVal,
+          department: deptVal,
           phone: document.getElementById('phone').value,
           area: document.getElementById('location-area').value,
           building: document.getElementById('location-building').value,
@@ -712,6 +813,7 @@
         if (result.success) {
           document.getElementById('ticket-id').textContent = result.ticketId;
           document.getElementById('modal-summary').innerHTML = `
+            <div>填報人：${payload.data.reporterName}（${payload.data.department}）</div>
             <div>地點：${payload.data.area} / ${payload.data.building} / ${payload.data.detailLocation}</div>
             <div>指派：${payload.data.dispatchTarget}</div>
             <div>通報：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
@@ -735,6 +837,12 @@
       updateBuildings();
       updateDispatchBadge();
       toggleEmergency({ target: { checked: false } });
+
+      // 還原記住的教職員身分
+      const lastDept = localStorage.getItem('last_teacher_dept');
+      const lastName = localStorage.getItem('last_teacher_name');
+      if (lastDept) document.getElementById('teacher-dept').value = lastDept;
+      if (lastName) document.getElementById('teacher-name').value = lastName;
     }
   </script>
 </body>
