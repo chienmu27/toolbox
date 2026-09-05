@@ -33,6 +33,12 @@
 
   <main class="max-w-3xl mx-auto px-4 mt-6">
 
+    <!-- 解析短代碼中的提示橫幅 -->
+    <div id="resolving-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 mb-5 text-xs text-indigo-900 flex items-center space-x-2">
+      <i class="fa-solid fa-spinner fa-spin text-indigo-600"></i>
+      <span>正在載入專屬學校報修設定，請稍候...</span>
+    </div>
+
     <!-- 狀態橫幅 -->
     <div id="status-banner" class="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 mb-5 text-xs text-blue-900 flex items-center justify-between">
       <div class="flex items-center space-x-2 truncate">
@@ -46,7 +52,7 @@
     <!-- 報修表單 -->
     <form id="repair-form" class="space-y-6" onsubmit="handleFormSubmit(event)">
 
-      <!-- 區塊 1：填報教職員身分（已升級為動態下拉選單，由試算表取得） -->
+      <!-- 區塊 1：填報教職員身分 -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center space-x-2">
@@ -86,7 +92,7 @@
         </div>
         <p class="text-[11px] text-slate-400 flex items-center gap-1">
           <i class="fa-solid fa-circle-info"></i>
-          <span>選單資料自動同步自試算表「人員與班級名單」分頁，系統會記住您選過的姓名。</span>
+          <span>選單資料自動同步自試算表「人員與班級名單」，系統會記住您選過的姓名。</span>
         </p>
       </div>
 
@@ -255,7 +261,7 @@
         <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between gap-2">
           <div>
             <div class="text-xs font-bold text-emerald-800">首次使用全新試算表？</div>
-            <p class="text-[11px] text-emerald-600">點此自動建立工單、名冊與設定分頁</p>
+            <p class="text-[11px] text-emerald-600">點此自動建立工單、名冊與專屬短網址</p>
           </div>
           <button 
             type="button" 
@@ -291,6 +297,44 @@
 
       <!-- 視圖 2：管理功能主面板 -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
+        
+        <!-- 🌟 新增：專屬免廣告短網址與 QR Code 卡片 -->
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-1.5 text-emerald-900 font-bold">
+              <i class="fa-solid fa-link text-emerald-600"></i>
+              <span>學校專屬報修短網址（無第三方廣告）</span>
+            </div>
+            <span class="text-[10px] bg-emerald-200/60 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold" id="badge-short-code">CODE</span>
+          </div>
+          <p class="text-[11px] text-emerald-700">
+            全校教職員點開此連結直接報修，無需輸入試算表網址，絕無轉址廣告！
+          </p>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              id="short-url-display" 
+              readonly 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-[11px] text-slate-700 font-bold select-all"
+            >
+            <button 
+              onclick="copyShortUrl()" 
+              class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shrink-0 transition flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-copy"></i>
+              <span>複製</span>
+            </button>
+            <button 
+              onclick="showQrCodeModal()" 
+              class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shrink-0 transition flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-qrcode"></i>
+              <span>QR Code</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -305,16 +349,16 @@
           >
         </div>
 
-        <div class="space-y-3 border-t pt-3">
+        <!-- 試算表設定 -->
+        <div class="space-y-2 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-table-cells text-blue-600"></i>
-            <span>2. 綁定之 Google 試算表網址</span>
+            <span>2. 綁定之 Google 試算表完整網址</span>
           </div>
-          <div>
-            <input type="text" id="cfg-sheet-url" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
-          </div>
+          <input type="text" id="cfg-sheet-url" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
         </div>
 
+        <!-- 修改管理者帳號與密碼 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
@@ -344,6 +388,18 @@
     </div>
   </div>
 
+  <!-- QR Code 彈窗 Modal -->
+  <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl space-y-4">
+      <h3 class="font-bold text-slate-800 text-sm">學校專屬報修 QR Code</h3>
+      <div class="p-3 bg-slate-50 border rounded-2xl inline-block shadow-inner">
+        <img id="qr-image" src="" alt="報修專屬 QR Code" class="w-48 h-48 mx-auto rounded-lg">
+      </div>
+      <p class="text-[11px] text-slate-400">可列印張貼於各辦公室或班級，老師手機掃描即可填單</p>
+      <button onclick="closeQrModal()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl">關閉</button>
+    </div>
+  </div>
+
   <!-- 成功送出彈窗 -->
   <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4">
@@ -361,7 +417,7 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 獨立外掛 GAS Web App 網址 (請填入您部署的 URL)
+    // 獨立外掛 GAS Web App 網址 (請填入您部署的 Google Apps Script URL)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
 
     // 地點資料庫
@@ -396,7 +452,7 @@
     let currentAdminUser = "";
     let currentAdminPass = "";
 
-    window.onload = function() {
+    window.onload = async function() {
       // 1. 初始化地點選單
       const areaSelect = document.getElementById('location-area');
       for (let area in locationData) {
@@ -406,16 +462,39 @@
         areaSelect.appendChild(opt);
       }
 
-      // 2. 支援以 URL 參數 ?sheet=... 帶入試算表網址
+      // 2. 核心：解析專屬免廣告短網址 (?c=代碼)
       const urlParams = new URLSearchParams(window.location.search);
+      const shortCodeParam = urlParams.get('c') || urlParams.get('code');
       const paramSheet = urlParams.get('sheet');
-      if (paramSheet) {
+
+      if (shortCodeParam) {
+        document.getElementById('resolving-banner').classList.remove('hidden');
+        try {
+          const res = await fetch(GAS_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "resolveShortCode",
+              code: shortCodeParam
+            })
+          });
+          const result = await res.json();
+          if (result.success && result.sheetUrl) {
+            localStorage.setItem('repair_sheet_url', result.sheetUrl);
+            localStorage.setItem('repair_short_code', result.shortCode);
+          }
+        } catch (err) {
+          console.warn("短網址解析失敗:", err);
+        } finally {
+          document.getElementById('resolving-banner').classList.add('hidden');
+        }
+      } else if (paramSheet) {
         localStorage.setItem('repair_sheet_url', decodeURIComponent(paramSheet));
       }
 
       updateSheetBanner();
 
-      // 3. 從試算表動態載入處室與教師名單
+      // 3. 載入處室與人員名單
       const currentSheet = localStorage.getItem('repair_sheet_url');
       if (currentSheet) {
         loadTeacherOptions(currentSheet);
@@ -424,8 +503,13 @@
       }
     };
 
+    function getCleanBaseUrl() {
+      return window.location.origin + window.location.pathname;
+    }
+
     function updateSheetBanner() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
+      const savedCode = localStorage.getItem('repair_short_code') || "";
       const label = document.getElementById('current-sheet-label');
       document.getElementById('login-sheet-url').value = savedSheet;
       document.getElementById('cfg-sheet-url').value = savedSheet;
@@ -437,9 +521,39 @@
         label.textContent = "未設定！請點此設定 Google 試算表網址以開始使用";
         label.parentElement.parentElement.className = "bg-rose-50 border border-rose-200 rounded-2xl p-3.5 mb-5 text-xs text-rose-900 flex items-center justify-between";
       }
+
+      if (savedCode) {
+        updateShortUrlDisplay(savedCode);
+      }
     }
 
-    // 動態載入處室與教師名單
+    function updateShortUrlDisplay(code) {
+      const shortUrl = getCleanBaseUrl() + "?c=" + code;
+      document.getElementById('short-url-display').value = shortUrl;
+      document.getElementById('badge-short-code').textContent = "代碼: " + code;
+    }
+
+    function copyShortUrl() {
+      const input = document.getElementById('short-url-display');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      alert("專屬短網址已複製到剪貼簿！\n" + input.value);
+    }
+
+    function showQrCodeModal() {
+      const shortUrl = document.getElementById('short-url-display').value;
+      if (!shortUrl) return;
+      // 使用純淨無廣告開源 QR API 渲染圖片
+      const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(shortUrl);
+      document.getElementById('qr-image').src = qrApi;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    // 動態載入名冊
     async function loadTeacherOptions(sheetUrl) {
       const deptSelect = document.getElementById('teacher-dept');
       const nameSelect = document.getElementById('teacher-name');
@@ -489,7 +603,6 @@
         nameSelect.appendChild(opt);
       });
 
-      // 自動還原上次使用者選擇
       const lastDept = localStorage.getItem('last_teacher_dept');
       const lastName = localStorage.getItem('last_teacher_name');
       if (lastDept && depts.includes(lastDept)) deptSelect.value = lastDept;
@@ -509,7 +622,6 @@
       if (name) localStorage.setItem('last_teacher_name', name);
     }
 
-    // 地點連動選單
     function updateBuildings() {
       const area = document.getElementById('location-area').value;
       const bldgSelect = document.getElementById('location-building');
@@ -636,6 +748,9 @@
         alert(result.message);
         if (result.success) {
           localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+          }
           updateSheetBanner();
           loadTeacherOptions(sheetUrl);
         }
@@ -655,7 +770,7 @@
       const btn = document.getElementById('btn-login');
 
       if (!sheetUrl) {
-        alert("請先在上方【1. 目標 Google 試算表網址】填入您的試算表連結！");
+        alert("請先在上方填入試算表連結！");
         document.getElementById('login-sheet-url').focus();
         return;
       }
@@ -684,13 +799,16 @@
           currentAdminUser = user;
           currentAdminPass = pass;
           localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+          }
           updateSheetBanner();
 
           document.getElementById('cfg-admin-email').value = result.adminEmail || "";
           document.getElementById('view-login').classList.add('hidden');
           document.getElementById('view-dashboard').classList.remove('hidden');
         } else {
-          alert("登入失敗：" + result.message + "\n\n若為初次使用的全新試算表，請先點擊上方綠色「一鍵初始化」按鈕！");
+          alert("登入失敗：" + result.message + "\n\n若為初次使用的全新試算表，請先點擊綠色「一鍵初始化」按鈕！");
         }
       } catch (err) {
         alert("連線失敗：" + err);
@@ -741,6 +859,9 @@
 
         if (result.success) {
           localStorage.setItem('repair_sheet_url', sheetUrl);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+          }
           updateSheetBanner();
           loadTeacherOptions(sheetUrl);
           if (newUser) currentAdminUser = newUser;
@@ -760,7 +881,7 @@
       }
     }
 
-    // 送出報修單（讀取下拉選單的值）
+    // 表單送出
     async function handleFormSubmit(e) {
       e.preventDefault();
 
@@ -838,7 +959,6 @@
       updateDispatchBadge();
       toggleEmergency({ target: { checked: false } });
 
-      // 還原記住的教職員身分
       const lastDept = localStorage.getItem('last_teacher_dept');
       const lastName = localStorage.getItem('last_teacher_name');
       if (lastDept) document.getElementById('teacher-dept').value = lastDept;
