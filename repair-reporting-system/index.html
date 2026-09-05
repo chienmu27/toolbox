@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校園維護報修系統 - 教職員高效率通道</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .transition-all-ease { transition: all 0.25s ease-in-out; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-16 antialiased">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-blue-600 text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
+          <i class="fa-solid fa-screwdriver-wrench text-base"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="header-unit-title" class="font-bold text-slate-800 text-base leading-tight">校園維護報修系統</h1>
+            <span id="badge-unit-tag" class="hidden text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold"></span>
+          </div>
+          <p class="text-xs text-slate-400">教職員高效率通道 • 免審核直派</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openSwitchUnitModal()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1 cursor-pointer">
+          <i class="fa-solid fa-school"></i>
+          <span>切換/開通學校</span>
+        </button>
+        <button type="button" onclick="openConfigModal()" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1 cursor-pointer">
+          <i class="fa-solid fa-shield-halved text-slate-500"></i>
+          <span>後台管理</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 mt-4">
+
+    <!-- 短代碼解析提示 -->
+    <div id="resolving-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4 text-xs text-indigo-900 flex items-center space-x-2">
+      <i class="fa-solid fa-spinner fa-spin text-indigo-600"></i>
+      <span>正在連線學校專屬報修代碼，請稍候...</span>
+    </div>
+
+    <!-- 尚未綁定學校時的提示卡 -->
+    <div id="no-unit-alert" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-4 mb-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+      <div class="flex items-start space-x-2.5">
+        <i class="fa-solid fa-circle-exclamation text-amber-600 text-base mt-0.5"></i>
+        <div>
+          <div class="font-bold text-sm">尚未綁定任何學校或單位</div>
+          <div class="text-amber-700 text-[11px] mt-0.5">管理者只需填入貴校的「試算表網址」，即可立即開通專屬報修短網址！</div>
+        </div>
+      </div>
+      <button type="button" onclick="openSwitchUnitModal(true)" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shrink-0 shadow-sm transition cursor-pointer">
+        立即開通貴校通道
+      </button>
+    </div>
+
+    <!-- 安全隱私狀態指示燈 -->
+    <div class="flex items-center justify-between text-xs px-1 mb-3 text-slate-400">
+      <div id="status-indicator" class="flex items-center gap-1.5">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="status-text" class="font-medium text-slate-600">系統服務正常運作中</span>
+      </div>
+      <span class="text-[11px] text-slate-400">總務處資訊流直接派工</span>
+    </div>
+
+    <!-- 報修表單 -->
+    <form id="repair-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
+
+      <!-- 區塊 1：填報老師姓名（小校極簡手打模式，移除處室/組別/分機） -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-user-pen text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">填報老師姓名 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-medium">小校極簡模式 • 免審核直派</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5" for="teacher-name">
+            請輸入填報人姓名 / 稱謂 <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="teacher-name" 
+            required 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease font-medium text-slate-800"
+            placeholder="例如：陳小華 老師、王主任..."
+          >
+          <p class="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>系統會自動記住您輸入過的姓名，下次報修免重複輸入。</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 區塊 2：故障發生地點 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-location-dot text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">故障發生地點 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-xs text-slate-400">可快捷選取或自由自填</span>
+        </div>
+
+        <div class="space-y-2.5">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">快捷常用地點選單（點選自動帶入下方輸入框）：</label>
+            <select 
+              id="location-preset" 
+              onchange="onLocationPresetChange()"
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">▼ 點此快速選擇常用地點...</option>
+              <optgroup label="各處室與辦公區">
+                <option value="辦公室/教務區">辦公室/教務區</option>
+                <option value="總務處/主計室">總務處/主計室</option>
+                <option value="校長室">校長室</option>
+                <option value="健康中心/保健室">健康中心/保健室</option>
+                <option value="教師休息室/會議室">教師休息室/會議室</option>
+              </optgroup>
+              <optgroup label="教學大樓（班級教室）">
+                <option value="一年級教室">一年級教室</option>
+                <option value="二年級教室">二年級教室</option>
+                <option value="三年級教室">三年級教室</option>
+                <option value="四年級教室">四年級教室</option>
+                <option value="五年級教室">五年級教室</option>
+                <option value="六年級教室">六年級教室</option>
+                <option value="幼兒園教室">幼兒園教室</option>
+              </optgroup>
+              <optgroup label="專科教室與活動場館">
+                <option value="自然實驗室/創客教室">自然實驗室/創客教室</option>
+                <option value="音樂/美勞專科教室">音樂/美勞專科教室</option>
+                <option value="電腦教室">電腦教室</option>
+                <option value="活動中心/體育館">活動中心/體育館</option>
+                <option value="圖書館/閱讀室">圖書館/閱讀室</option>
+              </optgroup>
+              <optgroup label="戶外與公共場域">
+                <option value="操場跑道及球場">操場跑道及球場</option>
+                <option value="司令台周邊">司令台周邊</option>
+                <option value="兒童遊戲器材區">兒童遊戲器材區</option>
+                <option value="走廊洗手台/師生廁所">走廊洗手台/師生廁所</option>
+                <option value="校門口中庭穿堂">校門口中庭穿堂</option>
+                <option value="校園廚房/午餐供應區">校園廚房/午餐供應區</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1" for="location-custom">
+              具體報修地點 <span class="text-rose-500">*</span> <span class="text-slate-400 font-normal">（可自由修改或直接打字輸入）</span>
+            </label>
+            <input 
+              type="text" 
+              id="location-custom" 
+              required
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease font-medium text-slate-800"
+              placeholder="例如：二年級走廊洗手台水管破裂、一年級教室後門喇叭鎖..."
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- 區塊 3：設備類別 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-tags text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">設備類別 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-xs text-slate-400">自動分流派單</span>
+        </div>
+        <select id="category" required onchange="updateDispatchBadge()" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">
+          <option value="">請選擇故障類別...</option>
+          <option value="water-electric">🔹 水電類（電燈、插座、風扇、開關、水龍頭、水箱漏水）</option>
+          <option value="facility">🔹 營繕類（門窗、鎖具、磁磚、天花板、牆面漏水）</option>
+          <option value="it">🔹 資訊/視聽類（投影機、大螢幕、電腦、擴音設備）</option>
+          <option value="furniture">🔹 公物公具（辦公桌椅、課桌椅、黑板）</option>
+        </select>
+        <div id="dispatch-box" class="hidden p-3 rounded-xl border flex items-center justify-between text-xs transition-all-ease">
+          <div class="flex items-center space-x-2">
+            <i id="dispatch-icon" class="fa-solid fa-user-gear"></i>
+            <span class="font-medium text-slate-700">自動指派責任窗口：</span>
+            <span id="dispatch-name" class="font-bold"></span>
+          </div>
+          <span class="text-[11px] bg-white/90 px-2 py-0.5 rounded border border-slate-200">免審核即刻通報</span>
+        </div>
+      </div>
+
+      <!-- 區塊 4：狀況描述 & 拍照 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <i class="fa-solid fa-camera text-blue-600"></i>
+          <h2 class="font-bold text-slate-800 text-sm">狀況描述與拍照</h2>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="description">
+            故障描述 <span class="text-rose-500">*</span>
+          </label>
+          <textarea 
+            id="description" 
+            rows="3" 
+            required 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
+            placeholder="請簡述故障狀況（例如：燈管兩端黑掉持續閃爍、水槽下水管滴水...）"
+          ></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳，存入指定資料夾）</label>
+          <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50 relative" onclick="document.getElementById('photo-input').click()">
+            <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" onchange="previewPhoto(event)">
+            <div id="upload-placeholder" class="space-y-1.5">
+              <i class="fa-solid fa-camera text-2xl text-blue-500"></i>
+              <p class="text-xs font-semibold text-slate-700">點擊拍照或選取現場相片</p>
+              <p class="text-[11px] text-slate-400">方便工友師傅攜帶相符零件一次修好</p>
+            </div>
+            <div id="photo-preview-box" class="hidden relative inline-block">
+              <img id="photo-preview" src="" class="max-h-52 rounded-xl object-contain shadow-md mx-auto">
+              <button type="button" onclick="removePhoto(event)" class="absolute -top-2 -right-2 bg-rose-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 區塊 5：緊急通報 -->
+      <div id="emergency-card" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm transition-all-ease">
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" id="emergency" class="mt-1 w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-slate-300" onchange="toggleEmergency(event)">
+          <div>
+            <span class="font-bold text-slate-800 text-sm">標記為【危險 / 緊急安全疑慮】</span>
+            <p class="text-xs text-slate-500 mt-0.5">有漏電起火風險、結構崩塌、水管大噴水等危及全校師生安全之事項。</p>
+            <div id="emergency-alert" class="hidden mt-2 text-xs font-semibold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i>系統將高亮紅色標記，並立即發送緊急 Gmail 通報主管與工友！
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <!-- 送出按鈕 -->
+      <button 
+        type="submit" 
+        id="submit-btn" 
+        class="w-full py-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold rounded-2xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center space-x-2 text-base cursor-pointer"
+      >
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>30 秒快速送出報修單</span>
+      </button>
+
+    </form>
+  </main>
+
+  <!-- 🏢 切換單位 / 開通新學校通道 Modal -->
+  <div id="switch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center space-x-2 text-slate-800 font-bold">
+          <i class="fa-solid fa-school text-emerald-600"></i>
+          <span>切換單位 / 開通新學校通道</span>
+        </div>
+        <button type="button" onclick="closeSwitchUnitModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- 輸入已知代碼 -->
+      <div class="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+        <label class="block font-bold text-xs text-slate-700">方法 1. 輸入貴校專屬短代碼前往</label>
+        <div class="flex gap-2">
+          <input type="text" id="input-switch-code" placeholder="例如：7PHDGG" class="w-full px-3 py-2 bg-white border rounded-xl text-xs font-mono uppercase font-bold">
+          <button type="button" onclick="goToSchoolCode()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shrink-0">前往</button>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <span class="text-[11px] text-slate-400 bg-white px-2">或是</span>
+      </div>
+
+      <button type="button" onclick="openNewSchoolSetup()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 shadow-md">
+        <i class="fa-solid fa-plus"></i>
+        <span>填入試算表，一鍵開通新學校</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ⚙️ 後台設定 Modal -->
+  <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-shield-halved text-blue-600"></i>
+          <h3 class="font-bold text-slate-800 text-base">後台系統管理</h3>
+        </div>
+        <button type="button" onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- 視圖 1：登入與開通介面 -->
+      <div id="view-login" class="space-y-4">
+        
+        <!-- 初次建置導引 -->
+        <div id="first-setup-box" class="hidden p-4 bg-emerald-50 rounded-2xl border border-emerald-300 space-y-3">
+          <div class="flex items-center space-x-1.5 text-xs font-bold text-emerald-950">
+            <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+            <span>開通新學校/單位報修通道</span>
+          </div>
+          <p class="text-[11px] text-emerald-800 leading-relaxed">
+            填寫<strong>學校名稱、試算表網址</strong>與<strong>自訂密碼</strong>，系統將自動完成配置並生成貴校專屬短網址：
+          </p>
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-900 mb-0.5">學校或單位全稱 <span class="text-rose-500">*</span></label>
+            <input 
+              type="text" 
+              id="initial-unit-name" 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-bold" 
+              placeholder="例如：東海國小、富岡國小"
+            >
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-900 mb-0.5">Google 試算表完整網址 <span class="text-rose-500">*</span></label>
+            <input 
+              type="text" 
+              id="initial-sheet-url" 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-xs" 
+              placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+            >
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-emerald-900 mb-0.5">照片存檔 Google Drive 資料夾網址 (選填)</label>
+            <input 
+              type="text" 
+              id="initial-folder-url" 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-xs" 
+              placeholder="https://drive.google.com/drive/folders/..."
+            >
+          </div>
+          <div class="pt-1 border-t border-emerald-200 space-y-2">
+            <div>
+              <label class="block text-[11px] font-bold text-emerald-950 mb-0.5">自訂管理者帳號 <span class="text-rose-500">*</span></label>
+              <input 
+                type="text" 
+                id="initial-new-user" 
+                value="admin"
+                class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs" 
+                placeholder="例如：admin 或 school_admin"
+              >
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-rose-700 mb-0.5">自訂管理密碼 <span class="text-rose-500">*</span></label>
+                <input 
+                  type="password" 
+                  id="initial-new-pass" 
+                  autocomplete="new-password"
+                  class="w-full px-3 py-2 bg-white border border-rose-300 rounded-xl text-xs" 
+                  placeholder="不可設為 1234"
+                >
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-rose-700 mb-0.5">確認管理密碼 <span class="text-rose-500">*</span></label>
+                <input 
+                  type="password" 
+                  id="initial-confirm-pass" 
+                  autocomplete="new-password"
+                  class="w-full px-3 py-2 bg-white border border-rose-300 rounded-xl text-xs" 
+                  placeholder="再次輸入新密碼"
+                >
+              </div>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            id="btn-initial-setup"
+            onclick="handleInitialSetup()" 
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer"
+          >
+            一鍵開通並產生專屬網址
+          </button>
+        </div>
+
+        <!-- 日常管理員登入區 -->
+        <div id="normal-login-box" class="space-y-3">
+          <div class="text-xs font-semibold text-slate-500 flex items-center justify-between">
+            <span>目前學校：<strong id="login-unit-display" class="text-slate-800">學校單位</strong></span>
+            <button type="button" onclick="openSwitchUnitModal()" class="text-blue-600 hover:underline text-[11px]">切換其他學校</button>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">管理者帳號</label>
+            <input 
+              type="text" 
+              id="login-user" 
+              autocomplete="off"
+              value="admin" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">管理者密碼</label>
+            <input 
+              type="password" 
+              id="login-pass" 
+              value="" 
+              autocomplete="new-password"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20" 
+              placeholder="請輸入貴校自訂之管理者密碼"
+            >
+          </div>
+          <button 
+            type="button"
+            onclick="handleAdminLogin()" 
+            id="btn-login" 
+            class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-md shadow-blue-500/20"
+          >
+            登入管理後台
+          </button>
+
+          <!-- 忘記密碼救急說明 -->
+          <div class="pt-2 text-center">
+            <button type="button" onclick="togglePasswordHelp()" class="text-[11px] text-blue-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+              <i class="fa-solid fa-circle-question"></i>
+              <span>忘記帳號或密碼？如何自主找回 / 重設</span>
+            </button>
+          </div>
+
+          <div id="password-help-card" class="hidden text-left p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-slate-600">
+            <div class="font-bold text-slate-800 flex items-center gap-1 text-xs">
+              <i class="fa-solid fa-key text-amber-500"></i>
+              <span>帳號密碼自主找回 SOP：</span>
+            </div>
+            <p class="text-[11px] leading-relaxed">
+              1. 開啟貴校的 <strong>Google 報修試算表</strong>。<br>
+              2. 切換到底部的 <strong>《系統設定》</strong> 分頁。<br>
+              3. 查看第 3 列 <code>B3</code> 儲存格（帳號）與第 4 列 <code>B4</code> 儲存格（密碼）。<br>
+              4. 您可以直接查看，或<strong>直接在該儲存格上手動修改成新密碼</strong>，改完後立即生效即可登入！
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 視圖 2：管理功能主面板 -->
+      <div id="view-dashboard" class="space-y-5 hidden text-xs">
+        
+        <!-- 短網址卡片 -->
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-1.5 text-emerald-900 font-bold">
+              <i class="fa-solid fa-link text-emerald-600"></i>
+              <span id="dashboard-unit-title">貴校專屬報修短網址</span>
+            </div>
+            <span class="text-[10px] bg-emerald-200/60 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold" id="badge-short-code">代碼</span>
+          </div>
+          <p class="text-[11px] text-emerald-700">
+            請將此專屬網址公告給全校老師，點開即自動進入貴校報修系統，絕不露出試算表 ID。
+          </p>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              id="short-url-display" 
+              readonly 
+              class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl font-mono text-[11px] text-slate-700 font-bold select-all"
+            >
+            <button 
+              type="button"
+              onclick="copyShortUrl()" 
+              class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shrink-0 transition flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-copy"></i>
+              <span>複製</span>
+            </button>
+            <button 
+              type="button"
+              onclick="showQrCodeModal()" 
+              class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shrink-0 transition flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-qrcode"></i>
+              <span>QR Code</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 學校名稱維護 -->
+        <div class="space-y-1.5 border-t pt-3">
+          <label class="block font-bold text-slate-800">學校或單位全稱</label>
+          <input type="text" id="cfg-unit-name" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-bold text-xs" placeholder="例如：東海國小">
+        </div>
+
+        <!-- 1. 管理者通知 Gmail 設置 (嚴格以試算表為準，不殘留舊校 Email) -->
+        <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
+          <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
+            <i class="fa-solid fa-envelope"></i>
+            <span>1. 管理者通知 Gmail 設置</span>
+          </div>
+          <p class="text-[11px] text-amber-700">新報修或緊急通報時，系統自動發信至此信箱（多筆請以逗號隔開）。</p>
+          <input 
+            type="email" 
+            id="cfg-admin-email" 
+            autocomplete="off"
+            placeholder="請輸入貴校主管信箱，例如：general@school.edu.tw" 
+            class="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs"
+          >
+        </div>
+
+        <!-- 2. 試算表設定 -->
+        <div class="space-y-2.5 border-t pt-3">
+          <div class="font-bold text-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-1">
+              <i class="fa-solid fa-table-cells text-blue-600"></i>
+              <span>2. 綁定之 Google 試算表完整網址</span>
+            </div>
+            <button 
+              type="button" 
+              id="btn-reinit" 
+              onclick="reInitCurrentSheet()" 
+              class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <i class="fa-solid fa-rotate"></i>
+              <span>一鍵同步權限</span>
+            </button>
+          </div>
+          <input 
+            type="text" 
+            id="cfg-sheet-url" 
+            class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" 
+            placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+          >
+        </div>
+
+        <!-- 3. 照片存放資料夾設定 -->
+        <div class="space-y-2 border-t pt-3">
+          <div class="font-bold text-slate-800 flex items-center space-x-1">
+            <i class="fa-solid fa-folder-open text-amber-600"></i>
+            <span>3. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
+          </div>
+          <p class="text-[11px] text-slate-500">照片將直接存入此指定資料夾，不再堆積在雲端硬碟根目錄。</p>
+          <input 
+            type="text" 
+            id="cfg-folder-url" 
+            class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-mono text-[11px]" 
+            placeholder="https://drive.google.com/drive/folders/..."
+          >
+        </div>
+
+        <!-- 4. 修改帳號與密碼 -->
+        <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
+          <div class="font-bold text-slate-800 flex items-center space-x-1">
+            <i class="fa-solid fa-key text-slate-600"></i>
+            <span>4. 修改管理者帳號與密碼</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-slate-500 mb-1">新管理者帳號</label>
+              <input type="text" id="cfg-new-user" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="若不修改請留空">
+            </div>
+            <div>
+              <label class="block text-slate-500 mb-1">新管理者密碼</label>
+              <input type="password" id="cfg-new-pass" value="" autocomplete="new-password" class="w-full px-3 py-2 bg-white border rounded-xl text-xs" placeholder="若不修改請留空">
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">💡 提示：若忘記密碼，試算表擁有者可隨時打開試算表「系統設定」分頁查看或修改。</p>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t">
+          <button type="button" onclick="handleAdminLogout()" class="text-rose-600 hover:underline text-xs cursor-pointer">登出後台</button>
+          <button type="button" onclick="saveAllAdminSettings()" id="btn-save-settings" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md">
+            儲存所有設定
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- QR Code 彈窗 Modal -->
+  <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl space-y-4">
+      <h3 class="font-bold text-slate-800 text-sm"><span id="qr-unit-title">學校</span> 專屬報修 QR Code</h3>
+      <div class="p-3 bg-slate-50 border rounded-2xl inline-block shadow-inner">
+        <img id="qr-image" src="" alt="報修專屬 QR Code" class="w-48 h-48 mx-auto rounded-lg">
+      </div>
+      <p class="text-[11px] text-slate-400">可列印張貼於辦公室或班級，手機掃碼直接填單</p>
+      <button type="button" onclick="closeQrModal()" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer">關閉</button>
+    </div>
+  </div>
+
+  <!-- 成功送出彈窗 -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">報修單已成功派發！</h3>
+        <p class="text-xs text-slate-500 mt-1">工單編號：<span id="ticket-id" class="font-mono font-bold text-slate-700"></span></p>
+      </div>
+      <div id="modal-summary" class="bg-slate-50 rounded-xl p-3 text-left text-xs space-y-1 border border-slate-100 font-medium text-slate-600"></div>
+      <button type="button" onclick="closeSuccessModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer">完成</button>
+    </div>
+  </div>
+
+  <!-- JavaScript 邏輯 -->
+  <script>
+    const MASTER_GAS_URL = "https://script.google.com/macros/s/AKfycbwEN8YpVft_8zPp8K9-5wd_eKAd6sK9xCH-73sB7XCcnF5PX0Q0QfsH5MArgu6t1nIMxA/exec";
+
+    const dispatchRules = {
+      "water-electric": { name: "水電工友 (陳師傅 / 分機 215)", style: "bg-cyan-50 border-cyan-200 text-cyan-800", icon: "fa-faucet-drip" },
+      "facility": { name: "事務組長 (黃組長 / 分機 210)", style: "bg-amber-50 border-amber-200 text-amber-800", icon: "fa-hammer" },
+      "it": { name: "資訊組長 (林組長 / 分機 216)", style: "bg-indigo-50 border-indigo-200 text-indigo-800", icon: "fa-desktop" },
+      "furniture": { name: "公物庫房 (分機 212)", style: "bg-emerald-50 border-emerald-200 text-emerald-800", icon: "fa-chair" }
+    };
+
+    let base64Photo = "";
+    let currentAdminUser = "";
+    let currentAdminPass = "";
+
+    async function fetchWithTimeout(url, options = {}, timeout = 35000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (error) {
+        clearTimeout(id);
+        throw error;
+      }
+    }
+
+    window.onload = async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const shortCodeParam = urlParams.get('c') || urlParams.get('code');
+      const paramSheet = urlParams.get('sheet') || urlParams.get('s');
+
+      if (shortCodeParam) {
+        const resolvingBanner = document.getElementById('resolving-banner');
+        if (resolvingBanner) resolvingBanner.classList.remove('hidden');
+        try {
+          const res = await fetchWithTimeout(MASTER_GAS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              action: "resolveShortCode",
+              code: shortCodeParam
+            })
+          }, 12000);
+          const result = await res.json();
+          if (result.success && result.sheetUrl) {
+            localStorage.setItem('repair_sheet_url', result.sheetUrl);
+            localStorage.setItem('repair_short_code', result.shortCode);
+            if (result.unitName) localStorage.setItem('repair_unit_name', result.unitName);
+          }
+        } catch (err) {
+          console.warn("短代碼解析失敗:", err);
+        } finally {
+          if (resolvingBanner) resolvingBanner.classList.add('hidden');
+        }
+      } else if (paramSheet) {
+        localStorage.setItem('repair_sheet_url', decodeURIComponent(paramSheet));
+      }
+
+      refreshSystemStatus();
+
+      // 自動還原老師上次填過的姓名
+      const savedTeacherName = localStorage.getItem('last_teacher_name') || "";
+      const nameInput = document.getElementById('teacher-name');
+      if (nameInput && savedTeacherName) {
+        nameInput.value = savedTeacherName;
+      }
+
+      // 防瀏覽器將網址誤填入帳號監聽
+      const userInput = document.getElementById('login-user');
+      if (userInput) {
+        userInput.addEventListener('input', function() {
+          if (this.value.includes('http') || this.value.includes('docs.google')) {
+            this.value = 'admin';
+          }
+        });
+      }
+    };
+
+    function refreshSystemStatus() {
+      const savedSheet = localStorage.getItem('repair_sheet_url') || "";
+      const savedUnit = localStorage.getItem('repair_unit_name') || "";
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+      const headerTitle = document.getElementById('header-unit-title');
+      const badgeTag = document.getElementById('badge-unit-tag');
+      const noUnitAlert = document.getElementById('no-unit-alert');
+      const loginUnitDisplay = document.getElementById('login-unit-display');
+
+      if (savedSheet) {
+        const unitDisplay = savedUnit ? savedUnit : "學校單位";
+        if (headerTitle) headerTitle.textContent = unitDisplay + " 維護報修系統";
+        if (badgeTag) {
+          badgeTag.textContent = unitDisplay;
+          badgeTag.classList.remove('hidden');
+        }
+        if (loginUnitDisplay) loginUnitDisplay.textContent = unitDisplay;
+        if (statusText) statusText.textContent = unitDisplay + " 連線服務正常運作中";
+        if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        if (noUnitAlert) noUnitAlert.classList.add('hidden');
+      } else {
+        if (headerTitle) headerTitle.textContent = "校園維護報修系統";
+        if (badgeTag) badgeTag.classList.add('hidden');
+        if (loginUnitDisplay) loginUnitDisplay.textContent = "未選擇單位";
+        if (statusText) statusText.textContent = "尚未綁定任何學校或單位";
+        if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-amber-500";
+        if (noUnitAlert) noUnitAlert.classList.remove('hidden');
+      }
+    }
+
+    function getCleanBaseUrl() {
+      return window.location.origin + window.location.pathname;
+    }
+
+    function updateShortUrlDisplay(code) {
+      const shortUrl = getCleanBaseUrl() + "?c=" + code;
+      const display = document.getElementById('short-url-display');
+      const badge = document.getElementById('badge-short-code');
+      const unitName = localStorage.getItem('repair_unit_name') || "貴校";
+      const dashTitle = document.getElementById('dashboard-unit-title');
+      if (display) display.value = shortUrl;
+      if (badge) badge.textContent = "代碼: " + code;
+      if (dashTitle) dashTitle.textContent = unitName + " 專屬報修短網址";
+    }
+
+    function copyShortUrl() {
+      const input = document.getElementById('short-url-display');
+      if (!input || !input.value) return;
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      alert("專屬短網址已複製到剪貼簿！\n" + input.value);
+    }
+
+    function showQrCodeModal() {
+      const shortUrl = document.getElementById('short-url-display')?.value;
+      if (!shortUrl) return;
+      const qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(shortUrl);
+      const qrImg = document.getElementById('qr-image');
+      const qrModal = document.getElementById('qr-modal');
+      const qrTitle = document.getElementById('qr-unit-title');
+      if (qrTitle) qrTitle.textContent = localStorage.getItem('repair_unit_name') || "學校";
+      if (qrImg) qrImg.src = qrApi;
+      if (qrModal) qrModal.classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      const qrModal = document.getElementById('qr-modal');
+      if (qrModal) qrModal.classList.add('hidden');
+    }
+
+    function openSwitchUnitModal(isNew = false) {
+      const modal = document.getElementById('switch-modal');
+      if (modal) modal.classList.remove('hidden');
+      if (isNew) {
+        closeSwitchUnitModal();
+        openNewSchoolSetup();
+      }
+    }
+
+    function closeSwitchUnitModal() {
+      const modal = document.getElementById('switch-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function goToSchoolCode() {
+      const code = document.getElementById('input-switch-code')?.value.trim().toUpperCase();
+      if (!code) {
+        alert("請輸入學校短代碼！");
+        return;
+      }
+      window.location.href = getCleanBaseUrl() + "?c=" + code;
+    }
+
+    function openNewSchoolSetup() {
+      closeSwitchUnitModal();
+      openConfigModal(true);
+    }
+
+    function onLocationPresetChange() {
+      const presetVal = document.getElementById('location-preset')?.value;
+      const customInput = document.getElementById('location-custom');
+      if (presetVal && customInput) {
+        customInput.value = presetVal;
+      }
+    }
+
+    function togglePasswordHelp() {
+      const card = document.getElementById('password-help-card');
+      if (card) card.classList.toggle('hidden');
+    }
+
+    function updateDispatchBadge() {
+      const cat = document.getElementById('category')?.value;
+      const box = document.getElementById('dispatch-box');
+      const name = document.getElementById('dispatch-name');
+      const icon = document.getElementById('dispatch-icon');
+      if (!box || !name || !icon) return;
+
+      if (!cat || !dispatchRules[cat]) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      const r = dispatchRules[cat];
+      box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${r.style}`;
+      name.textContent = r.name;
+      icon.className = `fa-solid ${r.icon} mr-1`;
+      box.classList.remove('hidden');
+    }
+
+    function previewPhoto(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          base64Photo = e.target.result;
+          document.getElementById('photo-preview').src = base64Photo;
+          document.getElementById('upload-placeholder')?.classList.add('hidden');
+          document.getElementById('photo-preview-box')?.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removePhoto(e) {
+      e.stopPropagation();
+      base64Photo = "";
+      document.getElementById('photo-input').value = "";
+      document.getElementById('photo-preview').src = "";
+      document.getElementById('photo-preview-box')?.classList.add('hidden');
+      document.getElementById('upload-placeholder')?.classList.remove('hidden');
+    }
+
+    function toggleEmergency(e) {
+      const isChecked = e.target.checked;
+      const card = document.getElementById('emergency-card');
+      const alertTip = document.getElementById('emergency-alert');
+      if (isChecked) {
+        card?.classList.add('border-rose-300', 'bg-rose-50/50');
+        alertTip?.classList.remove('hidden');
+      } else {
+        card?.classList.remove('border-rose-300', 'bg-rose-50/50');
+        alertTip?.classList.add('hidden');
+      }
+    }
+
+    function openConfigModal(forceNew = false) {
+      const savedSheet = localStorage.getItem('repair_sheet_url') || "";
+      const firstBox = document.getElementById('first-setup-box');
+      const normalBox = document.getElementById('normal-login-box');
+      const helpCard = document.getElementById('password-help-card');
+      if (helpCard) helpCard.classList.add('hidden');
+
+      if (!savedSheet || forceNew) {
+        if (firstBox) firstBox.classList.remove('hidden');
+        if (normalBox) normalBox.classList.add('hidden');
+        // 清空 Email 避免殘留舊校信箱
+        const emailInput = document.getElementById('cfg-admin-email');
+        if (emailInput) emailInput.value = "";
+      } else {
+        if (firstBox) firstBox.classList.add('hidden');
+        if (normalBox) normalBox.classList.remove('hidden');
+      }
+
+      const userInput = document.getElementById('login-user');
+      const passInput = document.getElementById('login-pass');
+      
+      if (userInput) userInput.value = "admin";
+      if (passInput) passInput.value = "";
+
+      const modal = document.getElementById('config-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      const passInput = document.getElementById('login-pass');
+      if (passInput) passInput.value = "";
+      const modal = document.getElementById('config-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    // 初次綁定試算表
+    async function handleInitialSetup() {
+      const unitName = document.getElementById('initial-unit-name')?.value.trim() || "";
+      const sheetUrl = document.getElementById('initial-sheet-url')?.value.trim() || "";
+      const folderUrl = document.getElementById('initial-folder-url')?.value.trim() || "";
+      const newUser = document.getElementById('initial-new-user')?.value.trim() || "admin";
+      const newPass = document.getElementById('initial-new-pass')?.value.trim() || "";
+      const confirmPass = document.getElementById('initial-confirm-pass')?.value.trim() || "";
+      const btn = document.getElementById('btn-initial-setup');
+
+      if (!unitName) {
+        alert("請填寫學校或單位全稱！");
+        return;
+      }
+      if (!sheetUrl) {
+        alert("請輸入 Google 試算表完整網址！");
+        return;
+      }
+      if (!newPass) {
+        alert("為了確保系統安全，請務必設定貴校專屬的管理密碼！");
+        return;
+      }
+      if (newPass === "1234") {
+        alert("不可使用預設密碼 1234，請自訂新密碼以確保安全！");
+        return;
+      }
+      if (newPass !== confirmPass) {
+        alert("兩次輸入的密碼不一致，請重新確認！");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "正在為 " + unitName + " 開通專屬通道...";
+      }
+
+      try {
+        const initRes = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "initSheet", 
+            sheetUrl: sheetUrl, 
+            folderUrl: folderUrl,
+            unitName: unitName,
+            initialUsername: newUser,
+            initialPassword: newPass
+          })
+        }, 35000);
+        const result = await initRes.json();
+
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          localStorage.setItem('repair_unit_name', unitName);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+
+          currentAdminUser = newUser;
+          currentAdminPass = newPass;
+
+          document.getElementById('cfg-unit-name').value = unitName;
+          document.getElementById('cfg-sheet-url').value = sheetUrl;
+          document.getElementById('cfg-folder-url').value = folderUrl;
+          // 新增學校清空信箱，不抓前一所學校暫存
+          document.getElementById('cfg-admin-email').value = "";
+          
+          alert(`🎉 恭喜！${unitName} 專屬報修系統開通成功！\n\n📌 貴校管理憑證：\n・帳號：${newUser}\n・密碼：${newPass}\n\n已為貴校產生專屬短網址與 QR Code！`);
+          document.getElementById('view-login')?.classList.add('hidden');
+          document.getElementById('view-dashboard')?.classList.remove('hidden');
+          refreshSystemStatus();
+        } else {
+          alert("開通失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("連線初始化逾時，請檢查試算表網址是否正確並已開放「知道連結的人均可編輯」！\n" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "一鍵開通並產生專屬網址";
+        }
+      }
+    }
+
+    // 日常管理員登入（嚴格依賴該校試算表）
+    async function handleAdminLogin() {
+      const sheetUrl = localStorage.getItem('repair_sheet_url') || "";
+      const user = document.getElementById('login-user')?.value.trim() || "admin";
+      const pass = document.getElementById('login-pass')?.value.trim();
+      const btn = document.getElementById('btn-login');
+
+      if (!pass) {
+        alert("請輸入管理密碼！");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "驗證身分中...";
+      }
+
+      try {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "adminLogin",
+            sheetUrl: sheetUrl,
+            username: user,
+            password: pass
+          })
+        }, 15000);
+        const result = await res.json();
+
+        if (result.success) {
+          currentAdminUser = user;
+          currentAdminPass = pass;
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+          if (result.unitName) {
+            localStorage.setItem('repair_unit_name', result.unitName);
+            document.getElementById('cfg-unit-name').value = result.unitName;
+          }
+
+          document.getElementById('cfg-sheet-url').value = sheetUrl;
+          // 嚴格讀取該校試算表的 Email，絕不讀取 localStorage 舊信箱
+          document.getElementById('cfg-admin-email').value = result.adminEmail || "";
+          document.getElementById('cfg-folder-url').value = result.photoFolderUrl || "";
+
+          const passInput = document.getElementById('login-pass');
+          if (passInput) passInput.value = "";
+
+          document.getElementById('view-login')?.classList.add('hidden');
+          document.getElementById('view-dashboard')?.classList.remove('hidden');
+          refreshSystemStatus();
+        } else {
+          alert(result.message);
+          const helpCard = document.getElementById('password-help-card');
+          if (helpCard) helpCard.classList.remove('hidden');
+        }
+      } catch (err) {
+        alert("連線驗證逾時，請確認網路連線！\n" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "登入管理後台";
+        }
+      }
+    }
+
+    function handleAdminLogout() {
+      currentAdminUser = "";
+      currentAdminPass = "";
+      const userInput = document.getElementById('login-user');
+      const passInput = document.getElementById('login-pass');
+      const newPass = document.getElementById('cfg-new-pass');
+      if (userInput) userInput.value = "admin";
+      if (passInput) passInput.value = "";
+      if (newPass) newPass.value = "";
+      document.getElementById('view-dashboard')?.classList.add('hidden');
+      document.getElementById('view-login')?.classList.remove('hidden');
+    }
+
+    // 一鍵同步權限
+    async function reInitCurrentSheet() {
+      const sheetUrl = document.getElementById('cfg-sheet-url')?.value.trim();
+      const folderUrl = document.getElementById('cfg-folder-url')?.value.trim();
+      const unitName = document.getElementById('cfg-unit-name')?.value.trim() || "學校單位";
+      const btn = document.getElementById('btn-reinit');
+
+      if (!confirm("確定要執行同步初始化嗎？（系統會完整保留貴校已設定的資料與密碼）")) return;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 同步權限中...`;
+      }
+
+      try {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "initSheet", 
+            sheetUrl: sheetUrl, 
+            folderUrl: folderUrl,
+            unitName: unitName
+          })
+        }, 35000);
+        const result = await res.json();
+        alert(result.message);
+        if (result.success && result.shortCode) {
+          localStorage.setItem('repair_short_code', result.shortCode);
+          updateShortUrlDisplay(result.shortCode);
+        }
+      } catch (err) {
+        alert("連線初始化失敗，請檢查試算表網址是否正確！\n" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>一鍵同步權限</span>`;
+        }
+      }
+    }
+
+    // 儲存所有設定
+    async function saveAllAdminSettings() {
+      const sheetUrl = document.getElementById('cfg-sheet-url')?.value.trim();
+      const folderUrl = document.getElementById('cfg-folder-url')?.value.trim() || "";
+      const adminEmail = document.getElementById('cfg-admin-email')?.value.trim() || "";
+      const unitName = document.getElementById('cfg-unit-name')?.value.trim() || "學校單位";
+      const newUser = document.getElementById('cfg-new-user')?.value.trim();
+      const newPass = document.getElementById('cfg-new-pass')?.value.trim();
+      const btn = document.getElementById('btn-save-settings');
+
+      if (!sheetUrl) {
+        alert("試算表網址不可為空！");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "儲存中...";
+      }
+
+      try {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "updateAdminSettings",
+            sheetUrl: sheetUrl,
+            unitName: unitName,
+            currentUsername: currentAdminUser || "admin",
+            currentPassword: currentAdminPass,
+            newUsername: newUser || currentAdminUser || "admin",
+            newPassword: newPass || currentAdminPass,
+            adminEmail: adminEmail,
+            photoFolderUrl: folderUrl
+          })
+        }, 20000);
+        const result = await res.json();
+
+        if (result.success) {
+          localStorage.setItem('repair_sheet_url', sheetUrl);
+          localStorage.setItem('repair_unit_name', unitName);
+          if (result.shortCode) {
+            localStorage.setItem('repair_short_code', result.shortCode);
+            updateShortUrlDisplay(result.shortCode);
+          }
+          if (newPass) currentAdminPass = newPass;
+          if (newUser) currentAdminUser = newUser;
+
+          document.getElementById('cfg-new-user').value = "";
+          document.getElementById('cfg-new-pass').value = "";
+          
+          alert("🎉 貴校設定已成功儲存！");
+          closeConfigModal();
+        } else {
+          alert("儲存失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("儲存逾時或連線異常：" + err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "儲存所有設定";
+        }
+        refreshSystemStatus();
+      }
+    }
+
+    // 提交報修單
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const sheetUrl = localStorage.getItem('repair_sheet_url');
+      if (!sheetUrl) {
+        alert("系統尚未綁定任何學校或單位，請點右上角【切換/開通學校】進行設定。");
+        openSwitchUnitModal(true);
+        return;
+      }
+
+      const teacherVal = document.getElementById('teacher-name')?.value.trim();
+      const locationVal = document.getElementById('location-custom')?.value.trim();
+
+      if (!teacherVal) {
+        alert("請輸入「填報老師姓名」！");
+        return;
+      }
+
+      if (!locationVal) {
+        alert("請填寫或選取「故障發生地點」！");
+        return;
+      }
+
+      // 自動記憶老師姓名
+      localStorage.setItem('last_teacher_name', teacherVal);
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>派單傳輸中...</span>`;
+      }
+
+      const category = document.getElementById('category')?.value || "facility";
+      const payload = {
+        action: "submitTicket",
+        sheetUrl: sheetUrl,
+        data: {
+          reporterName: teacherVal,
+          department: "教職員",
+          phone: "-",
+          location: locationVal,
+          categoryName: document.getElementById('category')?.options[document.getElementById('category').selectedIndex].text || "",
+          dispatchTarget: dispatchRules[category] ? dispatchRules[category].name : "總務處",
+          description: document.getElementById('description')?.value || "",
+          photoBase64: base64Photo,
+          isUrgent: document.getElementById('emergency')?.checked || false
+        }
+      };
+
+      try {
+        const res = await fetchWithTimeout(MASTER_GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        }, 20000);
+        const result = await res.json();
+
+        if (result.success) {
+          document.getElementById('ticket-id').textContent = result.ticketId;
+          document.getElementById('modal-summary').innerHTML = `
+            <div>填報老師：${payload.data.reporterName}</div>
+            <div>故障地點：${payload.data.location}</div>
+            <div>派單責任：${payload.data.dispatchTarget}</div>
+            <div>通知狀態：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
+          `;
+          document.getElementById('success-modal')?.classList.remove('hidden');
+        } else {
+          alert("報修單送出失敗：" + result.message);
+        }
+      } catch (err) {
+        alert("連線逾時，請檢查網路連線或確認試算表權限！\n" + err);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i><span>30 秒快速送出報修單</span>`;
+        }
+      }
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('success-modal')?.classList.add('hidden');
+      document.getElementById('repair-form')?.reset();
+      removePhoto({ stopPropagation: () => {} });
+      updateDispatchBadge();
+      toggleEmergency({ target: { checked: false } });
+
+      // 保留老師姓名，方便下次直接填
+      const savedTeacherName = localStorage.getItem('last_teacher_name') || "";
+      const nameInput = document.getElementById('teacher-name');
+      if (nameInput && savedTeacherName) {
+        nameInput.value = savedTeacherName;
+      }
+    }
+  </script>
+</body>
+</html>
