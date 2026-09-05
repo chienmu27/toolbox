@@ -33,7 +33,7 @@
 
   <main class="max-w-3xl mx-auto px-4 mt-4">
 
-    <!-- 解析專屬短代碼時的提示橫幅 -->
+    <!-- 短代碼解析提示 -->
     <div id="resolving-banner" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-4 text-xs text-indigo-900 flex items-center space-x-2">
       <i class="fa-solid fa-spinner fa-spin text-indigo-600"></i>
       <span>正在連線學校專屬報修代碼，請稍候...</span>
@@ -51,7 +51,7 @@
     <!-- 報修表單 -->
     <form id="repair-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
 
-      <!-- 區塊 1：填報教職員身分 -->
+      <!-- 區塊 1：填報教職員身分（處室學年 -> 組別班級 -> 自動產生姓名與分機） -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center space-x-2">
@@ -61,79 +61,140 @@
           <span class="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">免審核直接派單</span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- 第 1 層：處室 / 學年 -->
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-dept">
-              1. 所屬處室 / 班級 <span class="text-rose-500">*</span>
+              1. 處室 / 學年 <span class="text-rose-500">*</span>
             </label>
             <select 
               id="teacher-dept" 
               required 
-              onchange="rememberTeacherProfile()"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
+              onchange="onDeptChange()"
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
             >
-              <option value="">載入名冊中...</option>
+              <option value="">載入中...</option>
             </select>
           </div>
+
+          <!-- 第 2 層：組別 / 班級 -->
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-name">
-              2. 填報人姓名 <span class="text-rose-500">*</span>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-sub">
+              2. 組別 / 班級 <span class="text-rose-500">*</span>
             </label>
             <select 
+              id="teacher-sub" 
+              required 
+              disabled
+              onchange="onSubChange()"
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
+            >
+              <option value="">請先選處室/學年</option>
+            </select>
+          </div>
+
+          <!-- 第 3 層：教職員姓名（自動帶出） -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5" for="teacher-name">
+              3. 教職員姓名 <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
               id="teacher-name" 
               required 
-              onchange="rememberTeacherProfile()"
-              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease"
+              readonly
+              class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none"
+              placeholder="自動帶入姓名"
             >
-              <option value="">載入名冊中...</option>
-            </select>
           </div>
         </div>
         <p class="text-[11px] text-slate-400 flex items-center gap-1">
           <i class="fa-solid fa-circle-info"></i>
-          <span>選單資料自動同步自後台試算表「人員與班級名單」，系統會記住您選過的姓名。</span>
+          <span>選定組別或班級後，系統自動帶入姓名與校內分機。</span>
         </p>
       </div>
 
-      <!-- 區塊 2：聯絡電話/分機 -->
+      <!-- 區塊 2：聯絡電話/分機（由身分自動帶出，亦可自填修改手機） -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
         <label class="block text-xs font-semibold text-slate-600" for="phone">
-          填報人聯絡電話 / 校內分機 <span class="text-rose-500">*</span>
+          填報人聯絡分機 / 手機門號 <span class="text-rose-500">*</span>
         </label>
         <input 
           type="text" 
           id="phone" 
           required 
-          value="分機 203" 
           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           placeholder="例如：分機 203 或 0912-345678"
         >
       </div>
 
-      <!-- 區塊 3：地點選單 -->
-      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
-          <i class="fa-solid fa-location-dot text-blue-600"></i>
-          <h2 class="font-bold text-slate-800 text-sm">故障發生地點 <span class="text-rose-500">*</span></h2>
+      <!-- 區塊 3：故障發生地點（可下拉快捷選取，亦可自由手動自填） -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-location-dot text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-sm">故障發生地點 <span class="text-rose-500">*</span></h2>
+          </div>
+          <span class="text-xs text-slate-400">可快捷選取或自由自填</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+        <div class="space-y-2.5">
+          <!-- 快捷常用地點下拉選單 -->
           <div>
-            <label class="block text-xs text-slate-500 mb-1">1. 校園區域</label>
-            <select id="location-area" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" onchange="updateBuildings()" required>
-              <option value="">選擇區域</option>
+            <label class="block text-xs text-slate-500 mb-1">快捷常用地點選單（點選自動帶入下方輸入框）：</label>
+            <select 
+              id="location-preset" 
+              onchange="onLocationPresetChange()"
+              class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">▼ 點此快速選擇常用地點...</option>
+              <optgroup label="各處室與辦公區">
+                <option value="行政大樓 1F 教務處">行政大樓 1F 教務處</option>
+                <option value="行政大樓 1F 總務處">行政大樓 1F 總務處</option>
+                <option value="行政大樓 1F 學務處">行政大樓 1F 學務處</option>
+                <option value="行政大樓 2F 輔導處">行政大樓 2F 輔導處</option>
+                <option value="行政大樓 2F 校長室">行政大樓 2F 校長室</option>
+                <option value="行政大樓 1F 健康中心">行政大樓 1F 健康中心</option>
+              </optgroup>
+              <optgroup label="教學大樓（班級教室）">
+                <option value="和平樓 1F 一年級教室區">和平樓 1F 一年級教室區</option>
+                <option value="和平樓 2F 二年級教室區">和平樓 2F 二年級教室區</option>
+                <option value="和平樓 3F 三年級教室區">和平樓 3F 三年級教室區</option>
+                <option value="忠孝樓 1F 四年級教室區">忠孝樓 1F 四年級教室區</option>
+                <option value="忠孝樓 2F 五年級教室區">忠孝樓 2F 五年級教室區</option>
+                <option value="忠孝樓 3F 六年級教室區">忠孝樓 3F 六年級教室區</option>
+              </optgroup>
+              <optgroup label="專科教室與活動場館">
+                <option value="專科大樓 1F 自然實驗室">專科大樓 1F 自然實驗室</option>
+                <option value="專科大樓 2F 音樂教室">專科大樓 2F 音樂教室</option>
+                <option value="專科大樓 3F 電腦教室 A">專科大樓 3F 電腦教室 A</option>
+                <option value="專科大樓 3F 電腦教室 B">專科大樓 3F 電腦教室 B</option>
+                <option value="活動中心大禮堂">活動中心大禮堂</option>
+                <option value="圖書館閱覽室">圖書館閱覽室</option>
+              </optgroup>
+              <optgroup label="戶外與公共區域">
+                <option value="操場跑道及草皮區">操場跑道及草皮區</option>
+                <option value="司令台周邊">司令台周邊</option>
+                <option value="室外籃球場">室外籃球場</option>
+                <option value="兒童遊戲器材區">兒童遊戲器材區</option>
+                <option value="中庭花園及穿堂">中庭花園及穿堂</option>
+                <option value="地下停車場">地下停車場</option>
+              </optgroup>
             </select>
           </div>
+
+          <!-- 具體報修地點輸入框（可手動修改或自由自填） -->
           <div>
-            <label class="block text-xs text-slate-500 mb-1">2. 大樓 / 樓層</label>
-            <select id="location-building" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" onchange="updateDetails()" disabled required>
-              <option value="">先選區域</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">3. 具體位置</label>
-            <select id="location-detail" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" disabled required>
-              <option value="">先選大樓</option>
-            </select>
+            <label class="block text-xs font-semibold text-slate-700 mb-1" for="location-custom">
+              具體報修地點 <span class="text-rose-500">*</span> <span class="text-slate-400 font-normal">（可自由修改或直接手動打字輸入）</span>
+            </label>
+            <input 
+              type="text" 
+              id="location-custom" 
+              required
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all-ease font-medium text-slate-800"
+              placeholder="例如：和平樓 2F 二年三班後門、操場司令台旁洗手台..."
+            >
           </div>
         </div>
       </div>
@@ -228,7 +289,7 @@
     </form>
   </main>
 
-  <!-- ⚙️ 後台設定 Modal（登入後可設定照片資料夾與查看短網址） -->
+  <!-- ⚙️ 後台設定 Modal -->
   <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 hidden">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       
@@ -244,8 +305,6 @@
 
       <!-- 視圖 1：純淨登入驗證介面 -->
       <div id="view-login" class="space-y-4">
-        
-        <!-- 僅在完全尚未綁定任何試算表時，才顯示初次建置提示 -->
         <div id="first-setup-box" class="hidden p-3.5 bg-amber-50 rounded-2xl border border-amber-200 space-y-2.5">
           <div class="flex items-center space-x-1.5 text-xs font-bold text-amber-900">
             <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
@@ -309,10 +368,9 @@
         </button>
       </div>
 
-      <!-- 視圖 2：管理功能主面板 (登入後顯示) -->
+      <!-- 視圖 2：管理功能主面板 -->
       <div id="view-dashboard" class="space-y-5 hidden text-xs">
-        
-        <!-- 學校專屬短網址卡片 -->
+        <!-- 短網址卡片 -->
         <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-2.5">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-1.5 text-emerald-900 font-bold">
@@ -348,7 +406,7 @@
           </div>
         </div>
 
-        <!-- 1. 管理者通知 Gmail 設置 -->
+        <!-- Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -363,7 +421,7 @@
           >
         </div>
 
-        <!-- 2. 試算表設定 -->
+        <!-- 試算表設定 -->
         <div class="space-y-2.5 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center justify-between">
             <div class="flex items-center space-x-1">
@@ -377,7 +435,7 @@
               class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <i class="fa-solid fa-rotate"></i>
-              <span>一鍵重新初始化（同步設為可編輯）</span>
+              <span>一鍵重新初始化（更新名單結構）</span>
             </button>
           </div>
           <input 
@@ -388,13 +446,13 @@
           >
         </div>
 
-        <!-- 3. 新增：照片存放 Google Drive 資料夾設定 -->
+        <!-- 照片資料夾設定 -->
         <div class="space-y-2 border-t pt-3">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-folder-open text-amber-600"></i>
             <span>3. 報修照片儲存 Google 雲端硬碟資料夾網址</span>
           </div>
-          <p class="text-[11px] text-slate-500">照片將直接存入此指定資料夾，不再堆積在雲端硬碟根目錄。初始化將同步開放為「知道連結的人均可編輯」。</p>
+          <p class="text-[11px] text-slate-500">照片將直接存入此資料夾，不再堆積在雲端硬碟根目錄。</p>
           <input 
             type="text" 
             id="cfg-folder-url" 
@@ -403,7 +461,7 @@
           >
         </div>
 
-        <!-- 4. 修改管理者帳號與密碼 -->
+        <!-- 修改帳密 -->
         <div class="space-y-3 border-t pt-3 bg-slate-50 -mx-6 px-6 py-4">
           <div class="font-bold text-slate-800 flex items-center space-x-1">
             <i class="fa-solid fa-key text-slate-600"></i>
@@ -462,29 +520,8 @@
 
   <!-- JavaScript 邏輯 -->
   <script>
-    // 獨立外掛 GAS Web App 網址 (請換成您部署的 Google Apps Script URL)
+    // 獨立外掛 GAS Web App 網址 (請填入您部署的 Google Apps Script URL)
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz6aKiLmcy1fDmD7p5pNLbkexysKxH8g1JuDQNpbOiHwa5M-UqiwBTK0gD5QmKbZoJSnQ/exec";
-
-    // 地點資料庫
-    const locationData = {
-      "教學區": {
-        "和平樓 1 樓": ["101 班教室", "102 班教室", "一年級洗手間"],
-        "和平樓 2 樓": ["201 班教室", "202 班教室", "二年級洗手間"],
-        "和平樓 3 樓": ["301 班教室", "302 班教室", "三年級洗手間"],
-        "忠孝樓 1 樓": ["401 班教室", "402 班教室", "四年級洗手間"]
-      },
-      "行政區": {
-        "行政大樓 1 樓": ["教務處", "總務處", "健康中心", "穿堂玄關"],
-        "行政大樓 2 樓": ["校長室", "輔導室", "教師大辦公室"]
-      },
-      "專科教室": {
-        "專科大樓 1 樓": ["自然實驗室(一)", "自然器材室"],
-        "專科大樓 2 樓": ["音樂教室(一)", "電腦教室 A"]
-      },
-      "公共區域": {
-        "戶外運動場": ["操場跑道", "司令台", "籃球場", "兒童遊樂區"]
-      }
-    };
 
     const dispatchRules = {
       "water-electric": { name: "水電工友 (陳師傅 / 分機 215)", style: "bg-cyan-50 border-cyan-200 text-cyan-800", icon: "fa-faucet-drip" },
@@ -496,18 +533,10 @@
     let base64Photo = "";
     let currentAdminUser = "";
     let currentAdminPass = "";
+    let currentRoster = []; // 儲存全校名冊快取
 
     window.onload = async function() {
-      // 1. 初始化地點選單
-      const areaSelect = document.getElementById('location-area');
-      for (let area in locationData) {
-        let opt = document.createElement('option');
-        opt.value = area;
-        opt.textContent = area;
-        areaSelect.appendChild(opt);
-      }
-
-      // 2. 解析專屬短網址 (?c=代碼)
+      // 1. 解析專屬短網址 (?c=代碼)
       const urlParams = new URLSearchParams(window.location.search);
       const shortCodeParam = urlParams.get('c') || urlParams.get('code');
       const paramSheet = urlParams.get('sheet');
@@ -539,7 +568,7 @@
 
       refreshSystemStatus();
 
-      // 3. 載入處室與人員名冊
+      // 2. 載入處室與教職員階層名冊
       const currentSheet = localStorage.getItem('repair_sheet_url');
       if (currentSheet) {
         loadTeacherOptions(currentSheet);
@@ -547,14 +576,9 @@
         setFallbackTeacherOptions();
       }
 
-      // 4. 防網址誤填入監聽
+      // 3. 帳號欄位防瀏覽器誤填入網址監聽
       const userInput = document.getElementById('login-user');
       userInput.addEventListener('input', function() {
-        if (this.value.includes('http') || this.value.includes('docs.google')) {
-          this.value = 'admin';
-        }
-      });
-      userInput.addEventListener('change', function() {
         if (this.value.includes('http') || this.value.includes('docs.google')) {
           this.value = 'admin';
         }
@@ -604,7 +628,185 @@
       document.getElementById('qr-modal').classList.add('hidden');
     }
 
-    // 開啟設定視窗
+    // 地點快捷選擇變更時，自動帶入下方輸入框
+    function onLocationPresetChange() {
+      const presetVal = document.getElementById('location-preset').value;
+      if (presetVal) {
+        document.getElementById('location-custom').value = presetVal;
+      }
+    }
+
+    // 動態載入名冊
+    async function loadTeacherOptions(sheetUrl) {
+      const deptSelect = document.getElementById('teacher-dept');
+      deptSelect.innerHTML = '<option value="">載入處室清單中...</option>';
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "getTeacherData",
+            sheetUrl: sheetUrl
+          })
+        });
+        const result = await res.json();
+
+        if (result.success && result.roster && result.roster.length > 0) {
+          currentRoster = result.roster;
+          renderDeptDropdown();
+        } else {
+          setFallbackTeacherOptions();
+        }
+      } catch (err) {
+        setFallbackTeacherOptions();
+      }
+    }
+
+    // 渲染第 1 層：處室 / 學年
+    function renderDeptDropdown() {
+      const deptSelect = document.getElementById('teacher-dept');
+      const depts = [...new Set(currentRoster.map(item => item.dept))];
+
+      deptSelect.innerHTML = '<option value="">請選擇處室或學年</option>';
+      depts.forEach(d => {
+        let opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        deptSelect.appendChild(opt);
+      });
+
+      // 自動還原上次記憶之資料
+      const lastDept = localStorage.getItem('last_teacher_dept');
+      const lastSub = localStorage.getItem('last_teacher_sub');
+      if (lastDept && depts.includes(lastDept)) {
+        deptSelect.value = lastDept;
+        onDeptChange(lastSub);
+      }
+    }
+
+    // 第 1 層切換 -> 渲染第 2 層：組別 / 班級
+    function onDeptChange(preSelectSub) {
+      const selectedDept = document.getElementById('teacher-dept').value;
+      const subSelect = document.getElementById('teacher-sub');
+      const nameInput = document.getElementById('teacher-name');
+
+      if (!selectedDept) {
+        subSelect.innerHTML = '<option value="">請先選處室/學年</option>';
+        subSelect.disabled = true;
+        nameInput.value = "";
+        return;
+      }
+
+      subSelect.disabled = false;
+      const filtered = currentRoster.filter(r => r.dept === selectedDept);
+      subSelect.innerHTML = '<option value="">請選擇組別或班級</option>';
+      filtered.forEach(item => {
+        let opt = document.createElement('option');
+        opt.value = item.sub;
+        opt.textContent = item.sub;
+        subSelect.appendChild(opt);
+      });
+
+      nameInput.value = "";
+
+      if (preSelectSub && filtered.some(f => f.sub === preSelectSub)) {
+        subSelect.value = preSelectSub;
+        onSubChange();
+      }
+    }
+
+    // 第 2 層切換 -> 直接自動產生第 3 層姓名與預設分機！
+    function onSubChange() {
+      const selectedDept = document.getElementById('teacher-dept').value;
+      const selectedSub = document.getElementById('teacher-sub').value;
+      const nameInput = document.getElementById('teacher-name');
+      const phoneInput = document.getElementById('phone');
+
+      const matched = currentRoster.find(r => r.dept === selectedDept && r.sub === selectedSub);
+      if (matched) {
+        // 直接產生並帶入老師姓名
+        nameInput.value = matched.name;
+        // 自動帶入分機
+        if (matched.ext) {
+          phoneInput.value = "分機 " + matched.ext;
+        }
+
+        // 記憶選項
+        localStorage.setItem('last_teacher_dept', selectedDept);
+        localStorage.setItem('last_teacher_sub', selectedSub);
+        localStorage.setItem('last_teacher_name', matched.name);
+      } else {
+        nameInput.value = "";
+      }
+    }
+
+    function setFallbackTeacherOptions() {
+      currentRoster = [
+        { dept: "教務處", sub: "資訊組", name: "鄭組長", ext: "205" },
+        { dept: "教務處", sub: "教學組", name: "陳組長", ext: "202" },
+        { dept: "總務處", sub: "事務組", name: "郭組長", ext: "211" },
+        { dept: "學務處", sub: "生教組", name: "洪組長", ext: "222" },
+        { dept: "二年級", sub: "二年三班", name: "謝佩珊 老師", ext: "203" },
+        { dept: "一年級", sub: "一年一班", name: "王大明 老師", ext: "101" }
+      ];
+      renderDeptDropdown();
+    }
+
+    function updateDispatchBadge() {
+      const cat = document.getElementById('category').value;
+      const box = document.getElementById('dispatch-box');
+      const name = document.getElementById('dispatch-name');
+      const icon = document.getElementById('dispatch-icon');
+
+      if (!cat || !dispatchRules[cat]) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      const r = dispatchRules[cat];
+      box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${r.style}`;
+      name.textContent = r.name;
+      icon.className = `fa-solid ${r.icon} mr-1`;
+      box.classList.remove('hidden');
+    }
+
+    function previewPhoto(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          base64Photo = e.target.result;
+          document.getElementById('photo-preview').src = base64Photo;
+          document.getElementById('upload-placeholder').classList.add('hidden');
+          document.getElementById('photo-preview-box').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removePhoto(e) {
+      e.stopPropagation();
+      base64Photo = "";
+      document.getElementById('photo-input').value = "";
+      document.getElementById('photo-preview').src = "";
+      document.getElementById('photo-preview-box').classList.add('hidden');
+      document.getElementById('upload-placeholder').classList.remove('hidden');
+    }
+
+    function toggleEmergency(e) {
+      const isChecked = e.target.checked;
+      const card = document.getElementById('emergency-card');
+      const alertTip = document.getElementById('emergency-alert');
+      if (isChecked) {
+        card.classList.add('border-rose-300', 'bg-rose-50/50');
+        alertTip.classList.remove('hidden');
+      } else {
+        card.classList.remove('border-rose-300', 'bg-rose-50/50');
+        alertTip.classList.add('hidden');
+      }
+    }
+
     function openConfigModal() {
       const savedSheet = localStorage.getItem('repair_sheet_url') || "";
       const firstBox = document.getElementById('first-setup-box');
@@ -636,7 +838,6 @@
       document.getElementById('config-modal').classList.add('hidden');
     }
 
-    // 管理員登入邏輯（初次建置時支援資料夾網址同步授權）
     async function handleAdminLogin() {
       let sheetUrl = localStorage.getItem('repair_sheet_url') || "";
       let folderUrl = "";
@@ -663,7 +864,6 @@
       btn.textContent = "驗證身分中...";
 
       try {
-        // 如果是全新試算表尚未初始化過，先呼叫 initSheet 同步設定權限
         if (!localStorage.getItem('repair_sheet_url')) {
           const initRes = await fetch(GAS_API_URL, {
             method: "POST",
@@ -735,16 +935,15 @@
       document.getElementById('view-login').classList.remove('hidden');
     }
 
-    // 重新初始化試算表與資料夾權限
     async function reInitCurrentSheet() {
       const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
       const folderUrl = document.getElementById('cfg-folder-url').value.trim();
       const btn = document.getElementById('btn-reinit');
 
-      if (!confirm("確定要執行初始化嗎？這會同步將試算表與照片資料夾設定為「知道連結的人均可編輯」。")) return;
+      if (!confirm("確定要執行初始化嗎？這會更新名單階層結構，並設定試算表與照片資料夾權限。")) return;
 
       btn.disabled = true;
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 設定權限中...`;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 更新初始化中...`;
 
       try {
         const res = await fetch(GAS_API_URL, {
@@ -767,11 +966,10 @@
         alert("初始化失敗：" + err);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>一鍵重新初始化（同步設為可編輯）</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-rotate"></i><span>一鍵重新初始化（更新名單結構）</span>`;
       }
     }
 
-    // 儲存所有管理設定（包含照片資料夾網址）
     async function saveAllAdminSettings() {
       const sheetUrl = document.getElementById('cfg-sheet-url').value.trim();
       const folderUrl = document.getElementById('cfg-folder-url').value.trim();
@@ -831,165 +1029,6 @@
       }
     }
 
-    // 動態載入名冊
-    async function loadTeacherOptions(sheetUrl) {
-      const deptSelect = document.getElementById('teacher-dept');
-      const nameSelect = document.getElementById('teacher-name');
-
-      deptSelect.innerHTML = '<option value="">載入中...</option>';
-      nameSelect.innerHTML = '<option value="">載入中...</option>';
-
-      try {
-        const res = await fetch(GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "getTeacherData",
-            sheetUrl: sheetUrl
-          })
-        });
-        const result = await res.json();
-
-        if (result.success && result.departments && result.teachers) {
-          renderTeacherOptions(result.departments, result.teachers);
-        } else {
-          setFallbackTeacherOptions();
-        }
-      } catch (err) {
-        setFallbackTeacherOptions();
-      }
-    }
-
-    function renderTeacherOptions(depts, teachers) {
-      const deptSelect = document.getElementById('teacher-dept');
-      const nameSelect = document.getElementById('teacher-name');
-
-      deptSelect.innerHTML = '<option value="">請選擇處室或班級</option>';
-      depts.forEach(d => {
-        let opt = document.createElement('option');
-        opt.value = d;
-        opt.textContent = d;
-        deptSelect.appendChild(opt);
-      });
-
-      nameSelect.innerHTML = '<option value="">請選擇教師姓名</option>';
-      teachers.forEach(t => {
-        let opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        nameSelect.appendChild(opt);
-      });
-
-      const lastDept = localStorage.getItem('last_teacher_dept');
-      const lastName = localStorage.getItem('last_teacher_name');
-      if (lastDept && depts.includes(lastDept)) deptSelect.value = lastDept;
-      if (lastName && teachers.includes(lastName)) nameSelect.value = lastName;
-    }
-
-    function setFallbackTeacherOptions() {
-      const defaultDepts = ["一年一班", "二年一班", "二年三班", "三年一班", "教務處", "總務處", "學務處", "輔導室"];
-      const defaultTeachers = ["陳小華 老師", "王大明 老師", "李美麗 老師", "張志豪 老師"];
-      renderTeacherOptions(defaultDepts, defaultTeachers);
-    }
-
-    function rememberTeacherProfile() {
-      const dept = document.getElementById('teacher-dept').value;
-      const name = document.getElementById('teacher-name').value;
-      if (dept) localStorage.setItem('last_teacher_dept', dept);
-      if (name) localStorage.setItem('last_teacher_name', name);
-    }
-
-    function updateBuildings() {
-      const area = document.getElementById('location-area').value;
-      const bldgSelect = document.getElementById('location-building');
-      const detailSelect = document.getElementById('location-detail');
-
-      bldgSelect.innerHTML = '<option value="">選擇大樓/樓層</option>';
-      detailSelect.innerHTML = '<option value="">先選大樓</option>';
-      detailSelect.disabled = true;
-
-      if (!area) { bldgSelect.disabled = true; return; }
-      bldgSelect.disabled = false;
-
-      for (let bldg in locationData[area]) {
-        let opt = document.createElement('option');
-        opt.value = bldg;
-        opt.textContent = bldg;
-        bldgSelect.appendChild(opt);
-      }
-    }
-
-    function updateDetails() {
-      const area = document.getElementById('location-area').value;
-      const bldg = document.getElementById('location-building').value;
-      const detailSelect = document.getElementById('location-detail');
-
-      detailSelect.innerHTML = '<option value="">選擇具體位置</option>';
-      if (!bldg) { detailSelect.disabled = true; return; }
-      detailSelect.disabled = false;
-
-      locationData[area][bldg].forEach(d => {
-        let opt = document.createElement('option');
-        opt.value = d;
-        opt.textContent = d;
-        detailSelect.appendChild(opt);
-      });
-    }
-
-    function updateDispatchBadge() {
-      const cat = document.getElementById('category').value;
-      const box = document.getElementById('dispatch-box');
-      const name = document.getElementById('dispatch-name');
-      const icon = document.getElementById('dispatch-icon');
-
-      if (!cat || !dispatchRules[cat]) {
-        box.classList.add('hidden');
-        return;
-      }
-
-      const r = dispatchRules[cat];
-      box.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${r.style}`;
-      name.textContent = r.name;
-      icon.className = `fa-solid ${r.icon} mr-1`;
-      box.classList.remove('hidden');
-    }
-
-    function previewPhoto(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          base64Photo = e.target.result;
-          document.getElementById('photo-preview').src = base64Photo;
-          document.getElementById('upload-placeholder').classList.add('hidden');
-          document.getElementById('photo-preview-box').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function removePhoto(e) {
-      e.stopPropagation();
-      base64Photo = "";
-      document.getElementById('photo-input').value = "";
-      document.getElementById('photo-preview').src = "";
-      document.getElementById('photo-preview-box').classList.add('hidden');
-      document.getElementById('upload-placeholder').classList.remove('hidden');
-    }
-
-    function toggleEmergency(e) {
-      const isChecked = e.target.checked;
-      const card = document.getElementById('emergency-card');
-      const alertTip = document.getElementById('emergency-alert');
-      if (isChecked) {
-        card.classList.add('border-rose-300', 'bg-rose-50/50');
-        alertTip.classList.remove('hidden');
-      } else {
-        card.classList.remove('border-rose-300', 'bg-rose-50/50');
-        alertTip.classList.add('hidden');
-      }
-    }
-
     // 提交報修單
     async function handleFormSubmit(e) {
       e.preventDefault();
@@ -1002,10 +1041,17 @@
       }
 
       const deptVal = document.getElementById('teacher-dept').value;
+      const subVal = document.getElementById('teacher-sub').value;
       const teacherVal = document.getElementById('teacher-name').value;
+      const locationVal = document.getElementById('location-custom').value.trim();
 
-      if (!deptVal || !teacherVal) {
-        alert("請選擇「所屬處室/班級」與「填報人姓名」！");
+      if (!deptVal || !subVal || !teacherVal) {
+        alert("請選擇完整的「處室/學年」與「組別/班級」！");
+        return;
+      }
+
+      if (!locationVal) {
+        alert("請填寫或選取「故障發生地點」！");
         return;
       }
 
@@ -1019,11 +1065,9 @@
         sheetUrl: sheetUrl,
         data: {
           reporterName: teacherVal,
-          department: deptVal,
+          department: deptVal + " " + subVal,
           phone: document.getElementById('phone').value,
-          area: document.getElementById('location-area').value,
-          building: document.getElementById('location-building').value,
-          detailLocation: document.getElementById('location-detail').value,
+          location: locationVal, // 自由輸入或快捷選取的完整地點
           categoryName: document.getElementById('category').options[document.getElementById('category').selectedIndex].text,
           dispatchTarget: dispatchRules[category] ? dispatchRules[category].name : "總務處",
           description: document.getElementById('description').value,
@@ -1044,7 +1088,7 @@
           document.getElementById('ticket-id').textContent = result.ticketId;
           document.getElementById('modal-summary').innerHTML = `
             <div>填報人：${payload.data.reporterName}（${payload.data.department}）</div>
-            <div>地點：${payload.data.area} / ${payload.data.building} / ${payload.data.detailLocation}</div>
+            <div>地點：${payload.data.location}</div>
             <div>指派：${payload.data.dispatchTarget}</div>
             <div>通報：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
           `;
@@ -1064,14 +1108,16 @@
       document.getElementById('success-modal').classList.add('hidden');
       document.getElementById('repair-form').reset();
       removePhoto({ stopPropagation: () => {} });
-      updateBuildings();
       updateDispatchBadge();
       toggleEmergency({ target: { checked: false } });
 
+      // 保留教職員記憶
       const lastDept = localStorage.getItem('last_teacher_dept');
-      const lastName = localStorage.getItem('last_teacher_name');
-      if (lastDept) document.getElementById('teacher-dept').value = lastDept;
-      if (lastName) document.getElementById('teacher-name').value = lastName;
+      const lastSub = localStorage.getItem('last_teacher_sub');
+      if (lastDept) {
+        document.getElementById('teacher-dept').value = lastDept;
+        onDeptChange(lastSub);
+      }
     }
   </script>
 </body>
