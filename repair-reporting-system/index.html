@@ -74,7 +74,7 @@
     <!-- 報修表單 -->
     <form id="repair-form" class="space-y-5" onsubmit="handleFormSubmit(event)">
 
-      <!-- 區塊 1：填報老師姓名（小校極簡手打模式，移除處室/組別/分機） -->
+      <!-- 區塊 1：填報老師姓名（小校手打模式） -->
       <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center space-x-2">
@@ -211,17 +211,17 @@
             rows="3" 
             required 
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" 
-            placeholder="請簡述故障狀況（例如：燈管兩端黑掉持續閃爍、水槽下水管滴水...）"
+            placeholder="請簡述故障狀況（例如：風扇開關損壞、椅子靠背螺絲脫落...）"
           ></textarea>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳，存入指定資料夾）</label>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">現場照片（手機拍照自動壓縮上傳，存入指定資料夾並附於通報信中）</label>
           <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50 relative" onclick="document.getElementById('photo-input').click()">
             <input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" onchange="previewPhoto(event)">
             <div id="upload-placeholder" class="space-y-1.5">
               <i class="fa-solid fa-camera text-2xl text-blue-500"></i>
               <p class="text-xs font-semibold text-slate-700">點擊拍照或選取現場相片</p>
-              <p class="text-[11px] text-slate-400">方便工友師傅攜帶相符零件一次修好</p>
+              <p class="text-[11px] text-slate-400">方便工友師傅備妥料件一次修好</p>
             </div>
             <div id="photo-preview-box" class="hidden relative inline-block">
               <img id="photo-preview" src="" class="max-h-52 rounded-xl object-contain shadow-md mx-auto">
@@ -239,9 +239,9 @@
           <input type="checkbox" id="emergency" class="mt-1 w-5 h-5 rounded text-rose-600 focus:ring-rose-500 border-slate-300" onchange="toggleEmergency(event)">
           <div>
             <span class="font-bold text-slate-800 text-sm">標記為【危險 / 緊急安全疑慮】</span>
-            <p class="text-xs text-slate-500 mt-0.5">有漏電起火風險、結構崩塌、水管大噴水等危及全校師生安全之事項。</p>
+            <p class="text-xs text-slate-500 mt-0.5">有漏電起火風險、天花板掉落、水管大噴水等危及全校師生安全之事項。</p>
             <div id="emergency-alert" class="hidden mt-2 text-xs font-semibold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
-              <i class="fa-solid fa-triangle-exclamation mr-1"></i>系統將高亮紅色標記，並立即發送緊急 Gmail 通報主管與工友！
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i>系統將高亮紅色標記，並立即發送緊急 Gmail 通報主管與工友（夾帶照片附件）！
             </div>
           </div>
         </label>
@@ -497,7 +497,7 @@
           <input type="text" id="cfg-unit-name" class="w-full px-3 py-2 bg-slate-50 border rounded-xl font-bold text-xs" placeholder="例如：東海國小">
         </div>
 
-        <!-- 1. 管理者通知 Gmail 設置 (嚴格以試算表為準，不殘留舊校 Email) -->
+        <!-- 1. 管理者通知 Gmail 設置 -->
         <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center space-x-1.5 text-amber-900 font-bold text-xs">
             <i class="fa-solid fa-envelope"></i>
@@ -870,7 +870,6 @@
       if (!savedSheet || forceNew) {
         if (firstBox) firstBox.classList.remove('hidden');
         if (normalBox) normalBox.classList.add('hidden');
-        // 清空 Email 避免殘留舊校信箱
         const emailInput = document.getElementById('cfg-admin-email');
         if (emailInput) emailInput.value = "";
       } else {
@@ -960,7 +959,6 @@
           document.getElementById('cfg-unit-name').value = unitName;
           document.getElementById('cfg-sheet-url').value = sheetUrl;
           document.getElementById('cfg-folder-url').value = folderUrl;
-          // 新增學校清空信箱，不抓前一所學校暫存
           document.getElementById('cfg-admin-email').value = "";
           
           alert(`🎉 恭喜！${unitName} 專屬報修系統開通成功！\n\n📌 貴校管理憑證：\n・帳號：${newUser}\n・密碼：${newPass}\n\n已為貴校產生專屬短網址與 QR Code！`);
@@ -980,7 +978,7 @@
       }
     }
 
-    // 日常管理員登入（嚴格依賴該校試算表）
+    // 日常管理員登入
     async function handleAdminLogin() {
       const sheetUrl = localStorage.getItem('repair_sheet_url') || "";
       const user = document.getElementById('login-user')?.value.trim() || "admin";
@@ -1025,7 +1023,6 @@
           }
 
           document.getElementById('cfg-sheet-url').value = sheetUrl;
-          // 嚴格讀取該校試算表的 Email，絕不讀取 localStorage 舊信箱
           document.getElementById('cfg-admin-email').value = result.adminEmail || "";
           document.getElementById('cfg-folder-url').value = result.photoFolderUrl || "";
 
@@ -1171,7 +1168,7 @@
       }
     }
 
-    // 提交報修單
+    // 提交報修單（小校模式，手動填寫老師姓名）
     async function handleFormSubmit(e) {
       e.preventDefault();
 
@@ -1195,7 +1192,6 @@
         return;
       }
 
-      // 自動記憶老師姓名
       localStorage.setItem('last_teacher_name', teacherVal);
 
       const submitBtn = document.getElementById('submit-btn');
@@ -1235,7 +1231,7 @@
             <div>填報老師：${payload.data.reporterName}</div>
             <div>故障地點：${payload.data.location}</div>
             <div>派單責任：${payload.data.dispatchTarget}</div>
-            <div>通知狀態：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已寄發緊急通知信</span>' : '已寄發管理員信件'}</div>
+            <div>通知狀態：${payload.data.isUrgent ? '<span class="text-rose-600 font-bold">已發送緊急通報信（含照片附件）</span>' : '已發送主管通報信（含照片附件）'}</div>
           `;
           document.getElementById('success-modal')?.classList.remove('hidden');
         } else {
@@ -1258,7 +1254,6 @@
       updateDispatchBadge();
       toggleEmergency({ target: { checked: false } });
 
-      // 保留老師姓名，方便下次直接填
       const savedTeacherName = localStorage.getItem('last_teacher_name') || "";
       const nameInput = document.getElementById('teacher-name');
       if (nameInput && savedTeacherName) {
