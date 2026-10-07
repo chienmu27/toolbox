@@ -55,7 +55,6 @@
       position: relative;
     }
 
-    /* 頂部欄 */
     .top-header {
       border: 3px solid var(--border-blue);
       border-radius: 18px;
@@ -109,7 +108,6 @@
     .icon-svg-btn:hover { transform: scale(1.1); color: #536b8e; }
     .icon-svg-btn svg { width: 100%; height: 100%; fill: currentColor; }
 
-    /* 主要內容區與右側頁籤 */
     .content-area {
       display: flex;
       gap: 15px;
@@ -165,7 +163,6 @@
     .tab-choice { background-color: var(--tab-choice); }
     .tab-write { background-color: var(--tab-write); }
 
-    /* 通用按鈕風格 */
     .btn-kai {
       font-family: "DFKai-SB", "標楷體", sans-serif;
       font-size: 1.2rem;
@@ -185,7 +182,6 @@
     .btn-red { background-color: var(--btn-red); color: white; }
     .btn-purple { background-color: var(--btn-purple); color: white; }
 
-    /* 注音排版 */
     .ruby-box {
       display: inline-flex;
       align-items: center;
@@ -218,7 +214,6 @@
       font-size: 0.95em;
     }
 
-    /* 玩法面板 */
     .mode-panel {
       width: 100%;
       display: flex;
@@ -227,7 +222,6 @@
       justify-content: center;
     }
 
-    /* 玩法 1：翻頁卡片 */
     .card-flip-wrap {
       width: 320px;
       height: 320px;
@@ -260,7 +254,6 @@
     .card-back { transform: rotateY(180deg); background-color: #f4f8fc; }
     .pure-zhuyin-large { font-size: 6.5rem; }
 
-    /* 玩法 2 & 4：Canvas */
     .canvas-frame {
       width: 320px;
       height: 320px;
@@ -281,7 +274,6 @@
       justify-content: center;
     }
 
-    /* 玩法 3：選字 */
     .question-title-large {
       font-size: 3.2rem;
       color: var(--main-dark);
@@ -310,7 +302,6 @@
     }
     .btn-choice-opt:hover { background-color: #edf2f7; transform: translateY(-2px); }
 
-    /* 寫詞標題 */
     .phrase-title-box {
       font-size: 2.8rem;
       color: var(--main-dark);
@@ -322,7 +313,6 @@
       align-items: center;
     }
 
-    /* 回饋貼紙 Overlay */
     .overlay-feedback {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -349,7 +339,6 @@
       100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Modal 視窗通配 */
     .modal-mask {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -472,7 +461,6 @@
       padding: 15px;
       margin-bottom: 15px;
     }
-
     .cloud-box h3 { margin-top: 0; color: #2b6cb0; font-size: 1.3rem; }
 
     .editor-footer {
@@ -497,7 +485,6 @@
         <span class="theme-badge" id="currentThemeBadge">預設主題</span>
       </div>
       <div class="header-icons">
-        <!-- 順序/隨機 切換 -->
         <div class="icon-svg-btn" id="orderToggleBtn" onclick="togglePlayOrder()" title="切換為隨機模式">
           <svg id="iconSeq" viewBox="0 0 24 24">
             <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
@@ -506,13 +493,12 @@
             <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.42l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.12z"/>
           </svg>
         </div>
-        <!-- 全螢幕 -->
         <div class="icon-svg-btn" onclick="toggleFullscreen()" title="全螢幕">
           <svg viewBox="0 0 24 24">
             <path d="M5 9h2V7h2V5H5v4zm2 6H5v4h4v-2H7v-2zm10 2h-2v2h4v-4h-2v2zm-2-12v2h2v2h2V5h-4z"/>
           </svg>
         </div>
-        <!-- 後台管理按鈕 (學生模式下會隱藏) -->
+        <!-- 後台按鈕 (學生專用模式會隱藏) -->
         <div class="icon-svg-btn" id="adminSettingsBtn" onclick="requestAdminAccess()" title="後台管理與雲端題庫">
           <svg viewBox="0 0 24 24">
             <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -524,7 +510,6 @@
     <!-- 內容與右側頁籤區 -->
     <div class="content-area">
       <div class="game-card-container">
-        <!-- 回饋貼紙 Overlay -->
         <div class="overlay-feedback" id="feedbackOverlay" onclick="dismissFeedback()">
           <div class="sticker-character" id="fbSticker">🐶</div>
           <div class="sticker-text" id="fbText">太棒了！</div>
@@ -544,7 +529,7 @@
           </div>
         </div>
 
-        <!-- 玩法 2：習寫 (描紅) -->
+        <!-- 玩法 2：習寫 -->
         <div id="mode2" class="mode-panel" style="display:none; text-align:center;">
           <div class="canvas-frame">
             <canvas id="traceCanvas" width="320" height="320"></canvas>
@@ -604,20 +589,20 @@
           <label style="display:block; margin-bottom: 8px; font-weight: bold;">請輸入管理密碼 (預設: 1234)：</label>
           <input type="password" id="adminPwdInput" class="gui-input lg" placeholder="輸入密碼">
           <div style="text-align:right; margin-top: 15px;">
-            <button class="btn-kai btn-blue" onclick="verifyPassword()">登入後台</button>
+            <button class="btn-kai btn-blue" id="loginBtn" onclick="verifyPassword()">登入後台</button>
           </div>
         </div>
 
         <div id="pwdChangeArea" style="display:none;">
           <div style="background:#fffaf0; border:1px solid #ecc94b; color:#b7791f; padding:10px; border-radius:8px; margin-bottom:12px; font-size:0.95rem;">
-            ⚠️ 系統偵測到您使用的是預設密碼，為確保安全，請先設定您的新密碼！
+            ⚠️ 系統偵測到您目前使用的是預設密碼，為確保雲端題庫安全，請先設定新密碼並同步至試算表！
           </div>
           <label style="display:block; margin-bottom: 6px; font-weight: bold;">設定新密碼：</label>
           <input type="password" id="newPwdInput1" class="gui-input lg" placeholder="輸入新密碼" style="margin-bottom:10px;">
           <label style="display:block; margin-bottom: 6px; font-weight: bold;">確認新密碼：</label>
           <input type="password" id="newPwdInput2" class="gui-input lg" placeholder="再次輸入新密碼">
           <div style="text-align:right; margin-top: 15px;">
-            <button class="btn-kai btn-green" onclick="submitNewPassword()">確定儲存並進入</button>
+            <button class="btn-kai btn-green" id="saveNewPwdBtn" onclick="submitNewPassword()">確定儲存並進入</button>
           </div>
         </div>
       </div>
@@ -643,19 +628,15 @@
 
       <!-- 編輯器主內容區 -->
       <div class="editor-body">
-        <!-- 頁籤 0：Google 試算表雲端整合 -->
+        <!-- 頁籤 0：Google 試算表雲端整合 (已移除 GAS 網址輸入欄) -->
         <div id="guiTab0">
           <div class="cloud-box">
-            <h3>🔗 1. Google 試算表與 GAS API 連線</h3>
-            <div style="margin-bottom: 10px;">
-              <label style="font-weight:bold;">外接 GAS 應用程式網址 (Web App URL)：</label>
-              <input type="text" id="cfgGasUrl" class="gui-input lg" placeholder="https://script.google.com/macros/s/AKfycbwPWdXNJLmubsNj45js6TYuLrk-HR-SqT0yGh5Z2J25wys-Np5kBwAfKMMOaCHtWbEx/exec">
-            </div>
+            <h3>🔗 1. Google 試算表連結</h3>
             <div style="margin-bottom: 10px;">
               <label style="font-weight:bold;">Google 試算表網址 (共用權限需設為「知道連結的使用者可編輯」)：</label>
               <input type="text" id="cfgSheetUrl" class="gui-input lg" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
             </div>
-            <button class="btn-kai btn-blue sm" onclick="saveCloudConfig()">💾 儲存連線設定</button>
+            <button class="btn-kai btn-blue sm" onclick="saveCloudConfig()">💾 儲存試算表設定</button>
           </div>
 
           <div class="cloud-box">
@@ -674,7 +655,7 @@
 
           <div class="cloud-box">
             <h3>🎓 3. 學生專用連結生成器</h3>
-            <p style="color:#718096; font-size:0.95rem; margin:0 0 8px 0;">此專屬網址已帶入主題與試算表設定，學生進入後將「完全不顯示」後台設定齒輪。</p>
+            <p style="color:#718096; font-size:0.95rem; margin:0 0 8px 0;">此專屬網址已帶入主題與試算表設定，學生開啟後將「完全不顯示」後台設定齒輪。</p>
             <input type="text" id="studentLinkDisplay" class="gui-input lg" readonly style="background:#edf2f7; margin-bottom:10px;">
             <button class="btn-kai btn-blue sm" onclick="copyStudentLink()">📋 一鍵複製學生專屬連結</button>
           </div>
@@ -711,10 +692,11 @@
           <button class="btn-kai btn-blue sm" onclick="addNewWriteCard()">+ 新增寫詞題目</button>
         </div>
 
-        <!-- 頁籤 4：變更密碼 -->
+        <!-- 頁籤 4：變更密碼 (寫入試算表) -->
         <div id="guiTab4" style="display:none;">
-          <div class="cloud-box" style="max-width:400px;">
+          <div class="cloud-box" style="max-width:420px;">
             <h3>🔑 修改管理員密碼</h3>
+            <p style="color:#718096; font-size:0.9rem; margin-top:0;">密碼將直接同步寫入 Google 試算表 `_系統設定` 工作表。</p>
             <div style="margin-bottom:10px;">
               <label style="font-weight:bold;">新密碼：</label>
               <input type="password" id="tabNewPwd1" class="gui-input lg">
@@ -723,7 +705,7 @@
               <label style="font-weight:bold;">再次確認新密碼：</label>
               <input type="password" id="tabNewPwd2" class="gui-input lg">
             </div>
-            <button class="btn-kai btn-green sm" onclick="changeAdminPasswordFromTab()">儲存新密碼</button>
+            <button class="btn-kai btn-green sm" onclick="changeAdminPasswordFromTab()">💾 同步更新至試算表</button>
           </div>
         </div>
       </div>
@@ -739,6 +721,12 @@
   </div>
 
   <script>
+    /************************************************************************
+     * 1. 系統固定設定：外接專案 GAS 應用程式網址 (直接寫死在此)
+     ************************************************************************/
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwPWdXNJLmubsNj45js6TYuLrk-HR-SqT0yGh5Z2J25wys-Np5kBwAfKMMOaCHtWbEx/exec"; 
+    // ↑ 請確保已替換為您從 Apps Script 部署取得的真實 Web App 網址
+
     const DEFAULT_DB = {
       chars: [
         { char: "陽", zhuyin: "ㄧㄤˊ" },
@@ -776,10 +764,7 @@
     let guiDB = null;
     let currentTheme = "預設主題";
 
-    // 系統儲存鍵值
     const STORAGE_KEY_DB = 'zh_game_db';
-    const STORAGE_KEY_PWD = 'zh_game_admin_pwd';
-    const STORAGE_KEY_GAS = 'zh_game_gas_url';
     const STORAGE_KEY_SHEET = 'zh_game_sheet_url';
     const STORAGE_KEY_THEME = 'zh_game_current_theme';
 
@@ -791,7 +776,7 @@
     let showWriteHint = false;
     let isRandomOrder = false;
 
-    // 檢查是否為學生專用模式
+    // 檢查是否為學生模式
     const urlParams = new URLSearchParams(window.location.search);
     const isStudentMode = urlParams.get('student') === '1';
 
@@ -802,9 +787,8 @@
         if (btn) btn.style.display = 'none';
       }
 
-      // 2. 載入網址覆蓋參數 (若學生連結帶有 theme 與 sheetUrl)
+      // 2. 載入網址參數
       if (urlParams.get('sheetUrl')) localStorage.setItem(STORAGE_KEY_SHEET, urlParams.get('sheetUrl'));
-      if (urlParams.get('gasUrl')) localStorage.setItem(STORAGE_KEY_GAS, urlParams.get('gasUrl'));
       if (urlParams.get('theme')) {
         currentTheme = urlParams.get('theme');
         localStorage.setItem(STORAGE_KEY_THEME, currentTheme);
@@ -814,29 +798,23 @@
 
       document.getElementById('currentThemeBadge').innerText = currentTheme;
 
-      // 3. 載入題庫
+      // 3. 載入本機快取題庫
       const saved = localStorage.getItem(STORAGE_KEY_DB);
       if (saved) {
         try { DB = JSON.parse(saved); } catch(e) { DB = JSON.parse(JSON.stringify(DEFAULT_DB)); }
       }
 
-      // 如果有雲端連結且非自帶完整資料，可自動進行初次載入
-      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS);
+      // 若為學生模式且有設定試算表，自動從雲端獲取最新題目
       const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
-      if (gasUrl && sheetUrl && isStudentMode) {
-        loadDataFromCloud(gasUrl, sheetUrl, currentTheme, false);
+      if (sheetUrl && isStudentMode) {
+        loadDataFromCloud(sheetUrl, currentTheme, false);
       }
 
       switchMode(1);
     }
 
-    /* 密碼防護與後台登入 */
-    function getAdminPassword() {
-      return localStorage.getItem(STORAGE_KEY_PWD) || '1234';
-    }
-
+    /* 密碼防護與試算表同步驗證 */
     function requestAdminAccess() {
-      const pwd = getAdminPassword();
       document.getElementById('adminPwdInput').value = '';
       document.getElementById('pwdInputArea').style.display = 'block';
       document.getElementById('pwdChangeArea').style.display = 'none';
@@ -848,29 +826,56 @@
       document.getElementById('passwordModal').style.display = 'none';
     }
 
-    function verifyPassword() {
+    async function verifyPassword() {
       const entered = document.getElementById('adminPwdInput').value;
-      const currentPwd = getAdminPassword();
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
 
-      if (entered !== currentPwd) {
-        alert("❌ 密碼錯誤！請重新輸入。");
+      if (!entered) {
+        alert("請輸入密碼！");
         return;
       }
 
-      // 若目前密碼仍為預設的 1234，強制要求先修改密碼
-      if (currentPwd === '1234') {
-        document.getElementById('pwdInputArea').style.display = 'none';
-        document.getElementById('pwdChangeArea').style.display = 'block';
-        document.getElementById('pwdModalTitle').innerText = '⚠️ 修改預設密碼';
-      } else {
-        closePasswordModal();
-        openSettingsModal();
+      // 若尚未設定試算表，採用本機預設驗證
+      if (!sheetUrl) {
+        if (entered === '1234') {
+          document.getElementById('pwdInputArea').style.display = 'none';
+          document.getElementById('pwdChangeArea').style.display = 'block';
+          document.getElementById('pwdModalTitle').innerText = '⚠️ 修改預設密碼';
+        } else {
+          alert("❌ 密碼錯誤！(尚未綁定試算表時，預設密碼為 1234)");
+        }
+        return;
+      }
+
+      const btn = document.getElementById('loginBtn');
+      btn.innerText = "驗證中...";
+      btn.disabled = true;
+
+      const res = await callGAS({ action: "verifyPassword", password: entered });
+      btn.innerText = "登入後台";
+      btn.disabled = false;
+
+      if (res && res.success) {
+        if (!res.valid) {
+          alert("❌ 密碼錯誤！請重新輸入。");
+          return;
+        }
+
+        if (res.isDefault) {
+          document.getElementById('pwdInputArea').style.display = 'none';
+          document.getElementById('pwdChangeArea').style.display = 'block';
+          document.getElementById('pwdModalTitle').innerText = '⚠️ 修改預設密碼';
+        } else {
+          closePasswordModal();
+          openSettingsModal();
+        }
       }
     }
 
-    function submitNewPassword() {
+    async function submitNewPassword() {
       const p1 = document.getElementById('newPwdInput1').value;
       const p2 = document.getElementById('newPwdInput2').value;
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
 
       if (!p1 || p1.length < 4) {
         alert("密碼長度至少需 4 碼！");
@@ -885,15 +890,36 @@
         return;
       }
 
-      localStorage.setItem(STORAGE_KEY_PWD, p1);
-      alert("✅ 密碼修改成功！即將進入後台設定。");
-      closePasswordModal();
-      openSettingsModal();
+      if (sheetUrl) {
+        const btn = document.getElementById('saveNewPwdBtn');
+        btn.innerText = "儲存中...";
+        btn.disabled = true;
+
+        const res = await callGAS({ action: "updatePassword", newPassword: p1 });
+        btn.innerText = "確定儲存並進入";
+        btn.disabled = false;
+
+        if (res && res.success) {
+          alert("✅ 新密碼已成功儲存至試算表！即將進入後台。");
+          closePasswordModal();
+          openSettingsModal();
+        }
+      } else {
+        alert("✅ 密碼設定完成！請進入後台第一步先連結 Google 試算表。");
+        closePasswordModal();
+        openSettingsModal();
+      }
     }
 
-    function changeAdminPasswordFromTab() {
+    async function changeAdminPasswordFromTab() {
       const p1 = document.getElementById('tabNewPwd1').value;
       const p2 = document.getElementById('tabNewPwd2').value;
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
+
+      if (!sheetUrl) {
+        alert("請先於第 1 頁設定並儲存 Google 試算表網址！");
+        return;
+      }
       if (!p1 || p1.length < 4) {
         alert("密碼長度至少需 4 碼！");
         return;
@@ -902,16 +928,18 @@
         alert("兩次輸入的密碼不符！");
         return;
       }
-      localStorage.setItem(STORAGE_KEY_PWD, p1);
-      alert("✅ 管理員密碼已更新！");
-      document.getElementById('tabNewPwd1').value = '';
-      document.getElementById('tabNewPwd2').value = '';
+
+      const res = await callGAS({ action: "updatePassword", newPassword: p1 });
+      if (res && res.success) {
+        alert("✅ 管理員密碼已成功更新並寫入 Google 試算表！");
+        document.getElementById('tabNewPwd1').value = '';
+        document.getElementById('tabNewPwd2').value = '';
+      }
     }
 
     /* 後台管理面板控制 */
     function openSettingsModal() {
       guiDB = JSON.parse(JSON.stringify(DB));
-      document.getElementById('cfgGasUrl').value = localStorage.getItem(STORAGE_KEY_GAS) || '';
       document.getElementById('cfgSheetUrl').value = localStorage.getItem(STORAGE_KEY_SHEET) || '';
       updateStudentLinkDisplay();
       switchEditorTab(0);
@@ -938,20 +966,24 @@
       if (tabIndex === 3) renderGUITab3();
     }
 
-    /* 雲端試算表 API 呼叫方法 */
+    /* 雲端 GAS 呼叫方法 (直接使用寫死的 GAS_API_URL) */
     async function callGAS(payload) {
-      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS) || document.getElementById('cfgGasUrl').value.trim();
       const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET) || document.getElementById('cfgSheetUrl').value.trim();
 
-      if (!gasUrl || !sheetUrl) {
-        alert("請先於設定中填寫完整的 GAS 應用程式網址與試算表網址！");
+      if (!GAS_API_URL || GAS_API_URL.includes("YOUR_ACTUAL_ID_HERE")) {
+        alert("請先在 HTML 程式碼中填入真實的 GAS_API_URL！");
+        return null;
+      }
+
+      if (!sheetUrl && payload.action !== 'ping') {
+        alert("請先填寫 Google 試算表網址！");
         return null;
       }
 
       payload.sheetUrl = sheetUrl;
 
       try {
-        const res = await fetch(gasUrl, {
+        const res = await fetch(GAS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
@@ -959,18 +991,16 @@
         const data = await res.json();
         return data;
       } catch (e) {
-        alert("與雲端連線失敗：" + e.message);
+        alert("與 Google 試算表連線失敗：" + e.message);
         return null;
       }
     }
 
     function saveCloudConfig() {
-      const gasUrl = document.getElementById('cfgGasUrl').value.trim();
       const sheetUrl = document.getElementById('cfgSheetUrl').value.trim();
-      localStorage.setItem(STORAGE_KEY_GAS, gasUrl);
       localStorage.setItem(STORAGE_KEY_SHEET, sheetUrl);
       updateStudentLinkDisplay();
-      alert("✅ 雲端連線設定已儲存！");
+      alert("✅ 試算表網址已儲存！");
       fetchThemesList();
     }
 
@@ -1014,14 +1044,13 @@
         alert("請先選擇主題！");
         return;
       }
-      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS);
       const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
-      await loadDataFromCloud(gasUrl, sheetUrl, theme, true);
+      await loadDataFromCloud(sheetUrl, theme, true);
     }
 
-    async function loadDataFromCloud(gasUrl, sheetUrl, theme, showAlert = true) {
+    async function loadDataFromCloud(sheetUrl, theme, showAlert = true) {
       try {
-        const res = await fetch(gasUrl, {
+        const res = await fetch(GAS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({ action: "loadData", sheetUrl: sheetUrl, theme: theme })
@@ -1052,11 +1081,10 @@
     }
 
     function updateStudentLinkDisplay() {
-      const gasUrl = encodeURIComponent(localStorage.getItem(STORAGE_KEY_GAS) || '');
       const sheetUrl = encodeURIComponent(localStorage.getItem(STORAGE_KEY_SHEET) || '');
       const theme = encodeURIComponent(currentTheme);
       const baseUrl = window.location.origin + window.location.pathname;
-      const studentUrl = `${baseUrl}?student=1&theme=${theme}&sheetUrl=${sheetUrl}&gasUrl=${gasUrl}`;
+      const studentUrl = `${baseUrl}?student=1&theme=${theme}&sheetUrl=${sheetUrl}`;
       document.getElementById('studentLinkDisplay').value = studentUrl;
     }
 
@@ -1068,7 +1096,7 @@
       alert("📋 學生專屬連結已複製到剪貼簿！");
     }
 
-    /* 注音排版元件 */
+    /* 注音與 Ruby 排版 */
     function renderRubyHTML(char, zhuyinStr, pureZhuyinMode = false) {
       if (!zhuyinStr) return char || '';
       const tones = ['ˊ', 'ˇ', 'ˋ', '˙'];
@@ -1304,7 +1332,7 @@
       }
     }
 
-    /* 編輯器內部 DOM 渲染 */
+    /* 圖形化題庫編輯器渲染 */
     function renderGUITab1() {
       const tbody = document.getElementById('charsTableBody');
       tbody.innerHTML = '';
@@ -1464,7 +1492,7 @@
       alert("✅ 目前題庫已套用！");
     }
 
-    // 初始化啟動
+    // 啟動程式
     initApp();
   </script>
 </body>
