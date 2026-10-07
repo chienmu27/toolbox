@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國字小遊戲</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-grid: #fce4ec;
+      --card-bg: #ffffff;
+      --main-blue: #7ba4cf;
+      --main-dark: #2c3e50;
+      --border-blue: #b0c4de;
+      --tab-card: #b8a7ea;
+      --tab-trace: #eeb375;
+      --tab-choice: #88ab9a;
+      --tab-write: #a1b8cc;
+      --btn-gray: #e2e8f0;
+      --btn-blue: #6aa1d8;
+      --btn-green: #38b2ac;
+      --btn-orange: #ed8936;
+      --btn-red: #e53935;
+      --btn-purple: #9f7aea;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      background-color: #f7fafc;
+      background-image: 
+        linear-gradient(var(--bg-grid) 1.5px, transparent 1.5px),
+        linear-gradient(90deg, var(--bg-grid) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      margin: 0;
+      padding: 15px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+    }
+
+    .main-wrapper {
+      width: 100%;
+      max-width: 920px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 4px solid var(--border-blue);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    /* 頂部欄 */
+    .top-header {
+      border: 3px solid var(--border-blue);
+      border-radius: 18px;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #fff;
+      margin-bottom: 15px;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-family: 'Zen Maru Gothic', 'Mochiy Pop One', cursive, sans-serif;
+      font-size: 2.2rem;
+      color: #637b9d;
+      margin: 0;
+      letter-spacing: 2px;
+    }
+
+    .theme-badge {
+      font-size: 1.1rem;
+      background: #e2e8f0;
+      color: #4a5568;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .header-icons {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .icon-svg-btn {
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7b8eab;
+      transition: transform 0.15s, color 0.15s;
+    }
+    .icon-svg-btn:hover { transform: scale(1.1); color: #536b8e; }
+    .icon-svg-btn svg { width: 100%; height: 100%; fill: currentColor; }
+
+    /* 主要內容區與右側頁籤 */
+    .content-area {
+      display: flex;
+      gap: 15px;
+      position: relative;
+    }
+
+    .game-card-container {
+      flex: 1;
+      border: 3px solid var(--border-blue);
+      border-radius: 20px;
+      padding: 20px;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .side-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .tab-btn {
+      width: 70px;
+      height: 90px;
+      border-radius: 35px 0 0 35px;
+      border: none;
+      color: white;
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      font-size: 1.4rem;
+      font-weight: bold;
+      writing-mode: vertical-rl;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      width: 80px;
+      opacity: 1;
+      box-shadow: -4px 0 10px rgba(0,0,0,0.1);
+    }
+    .tab-card { background-color: var(--tab-card); }
+    .tab-trace { background-color: var(--tab-trace); }
+    .tab-choice { background-color: var(--tab-choice); }
+    .tab-write { background-color: var(--tab-write); }
+
+    /* 通用按鈕風格 */
+    .btn-kai {
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      font-size: 1.2rem;
+      padding: 8px 20px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      transition: all 0.15s;
+    }
+    .btn-kai:active { transform: translateY(2px); }
+    .btn-kai.sm { font-size: 1rem; padding: 5px 12px; border-radius: 8px; }
+    .btn-gray { background-color: var(--btn-gray); color: #334e68; }
+    .btn-blue { background-color: var(--btn-blue); color: white; }
+    .btn-green { background-color: var(--btn-green); color: white; }
+    .btn-orange { background-color: var(--btn-orange); color: white; }
+    .btn-red { background-color: var(--btn-red); color: white; }
+    .btn-purple { background-color: var(--btn-purple); color: white; }
+
+    /* 注音排版 */
+    .ruby-box {
+      display: inline-flex;
+      align-items: center;
+      margin: 0 4px;
+    }
+    .ruby-char { font-size: inherit; line-height: 1; }
+    .ruby-zhuyin-col {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: 0.38em;
+      margin-left: 3px;
+      line-height: 1;
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+    }
+    .zy-symbol { line-height: 1.05; }
+    .zy-tone-top {
+      position: absolute;
+      top: -0.7em;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9em;
+    }
+    .zy-tone-right {
+      position: absolute;
+      right: -0.85em;
+      bottom: 0.1em;
+      font-size: 0.95em;
+    }
+
+    /* 玩法面板 */
+    .mode-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 玩法 1：翻頁卡片 */
+    .card-flip-wrap {
+      width: 320px;
+      height: 320px;
+      perspective: 1000px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .card-flip-inner {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+      border: 4px solid var(--main-blue);
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: 0 6px 16px rgba(123, 164, 207, 0.2);
+    }
+    .card-flip-wrap.flipped .card-flip-inner { transform: rotateY(180deg); }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 24px;
+    }
+    .card-front { font-size: 8rem; color: var(--main-dark); }
+    .card-back { transform: rotateY(180deg); background-color: #f4f8fc; }
+    .pure-zhuyin-large { font-size: 6.5rem; }
+
+    /* 玩法 2 & 4：Canvas */
+    .canvas-frame {
+      width: 320px;
+      height: 320px;
+      border: 3px solid var(--border-blue);
+      border-radius: 24px;
+      background-color: #ffffff;
+      position: relative;
+      touch-action: none;
+      margin: 0 auto;
+    }
+    canvas { width: 100%; height: 100%; border-radius: 20px; }
+    .control-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* 玩法 3：選字 */
+    .question-title-large {
+      font-size: 3.2rem;
+      color: var(--main-dark);
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .choice-options-group {
+      display: flex;
+      gap: 25px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-choice-opt {
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      font-size: 3rem;
+      padding: 12px 36px;
+      border: 3px solid var(--border-blue);
+      border-radius: 20px;
+      background-color: #f7fafc;
+      color: var(--main-dark);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-choice-opt:hover { background-color: #edf2f7; transform: translateY(-2px); }
+
+    /* 寫詞標題 */
+    .phrase-title-box {
+      font-size: 2.8rem;
+      color: var(--main-dark);
+      margin-bottom: 12px;
+      background-color: #f0f4f8;
+      padding: 6px 24px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 回饋貼紙 Overlay */
+    .overlay-feedback {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.88);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      border-radius: 18px;
+      cursor: pointer;
+    }
+    .sticker-character { font-size: 6.5rem; animation: popJump 0.5s ease-out; }
+    .sticker-text {
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #334e68;
+      margin-top: 10px;
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+    }
+    @keyframes popJump {
+      0% { transform: scale(0.3); opacity: 0; }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Modal 視窗通配 */
+    .modal-mask {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 24px;
+      width: 92%;
+      max-width: 800px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+      border: 3px solid var(--border-blue);
+    }
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .editor-header h2 {
+      margin: 0;
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      color: #334e68;
+      font-size: 1.8rem;
+    }
+
+    .editor-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .editor-tab-btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #edf2f7;
+      color: #4a5568;
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .editor-tab-btn.active {
+      background: var(--btn-blue);
+      color: white;
+      font-weight: bold;
+    }
+
+    .editor-body { flex: 1; overflow-y: auto; padding-right: 6px; }
+
+    .editor-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    .editor-table th, .editor-table td {
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      text-align: center;
+    }
+    .editor-table th { background: #f7fafc; color: #4a5568; }
+
+    .editor-card {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 15px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    .editor-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #2d3748;
+    }
+
+    .gui-input {
+      font-family: "DFKai-SB", "標楷體", sans-serif;
+      font-size: 1.1rem;
+      padding: 6px 10px;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .gui-input:focus { border-color: var(--btn-blue); }
+    .gui-input.sm { width: 90px; text-align: center; }
+    .gui-input.md { width: 140px; }
+    .gui-input.lg { width: 100%; }
+
+    .word-pair-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #ffffff;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px dashed #cbd5e0;
+      margin-bottom: 8px;
+    }
+
+    .cloud-box {
+      background: #f0f7ff;
+      border: 2px solid #bee3f8;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .cloud-box h3 { margin-top: 0; color: #2b6cb0; font-size: 1.3rem; }
+
+    .editor-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid #e2e8f0;
+      padding-top: 16px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="main-wrapper">
+    <!-- 頂部列 -->
+    <div class="top-header">
+      <div class="title-group">
+        <h1 class="app-title">國字小遊戲</h1>
+        <span class="theme-badge" id="currentThemeBadge">預設主題</span>
+      </div>
+      <div class="header-icons">
+        <!-- 順序/隨機 切換 -->
+        <div class="icon-svg-btn" id="orderToggleBtn" onclick="togglePlayOrder()" title="切換為隨機模式">
+          <svg id="iconSeq" viewBox="0 0 24 24">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+          </svg>
+          <svg id="iconRand" viewBox="0 0 24 24" style="display:none;">
+            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.42l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.12z"/>
+          </svg>
+        </div>
+        <!-- 全螢幕 -->
+        <div class="icon-svg-btn" onclick="toggleFullscreen()" title="全螢幕">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 9h2V7h2V5H5v4zm2 6H5v4h4v-2H7v-2zm10 2h-2v2h4v-4h-2v2zm-2-12v2h2v2h2V5h-4z"/>
+          </svg>
+        </div>
+        <!-- 後台管理按鈕 (學生模式下會隱藏) -->
+        <div class="icon-svg-btn" id="adminSettingsBtn" onclick="requestAdminAccess()" title="後台管理與雲端題庫">
+          <svg viewBox="0 0 24 24">
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 內容與右側頁籤區 -->
+    <div class="content-area">
+      <div class="game-card-container">
+        <!-- 回饋貼紙 Overlay -->
+        <div class="overlay-feedback" id="feedbackOverlay" onclick="dismissFeedback()">
+          <div class="sticker-character" id="fbSticker">🐶</div>
+          <div class="sticker-text" id="fbText">太棒了！</div>
+        </div>
+
+        <!-- 玩法 1：字卡 -->
+        <div id="mode1" class="mode-panel" style="display:none; text-align:center;">
+          <div class="card-flip-wrap" id="cardFlipWrap" onclick="this.classList.toggle('flipped')">
+            <div class="card-flip-inner">
+              <div class="card-front" id="m1Char">陽</div>
+              <div class="card-back" id="m1Zhuyin"></div>
+            </div>
+          </div>
+          <div class="control-bar">
+            <button class="btn-kai btn-gray" onclick="prevQ()">上一字</button>
+            <button class="btn-kai btn-blue" onclick="nextQ()">下一字</button>
+          </div>
+        </div>
+
+        <!-- 玩法 2：習寫 (描紅) -->
+        <div id="mode2" class="mode-panel" style="display:none; text-align:center;">
+          <div class="canvas-frame">
+            <canvas id="traceCanvas" width="320" height="320"></canvas>
+          </div>
+          <div class="control-bar">
+            <button class="btn-kai btn-gray" onclick="setTracePen('#000000', 9)">黑筆</button>
+            <button class="btn-kai btn-gray" style="color:#e53935;" onclick="setTracePen('#e53935', 5)">紅筆</button>
+            <button class="btn-kai btn-gray" onclick="resetTraceCanvas()">清除</button>
+            <button class="btn-kai btn-green" onclick="triggerFeedback(true)">⭕ 正確</button>
+            <button class="btn-kai btn-orange" onclick="triggerFeedback(false)">❌ 再加油</button>
+          </div>
+        </div>
+
+        <!-- 玩法 3：選字 -->
+        <div id="mode3" class="mode-panel" style="display:none; text-align:center;">
+          <div style="font-size: 1.2rem; color: #718096; margin-bottom: 15px;">請選擇正確的國字填入詞語中：</div>
+          <div class="question-title-large" id="m3Title"></div>
+          <div class="choice-options-group" id="m3Options"></div>
+        </div>
+
+        <!-- 玩法 4：寫詞 -->
+        <div id="mode4" class="mode-panel" style="display:none; text-align:center;">
+          <div class="phrase-title-box" id="m4Title"></div>
+          <div class="canvas-frame">
+            <canvas id="writeCanvas" width="320" height="320"></canvas>
+          </div>
+          <div class="control-bar">
+            <button class="btn-kai btn-gray" id="writeHintBtn" onclick="toggleWriteHint()" title="提示燈泡">💡</button>
+            <button class="btn-kai btn-gray" onclick="setWritePen('#000000', 9)">黑筆</button>
+            <button class="btn-kai btn-gray" style="color:#e53935;" onclick="setWritePen('#e53935', 5)">紅筆</button>
+            <button class="btn-kai btn-gray" onclick="resetWriteCanvas()">清除</button>
+            <button class="btn-kai btn-green" onclick="triggerFeedback(true)">⭕ 正確</button>
+            <button class="btn-kai btn-orange" onclick="triggerFeedback(false)">❌ 再加油</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側頁籤 -->
+      <div class="side-tabs">
+        <button class="tab-btn tab-card active" onclick="switchMode(1)">字卡</button>
+        <button class="tab-btn tab-trace" onclick="switchMode(2)">習寫</button>
+        <button class="tab-btn tab-choice" onclick="switchMode(3)">選字</button>
+        <button class="tab-btn tab-write" onclick="switchMode(4)">寫詞</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 後台登入 / 密碼變更 Modal -->
+  <div class="modal-mask" id="passwordModal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="editor-header">
+        <h2 id="pwdModalTitle">🔒 後台管理者驗證</h2>
+        <button class="btn-kai btn-gray sm" onclick="closePasswordModal()">✕</button>
+      </div>
+      <div style="padding: 15px 0;">
+        <div id="pwdInputArea">
+          <label style="display:block; margin-bottom: 8px; font-weight: bold;">請輸入管理密碼 (預設: 1234)：</label>
+          <input type="password" id="adminPwdInput" class="gui-input lg" placeholder="輸入密碼">
+          <div style="text-align:right; margin-top: 15px;">
+            <button class="btn-kai btn-blue" onclick="verifyPassword()">登入後台</button>
+          </div>
+        </div>
+
+        <div id="pwdChangeArea" style="display:none;">
+          <div style="background:#fffaf0; border:1px solid #ecc94b; color:#b7791f; padding:10px; border-radius:8px; margin-bottom:12px; font-size:0.95rem;">
+            ⚠️ 系統偵測到您使用的是預設密碼，為確保安全，請先設定您的新密碼！
+          </div>
+          <label style="display:block; margin-bottom: 6px; font-weight: bold;">設定新密碼：</label>
+          <input type="password" id="newPwdInput1" class="gui-input lg" placeholder="輸入新密碼" style="margin-bottom:10px;">
+          <label style="display:block; margin-bottom: 6px; font-weight: bold;">確認新密碼：</label>
+          <input type="password" id="newPwdInput2" class="gui-input lg" placeholder="再次輸入新密碼">
+          <div style="text-align:right; margin-top: 15px;">
+            <button class="btn-kai btn-green" onclick="submitNewPassword()">確定儲存並進入</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 後台管理 / 圖形化題庫編輯器 Modal -->
+  <div class="modal-mask" id="settingsModal">
+    <div class="modal-content">
+      <div class="editor-header">
+        <h2>🛠️ 後台管理與題庫系統</h2>
+        <button class="btn-kai btn-gray sm" onclick="closeSettings()">✕ 關閉</button>
+      </div>
+
+      <!-- Modal 內部頁籤 -->
+      <div class="editor-tabs">
+        <button class="editor-tab-btn active" onclick="switchEditorTab(0)">☁️ Google 試算表設定</button>
+        <button class="editor-tab-btn" onclick="switchEditorTab(1)">字卡/習寫題庫</button>
+        <button class="editor-tab-btn" onclick="switchEditorTab(2)">選字題庫</button>
+        <button class="editor-tab-btn" onclick="switchEditorTab(3)">寫詞題庫</button>
+        <button class="editor-tab-btn" onclick="switchEditorTab(4)">🔑 變更密碼</button>
+      </div>
+
+      <!-- 編輯器主內容區 -->
+      <div class="editor-body">
+        <!-- 頁籤 0：Google 試算表雲端整合 -->
+        <div id="guiTab0">
+          <div class="cloud-box">
+            <h3>🔗 1. Google 試算表與 GAS API 連線</h3>
+            <div style="margin-bottom: 10px;">
+              <label style="font-weight:bold;">外接 GAS 應用程式網址 (Web App URL)：</label>
+              <input type="text" id="cfgGasUrl" class="gui-input lg" placeholder="https://script.google.com/macros/s/AKfycbwPWdXNJLmubsNj45js6TYuLrk-HR-SqT0yGh5Z2J25wys-Np5kBwAfKMMOaCHtWbEx/exec">
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-weight:bold;">Google 試算表網址 (共用權限需設為「知道連結的使用者可編輯」)：</label>
+              <input type="text" id="cfgSheetUrl" class="gui-input lg" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+            </div>
+            <button class="btn-kai btn-blue sm" onclick="saveCloudConfig()">💾 儲存連線設定</button>
+          </div>
+
+          <div class="cloud-box">
+            <h3>📂 2. 主題管理與自動建表</h3>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+              <input type="text" id="newThemeInput" class="gui-input md" placeholder="新主題 (如: 第一課)">
+              <button class="btn-kai btn-purple sm" onclick="createThemeInSheet()">🚀 自動在試算表生成新主題表</button>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <label style="font-weight:bold;">選擇載入主題：</label>
+              <select id="themeSelect" class="gui-input md"></select>
+              <button class="btn-kai btn-green sm" onclick="loadSelectedThemeData()">🔄 同步雲端此主題題庫</button>
+              <button class="btn-kai btn-gray sm" onclick="fetchThemesList()">🔍 重新整理主題清單</button>
+            </div>
+          </div>
+
+          <div class="cloud-box">
+            <h3>🎓 3. 學生專用連結生成器</h3>
+            <p style="color:#718096; font-size:0.95rem; margin:0 0 8px 0;">此專屬網址已帶入主題與試算表設定，學生進入後將「完全不顯示」後台設定齒輪。</p>
+            <input type="text" id="studentLinkDisplay" class="gui-input lg" readonly style="background:#edf2f7; margin-bottom:10px;">
+            <button class="btn-kai btn-blue sm" onclick="copyStudentLink()">📋 一鍵複製學生專屬連結</button>
+          </div>
+        </div>
+
+        <!-- 頁籤 1：字卡與習寫 -->
+        <div id="guiTab1" style="display:none;">
+          <table class="editor-table">
+            <thead>
+              <tr>
+                <th style="width:30%;">國字</th>
+                <th style="width:50%;">注音</th>
+                <th style="width:20%;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="charsTableBody"></tbody>
+          </table>
+          <button class="btn-kai btn-blue sm" onclick="addNewCharRow()">+ 新增國字</button>
+        </div>
+
+        <!-- 頁籤 2：選字題目 -->
+        <div id="guiTab2" style="display:none;">
+          <div id="choiceCardsContainer"></div>
+          <button class="btn-kai btn-blue sm" onclick="addNewChoiceCard()">+ 新增選字題目</button>
+        </div>
+
+        <!-- 頁籤 3：寫詞題目 -->
+        <div id="guiTab3" style="display:none;">
+          <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-kai btn-blue sm" onclick="setAllWriteHints(true)">💡 全部開啟提示</button>
+            <button class="btn-kai btn-gray sm" onclick="setAllWriteHints(false)">🚫 取消全部提示</button>
+          </div>
+          <div id="writeCardsContainer"></div>
+          <button class="btn-kai btn-blue sm" onclick="addNewWriteCard()">+ 新增寫詞題目</button>
+        </div>
+
+        <!-- 頁籤 4：變更密碼 -->
+        <div id="guiTab4" style="display:none;">
+          <div class="cloud-box" style="max-width:400px;">
+            <h3>🔑 修改管理員密碼</h3>
+            <div style="margin-bottom:10px;">
+              <label style="font-weight:bold;">新密碼：</label>
+              <input type="password" id="tabNewPwd1" class="gui-input lg">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label style="font-weight:bold;">再次確認新密碼：</label>
+              <input type="password" id="tabNewPwd2" class="gui-input lg">
+            </div>
+            <button class="btn-kai btn-green sm" onclick="changeAdminPasswordFromTab()">儲存新密碼</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作功能 -->
+      <div class="editor-footer">
+        <div>
+          <button class="btn-kai btn-green" onclick="saveSettingsGUI()">💾 儲存並套用目前題庫</button>
+          <button class="btn-kai btn-purple" onclick="uploadDataToSheet()">☁️ 同步儲存至試算表</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_DB = {
+      chars: [
+        { char: "陽", zhuyin: "ㄧㄤˊ" },
+        { char: "高", zhuyin: "ㄍㄠ" },
+        { char: "山", zhuyin: "ㄕㄢ" }
+      ],
+      choice: [
+        {
+          prefix: [{ c: "高", z: "ㄍㄠ" }],
+          targetZhuyin: "ㄕㄢ",
+          suffix: [],
+          options: ["山", "出"],
+          answer: "山"
+        },
+        {
+          prefix: [{ c: "太", z: "ㄊㄞˋ" }],
+          targetZhuyin: "ㄧㄤˊ",
+          suffix: [],
+          options: ["陽", "楊"],
+          answer: "陽"
+        }
+      ],
+      write: [
+        {
+          prefix: [{ c: "高", z: "ㄍㄠ" }],
+          targetZhuyin: "ㄕㄢ",
+          suffix: [],
+          targetChar: "山",
+          enableHint: true
+        }
+      ]
+    };
+
+    let DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+    let guiDB = null;
+    let currentTheme = "預設主題";
+
+    // 系統儲存鍵值
+    const STORAGE_KEY_DB = 'zh_game_db';
+    const STORAGE_KEY_PWD = 'zh_game_admin_pwd';
+    const STORAGE_KEY_GAS = 'zh_game_gas_url';
+    const STORAGE_KEY_SHEET = 'zh_game_sheet_url';
+    const STORAGE_KEY_THEME = 'zh_game_current_theme';
+
+    let currentMode = 1;
+    let curCharIdx = 0;
+    let curChoiceIdx = 0;
+    let curWriteIdx = 0;
+    let feedbackTimer = null;
+    let showWriteHint = false;
+    let isRandomOrder = false;
+
+    // 檢查是否為學生專用模式
+    const urlParams = new URLSearchParams(window.location.search);
+    const isStudentMode = urlParams.get('student') === '1';
+
+    function initApp() {
+      // 1. 若為學生模式，隱藏後台按鈕
+      if (isStudentMode) {
+        const btn = document.getElementById('adminSettingsBtn');
+        if (btn) btn.style.display = 'none';
+      }
+
+      // 2. 載入網址覆蓋參數 (若學生連結帶有 theme 與 sheetUrl)
+      if (urlParams.get('sheetUrl')) localStorage.setItem(STORAGE_KEY_SHEET, urlParams.get('sheetUrl'));
+      if (urlParams.get('gasUrl')) localStorage.setItem(STORAGE_KEY_GAS, urlParams.get('gasUrl'));
+      if (urlParams.get('theme')) {
+        currentTheme = urlParams.get('theme');
+        localStorage.setItem(STORAGE_KEY_THEME, currentTheme);
+      } else {
+        currentTheme = localStorage.getItem(STORAGE_KEY_THEME) || "預設主題";
+      }
+
+      document.getElementById('currentThemeBadge').innerText = currentTheme;
+
+      // 3. 載入題庫
+      const saved = localStorage.getItem(STORAGE_KEY_DB);
+      if (saved) {
+        try { DB = JSON.parse(saved); } catch(e) { DB = JSON.parse(JSON.stringify(DEFAULT_DB)); }
+      }
+
+      // 如果有雲端連結且非自帶完整資料，可自動進行初次載入
+      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS);
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
+      if (gasUrl && sheetUrl && isStudentMode) {
+        loadDataFromCloud(gasUrl, sheetUrl, currentTheme, false);
+      }
+
+      switchMode(1);
+    }
+
+    /* 密碼防護與後台登入 */
+    function getAdminPassword() {
+      return localStorage.getItem(STORAGE_KEY_PWD) || '1234';
+    }
+
+    function requestAdminAccess() {
+      const pwd = getAdminPassword();
+      document.getElementById('adminPwdInput').value = '';
+      document.getElementById('pwdInputArea').style.display = 'block';
+      document.getElementById('pwdChangeArea').style.display = 'none';
+      document.getElementById('pwdModalTitle').innerText = '🔒 後台管理者驗證';
+      document.getElementById('passwordModal').style.display = 'flex';
+    }
+
+    function closePasswordModal() {
+      document.getElementById('passwordModal').style.display = 'none';
+    }
+
+    function verifyPassword() {
+      const entered = document.getElementById('adminPwdInput').value;
+      const currentPwd = getAdminPassword();
+
+      if (entered !== currentPwd) {
+        alert("❌ 密碼錯誤！請重新輸入。");
+        return;
+      }
+
+      // 若目前密碼仍為預設的 1234，強制要求先修改密碼
+      if (currentPwd === '1234') {
+        document.getElementById('pwdInputArea').style.display = 'none';
+        document.getElementById('pwdChangeArea').style.display = 'block';
+        document.getElementById('pwdModalTitle').innerText = '⚠️ 修改預設密碼';
+      } else {
+        closePasswordModal();
+        openSettingsModal();
+      }
+    }
+
+    function submitNewPassword() {
+      const p1 = document.getElementById('newPwdInput1').value;
+      const p2 = document.getElementById('newPwdInput2').value;
+
+      if (!p1 || p1.length < 4) {
+        alert("密碼長度至少需 4 碼！");
+        return;
+      }
+      if (p1 === '1234') {
+        alert("不能使用預設密碼 1234，請設定新密碼！");
+        return;
+      }
+      if (p1 !== p2) {
+        alert("兩次輸入的新密碼不相符！");
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEY_PWD, p1);
+      alert("✅ 密碼修改成功！即將進入後台設定。");
+      closePasswordModal();
+      openSettingsModal();
+    }
+
+    function changeAdminPasswordFromTab() {
+      const p1 = document.getElementById('tabNewPwd1').value;
+      const p2 = document.getElementById('tabNewPwd2').value;
+      if (!p1 || p1.length < 4) {
+        alert("密碼長度至少需 4 碼！");
+        return;
+      }
+      if (p1 !== p2) {
+        alert("兩次輸入的密碼不符！");
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY_PWD, p1);
+      alert("✅ 管理員密碼已更新！");
+      document.getElementById('tabNewPwd1').value = '';
+      document.getElementById('tabNewPwd2').value = '';
+    }
+
+    /* 後台管理面板控制 */
+    function openSettingsModal() {
+      guiDB = JSON.parse(JSON.stringify(DB));
+      document.getElementById('cfgGasUrl').value = localStorage.getItem(STORAGE_KEY_GAS) || '';
+      document.getElementById('cfgSheetUrl').value = localStorage.getItem(STORAGE_KEY_SHEET) || '';
+      updateStudentLinkDisplay();
+      switchEditorTab(0);
+      document.getElementById('settingsModal').style.display = 'flex';
+      fetchThemesList();
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').style.display = 'none';
+      guiDB = null;
+    }
+
+    function switchEditorTab(tabIndex) {
+      document.querySelectorAll('.editor-tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === tabIndex);
+      });
+      for (let i = 0; i <= 4; i++) {
+        const el = document.getElementById(`guiTab${i}`);
+        if (el) el.style.display = (i === tabIndex) ? 'block' : 'none';
+      }
+
+      if (tabIndex === 1) renderGUITab1();
+      if (tabIndex === 2) renderGUITab2();
+      if (tabIndex === 3) renderGUITab3();
+    }
+
+    /* 雲端試算表 API 呼叫方法 */
+    async function callGAS(payload) {
+      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS) || document.getElementById('cfgGasUrl').value.trim();
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET) || document.getElementById('cfgSheetUrl').value.trim();
+
+      if (!gasUrl || !sheetUrl) {
+        alert("請先於設定中填寫完整的 GAS 應用程式網址與試算表網址！");
+        return null;
+      }
+
+      payload.sheetUrl = sheetUrl;
+
+      try {
+        const res = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        return data;
+      } catch (e) {
+        alert("與雲端連線失敗：" + e.message);
+        return null;
+      }
+    }
+
+    function saveCloudConfig() {
+      const gasUrl = document.getElementById('cfgGasUrl').value.trim();
+      const sheetUrl = document.getElementById('cfgSheetUrl').value.trim();
+      localStorage.setItem(STORAGE_KEY_GAS, gasUrl);
+      localStorage.setItem(STORAGE_KEY_SHEET, sheetUrl);
+      updateStudentLinkDisplay();
+      alert("✅ 雲端連線設定已儲存！");
+      fetchThemesList();
+    }
+
+    async function createThemeInSheet() {
+      const theme = document.getElementById('newThemeInput').value.trim();
+      if (!theme) {
+        alert("請輸入新主題名稱！");
+        return;
+      }
+      const res = await callGAS({ action: "createTheme", theme: theme });
+      if (res && res.success) {
+        alert(res.message);
+        document.getElementById('newThemeInput').value = '';
+        fetchThemesList();
+      }
+    }
+
+    async function fetchThemesList() {
+      const select = document.getElementById('themeSelect');
+      select.innerHTML = '<option value="">載入中...</option>';
+      const res = await callGAS({ action: "getThemes" });
+      if (res && res.success) {
+        select.innerHTML = '';
+        if (res.themes.length === 0) {
+          select.innerHTML = '<option value="">尚未建立主題</option>';
+        } else {
+          res.themes.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.innerText = t;
+            if (t === currentTheme) opt.selected = true;
+            select.appendChild(opt);
+          });
+        }
+      }
+    }
+
+    async function loadSelectedThemeData() {
+      const theme = document.getElementById('themeSelect').value;
+      if (!theme) {
+        alert("請先選擇主題！");
+        return;
+      }
+      const gasUrl = localStorage.getItem(STORAGE_KEY_GAS);
+      const sheetUrl = localStorage.getItem(STORAGE_KEY_SHEET);
+      await loadDataFromCloud(gasUrl, sheetUrl, theme, true);
+    }
+
+    async function loadDataFromCloud(gasUrl, sheetUrl, theme, showAlert = true) {
+      try {
+        const res = await fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: "loadData", sheetUrl: sheetUrl, theme: theme })
+        });
+        const resData = await res.json();
+        if (resData && resData.success) {
+          DB = resData.data;
+          guiDB = JSON.parse(JSON.stringify(DB));
+          currentTheme = theme;
+          localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(DB));
+          localStorage.setItem(STORAGE_KEY_THEME, currentTheme);
+          document.getElementById('currentThemeBadge').innerText = currentTheme;
+          updateStudentLinkDisplay();
+          switchMode(currentMode);
+          if (showAlert) alert(`✅ 成功載入主題【${theme}】題庫！`);
+        }
+      } catch (e) {
+        if (showAlert) alert("載入失敗：" + e.message);
+      }
+    }
+
+    async function uploadDataToSheet() {
+      if (!guiDB) guiDB = JSON.parse(JSON.stringify(DB));
+      const res = await callGAS({ action: "saveData", theme: currentTheme, data: guiDB });
+      if (res && res.success) {
+        alert("✅ 題庫已成功同步儲存至 Google 試算表！");
+      }
+    }
+
+    function updateStudentLinkDisplay() {
+      const gasUrl = encodeURIComponent(localStorage.getItem(STORAGE_KEY_GAS) || '');
+      const sheetUrl = encodeURIComponent(localStorage.getItem(STORAGE_KEY_SHEET) || '');
+      const theme = encodeURIComponent(currentTheme);
+      const baseUrl = window.location.origin + window.location.pathname;
+      const studentUrl = `${baseUrl}?student=1&theme=${theme}&sheetUrl=${sheetUrl}&gasUrl=${gasUrl}`;
+      document.getElementById('studentLinkDisplay').value = studentUrl;
+    }
+
+    function copyStudentLink() {
+      const copyText = document.getElementById('studentLinkDisplay');
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      alert("📋 學生專屬連結已複製到剪貼簿！");
+    }
+
+    /* 注音排版元件 */
+    function renderRubyHTML(char, zhuyinStr, pureZhuyinMode = false) {
+      if (!zhuyinStr) return char || '';
+      const tones = ['ˊ', 'ˇ', 'ˋ', '˙'];
+      let tone = '';
+      let symbols = '';
+      for (let ch of zhuyinStr) {
+        if (tones.includes(ch)) tone = ch;
+        else symbols += ch;
+      }
+      let toneHTML = (tone === '˙') ? `<span class="zy-tone-top">˙</span>` : (tone !== '' ? `<span class="zy-tone-right">${tone}</span>` : '');
+      let symbolHTML = '';
+      for (let s of symbols) symbolHTML += `<span class="zy-symbol">${s}</span>`;
+      const colHTML = `<div class="ruby-zhuyin-col">${toneHTML}${symbolHTML}</div>`;
+      if (pureZhuyinMode) return `<div class="pure-zhuyin-large" style="display:inline-flex; align-items:center;">${colHTML}</div>`;
+      return `<div class="ruby-box"><span class="ruby-char">${char}</span>${colHTML}</div>`;
+    }
+
+    /* 遊戲玩法控制 */
+    function togglePlayOrder() {
+      isRandomOrder = !isRandomOrder;
+      const btn = document.getElementById('orderToggleBtn');
+      const iconSeq = document.getElementById('iconSeq');
+      const iconRand = document.getElementById('iconRand');
+      btn.title = isRandomOrder ? "切換為順序模式" : "切換為隨機模式";
+      iconSeq.style.display = isRandomOrder ? "none" : "block";
+      iconRand.style.display = isRandomOrder ? "block" : "none";
+    }
+
+    function getRandomIndex(maxLen, currentIdx) {
+      if (maxLen <= 1) return 0;
+      let nextIdx = currentIdx;
+      while (nextIdx === currentIdx) {
+        nextIdx = Math.floor(Math.random() * maxLen);
+      }
+      return nextIdx;
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === mode - 1));
+      document.querySelectorAll('.mode-panel').forEach((p, i) => p.style.display = (i === mode - 1) ? 'flex' : 'none');
+      if (mode === 1) renderMode1();
+      if (mode === 2) renderMode2();
+      if (mode === 3) renderMode3();
+      if (mode === 4) renderMode4();
+    }
+
+    function renderMode1() {
+      if (!DB.chars || DB.chars.length === 0) return;
+      curCharIdx = curCharIdx % DB.chars.length;
+      const q = DB.chars[curCharIdx];
+      document.getElementById('m1Char').innerText = q.char;
+      document.getElementById('m1Zhuyin').innerHTML = renderRubyHTML('', q.zhuyin, true);
+      document.getElementById('cardFlipWrap').classList.remove('flipped');
+    }
+
+    function prevQ() {
+      showWriteHint = false;
+      const len = (currentMode <= 2) ? DB.chars.length : (currentMode === 3 ? DB.choice.length : DB.write.length);
+      if (len === 0) return;
+      if (currentMode <= 2) curCharIdx = isRandomOrder ? getRandomIndex(len, curCharIdx) : (curCharIdx - 1 + len) % len;
+      else if (currentMode === 3) curChoiceIdx = isRandomOrder ? getRandomIndex(len, curChoiceIdx) : (curChoiceIdx - 1 + len) % len;
+      else if (currentMode === 4) curWriteIdx = isRandomOrder ? getRandomIndex(len, curWriteIdx) : (curWriteIdx - 1 + len) % len;
+      switchMode(currentMode);
+    }
+
+    function nextQ() {
+      showWriteHint = false;
+      const len = (currentMode <= 2) ? DB.chars.length : (currentMode === 3 ? DB.choice.length : DB.write.length);
+      if (len === 0) return;
+      if (currentMode <= 2) curCharIdx = isRandomOrder ? getRandomIndex(len, curCharIdx) : (curCharIdx + 1) % len;
+      else if (currentMode === 3) curChoiceIdx = isRandomOrder ? getRandomIndex(len, curChoiceIdx) : (curChoiceIdx + 1) % len;
+      else if (currentMode === 4) curWriteIdx = isRandomOrder ? getRandomIndex(len, curWriteIdx) : (curWriteIdx + 1) % len;
+      switchMode(currentMode);
+    }
+
+    /* 描紅與習寫 Canvas */
+    let tCanvas, tCtx, isTraceDrawing = false;
+    let tPenColor = '#000000', tPenWidth = 9;
+
+    function renderMode2() {
+      if (!DB.chars || DB.chars.length === 0) return;
+      curCharIdx = curCharIdx % DB.chars.length;
+      tCanvas = document.getElementById('traceCanvas');
+      tCtx = tCanvas.getContext('2d');
+      resetTraceCanvas();
+      tCanvas.onmousedown = tCanvas.ontouchstart = (e) => { isTraceDrawing = true; drawTrace(e); };
+      tCanvas.onmousemove = tCanvas.ontouchmove = (e) => { drawTrace(e); };
+      tCanvas.onmouseup = tCanvas.ontouchend = () => { isTraceDrawing = false; tCtx.beginPath(); };
+    }
+
+    function resetTraceCanvas() {
+      tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+      const q = DB.chars[curCharIdx];
+      tCtx.font = "230px 標楷體";
+      tCtx.fillStyle = "#e2e8f0";
+      tCtx.textAlign = "center";
+      tCtx.textBaseline = "middle";
+      tCtx.fillText(q.char, tCanvas.width / 2, tCanvas.height / 2 + 15);
+      tCtx.beginPath();
+    }
+
+    function drawTrace(e) {
+      if (!isTraceDrawing) return;
+      const rect = tCanvas.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+      tCtx.lineWidth = tPenWidth;
+      tCtx.lineCap = 'round';
+      tCtx.strokeStyle = tPenColor;
+      tCtx.lineTo(x, y);
+      tCtx.stroke();
+      tCtx.beginPath();
+      tCtx.moveTo(x, y);
+    }
+
+    function setTracePen(c, w) { tPenColor = c; tPenWidth = w; }
+
+    /* 選字 */
+    function renderMode3() {
+      if (!DB.choice || DB.choice.length === 0) return;
+      curChoiceIdx = curChoiceIdx % DB.choice.length;
+      const q = DB.choice[curChoiceIdx];
+      let html = "";
+      if (q.prefix) q.prefix.forEach(item => html += renderRubyHTML(item.c, item.z));
+      html += `（ ${renderRubyHTML(" ", q.targetZhuyin)} ）`;
+      if (q.suffix) q.suffix.forEach(item => html += renderRubyHTML(item.c, item.z));
+      document.getElementById('m3Title').innerHTML = html;
+
+      const optGroup = document.getElementById('m3Options');
+      optGroup.innerHTML = "";
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-choice-opt';
+        btn.innerText = opt;
+        btn.onclick = () => triggerFeedback(opt === q.answer);
+        optGroup.appendChild(btn);
+      });
+    }
+
+    /* 寫詞 */
+    let wCanvas, wCtx, isWriteDrawing = false;
+    let wPenColor = '#000000', wPenWidth = 9;
+
+    function renderMode4() {
+      if (!DB.write || DB.write.length === 0) return;
+      curWriteIdx = curWriteIdx % DB.write.length;
+      const q = DB.write[curWriteIdx];
+      let html = "";
+      if (q.prefix) q.prefix.forEach(item => html += renderRubyHTML(item.c, item.z));
+      html += `（ ${renderRubyHTML(" ", q.targetZhuyin)} ）`;
+      if (q.suffix) q.suffix.forEach(item => html += renderRubyHTML(item.c, item.z));
+      document.getElementById('m4Title').innerHTML = html;
+
+      const hintBtn = document.getElementById('writeHintBtn');
+      if (hintBtn) hintBtn.style.display = (q.enableHint !== false) ? 'inline-block' : 'none';
+
+      setTimeout(() => {
+        wCanvas = document.getElementById('writeCanvas');
+        wCtx = wCanvas.getContext('2d');
+        resetWriteCanvas();
+        wCanvas.onmousedown = wCanvas.ontouchstart = (e) => { isWriteDrawing = true; drawWrite(e); };
+        wCanvas.onmousemove = wCanvas.ontouchmove = (e) => { drawWrite(e); };
+        wCanvas.onmouseup = wCanvas.ontouchend = () => { isWriteDrawing = false; wCtx.beginPath(); };
+      }, 50);
+    }
+
+    function toggleWriteHint() {
+      showWriteHint = !showWriteHint;
+      resetWriteCanvas();
+    }
+
+    function resetWriteCanvas() {
+      if (!wCtx) return;
+      wCtx.clearRect(0, 0, wCanvas.width, wCanvas.height);
+      if (showWriteHint) {
+        const q = DB.write[curWriteIdx];
+        wCtx.font = "230px 標楷體";
+        wCtx.fillStyle = "#e2e8f0";
+        wCtx.textAlign = "center";
+        wCtx.textBaseline = "middle";
+        wCtx.fillText(q.targetChar || '', wCanvas.width / 2, wCanvas.height / 2 + 15);
+      }
+      wCtx.beginPath();
+    }
+
+    function drawWrite(e) {
+      if (!isWriteDrawing) return;
+      const rect = wCanvas.getBoundingClientRect();
+      const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+      const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+      wCtx.lineWidth = wPenWidth;
+      wCtx.lineCap = 'round';
+      wCtx.strokeStyle = wPenColor;
+      wCtx.lineTo(x, y);
+      wCtx.stroke();
+      wCtx.beginPath();
+      wCtx.moveTo(x, y);
+    }
+
+    function setWritePen(c, w) { wPenColor = c; wPenWidth = w; }
+
+    /* 回饋貼紙 */
+    const okStickers = [{ img: '🐶', text: '太棒了！答對囉！' }, { img: '🐱', text: '你真聰明！' }, { img: '🐰', text: '太厲害了！' }];
+    const noStickers = [{ img: '🐻', text: '再加油一下喔！' }, { img: '🐥', text: '沒關係，再試一次！' }];
+
+    function triggerFeedback(isCorrect) {
+      const overlay = document.getElementById('feedbackOverlay');
+      const sticker = document.getElementById('fbSticker');
+      const text = document.getElementById('fbText');
+      const list = isCorrect ? okStickers : noStickers;
+      const item = list[Math.floor(Math.random() * list.length)];
+      sticker.innerText = item.img;
+      text.innerText = item.text;
+      overlay.style.display = 'flex';
+      clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(dismissFeedback, 2300);
+    }
+
+    function dismissFeedback() {
+      clearTimeout(feedbackTimer);
+      const overlay = document.getElementById('feedbackOverlay');
+      if (overlay.style.display === 'none') return;
+      overlay.style.display = 'none';
+      nextQ();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    /* 編輯器內部 DOM 渲染 */
+    function renderGUITab1() {
+      const tbody = document.getElementById('charsTableBody');
+      tbody.innerHTML = '';
+      guiDB.chars.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="text" class="gui-input sm" value="${item.char || ''}" onchange="guiDB.chars[${index}].char = this.value"></td>
+          <td><input type="text" class="gui-input md" value="${item.zhuyin || ''}" onchange="guiDB.chars[${index}].zhuyin = this.value"></td>
+          <td><button class="btn-kai btn-red sm" onclick="guiDB.chars.splice(${index},1); renderGUITab1();">刪除</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function addNewCharRow() {
+      guiDB.chars.push({ char: "", zhuyin: "" });
+      renderGUITab1();
+    }
+
+    function createWordPairContainerHTML(list, pathPrefix) {
+      let html = `<div style="display:flex; flex-direction:column; gap:6px;">`;
+      list.forEach((pair, idx) => {
+        html += `
+          <div class="word-pair-group">
+            <span>字:</span>
+            <input type="text" class="gui-input sm" value="${pair.c || ''}" onchange="${pathPrefix}[${idx}].c = this.value">
+            <span>注音:</span>
+            <input type="text" class="gui-input md" value="${pair.z || ''}" onchange="${pathPrefix}[${idx}].z = this.value">
+            <button class="btn-kai btn-red sm" onclick="eval('${pathPrefix}').splice(${idx},1); if('${pathPrefix}'.includes('choice')) renderGUITab2(); else renderGUITab3();">✕</button>
+          </div>
+        `;
+      });
+      html += `<button class="btn-kai btn-gray sm" style="align-self:flex-start;" onclick="eval('${pathPrefix}').push({c:'', z:''}); if('${pathPrefix}'.includes('choice')) renderGUITab2(); else renderGUITab3();">+ 新增前後綴字</button></div>`;
+      return html;
+    }
+
+    function renderGUITab2() {
+      const container = document.getElementById('choiceCardsContainer');
+      container.innerHTML = '';
+      guiDB.choice.forEach((q, qIdx) => {
+        const card = document.createElement('div');
+        card.className = 'editor-card';
+
+        let optionsHTML = '';
+        q.options.forEach((opt, oIdx) => {
+          optionsHTML += `
+            <div style="display:inline-flex; align-items:center; gap:4px; margin-right:8px; margin-bottom:6px;">
+              <input type="text" class="gui-input sm" value="${opt}" onchange="guiDB.choice[${qIdx}].options[${oIdx}] = this.value; renderGUITab2();">
+              <button class="btn-kai btn-red sm" onclick="guiDB.choice[${qIdx}].options.splice(${oIdx}, 1); renderGUITab2();">✕</button>
+            </div>
+          `;
+        });
+
+        let answerSelectHTML = `<select class="gui-input md" onchange="guiDB.choice[${qIdx}].answer = this.value">`;
+        q.options.forEach(opt => {
+          answerSelectHTML += `<option value="${opt}" ${(opt === q.answer) ? 'selected' : ''}>${opt}</option>`;
+        });
+        answerSelectHTML += `</select>`;
+
+        card.innerHTML = `
+          <div class="editor-card-header">
+            <span>題目 ${qIdx + 1}</span>
+            <button class="btn-kai btn-red sm" onclick="guiDB.choice.splice(${qIdx}, 1); renderGUITab2();">刪除此題</button>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+              <label style="font-weight:bold;">前綴詞句:</label>
+              ${createWordPairContainerHTML(q.prefix, `guiDB.choice[${qIdx}].prefix`)}
+            </div>
+            <div>
+              <label style="font-weight:bold;">後綴詞句:</label>
+              ${createWordPairContainerHTML(q.suffix, `guiDB.choice[${qIdx}].suffix`)}
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-weight:bold;">挖空注音：</label>
+            <input type="text" class="gui-input md" value="${q.targetZhuyin || ''}" onchange="guiDB.choice[${qIdx}].targetZhuyin = this.value">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-weight:bold;">選項列表：</label>
+            <div style="margin-top:6px;">
+              ${optionsHTML}
+              <button class="btn-kai btn-gray sm" onclick="guiDB.choice[${qIdx}].options.push('新'); renderGUITab2();">+ 新增選項</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-weight:bold;">正確答案：</label>
+            ${answerSelectHTML}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addNewChoiceCard() {
+      guiDB.choice.push({ prefix: [{ c: "新", z: "ㄒㄧㄣ" }], targetZhuyin: "ㄗˋ", suffix: [], options: ["字", "自"], answer: "字" });
+      renderGUITab2();
+    }
+
+    function renderGUITab3() {
+      const container = document.getElementById('writeCardsContainer');
+      container.innerHTML = '';
+      guiDB.write.forEach((q, qIdx) => {
+        const card = document.createElement('div');
+        card.className = 'editor-card';
+        card.innerHTML = `
+          <div class="editor-card-header">
+            <span>題目 ${qIdx + 1}</span>
+            <button class="btn-kai btn-red sm" onclick="guiDB.write.splice(${qIdx}, 1); renderGUITab3();">刪除此題</button>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+              <label style="font-weight:bold;">前綴詞句:</label>
+              ${createWordPairContainerHTML(q.prefix, `guiDB.write[${qIdx}].prefix`)}
+            </div>
+            <div>
+              <label style="font-weight:bold;">後綴詞句:</label>
+              ${createWordPairContainerHTML(q.suffix, `guiDB.write[${qIdx}].suffix`)}
+            </div>
+          </div>
+          <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+            <div>
+              <label style="font-weight:bold;">答案國字：</label>
+              <input type="text" class="gui-input sm" value="${q.targetChar || ''}" onchange="guiDB.write[${qIdx}].targetChar = this.value">
+            </div>
+            <div>
+              <label style="font-weight:bold;">答案注音：</label>
+              <input type="text" class="gui-input md" value="${q.targetZhuyin || ''}" onchange="guiDB.write[${qIdx}].targetZhuyin = this.value">
+            </div>
+          </div>
+          <div style="background:#edf2f7; padding:8px 12px; border-radius:10px; display:inline-flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="hintCheck_${qIdx}" ${(q.enableHint !== false) ? 'checked' : ''} onchange="guiDB.write[${qIdx}].enableHint = this.checked">
+            <label for="hintCheck_${qIdx}" style="cursor:pointer; font-weight:bold; color:#2d3748;">允許使用提示燈泡 (💡)</label>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function setAllWriteHints(enable) {
+      if (guiDB && guiDB.write) {
+        guiDB.write.forEach(q => q.enableHint = enable);
+        renderGUITab3();
+      }
+    }
+
+    function addNewWriteCard() {
+      guiDB.write.push({ prefix: [{ c: "太", z: "ㄊㄞˋ" }], targetZhuyin: "ㄧㄤˊ", suffix: [], targetChar: "陽", enableHint: true });
+      renderGUITab3();
+    }
+
+    function saveSettingsGUI() {
+      DB = JSON.parse(JSON.stringify(guiDB));
+      localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(DB));
+      closeSettings();
+      switchMode(currentMode);
+      alert("✅ 目前題庫已套用！");
+    }
+
+    // 初始化啟動
+    initApp();
+  </script>
+</body>
+</html>
